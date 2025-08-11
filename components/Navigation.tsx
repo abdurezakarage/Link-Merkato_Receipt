@@ -6,13 +6,7 @@ import Image from "next/image";
 import { useAuth } from "../app/Context/AuthContext";
 import { CompanyData } from "../app/(local-receipts)/local-data-forms/types";
 
-/**
- * Navigation component with role-based access control:
- * - USER role: Can access Receipt Management
- * - CLERK role: Can access Data Upload and Clerk Dashboard
- * - ACCOUNTANT role: Can access Accountant Dashboard
- * - ADMIN role: Can access Admin page
- */
+
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const { user, logout, token } = useAuth();
