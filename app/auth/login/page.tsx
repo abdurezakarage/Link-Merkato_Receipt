@@ -97,25 +97,22 @@ export default function Login() {
       // Get the token from localStorage since the state might not be updated yet
       const currentToken = localStorage.getItem('token');
       
-      console.log('Login successful, checking token:', !!currentToken);
+      //console.log('Login successful, checking token:', !!currentToken);
       
       if (currentToken) {
         try {
           const decodedToken = parseJwt(currentToken);
-          console.log('Decoded token:', decodedToken);
+          //console.log('Decoded token:', decodedToken);
           const roles = decodedToken.roles;
           
-          console.log('User roles:', roles); // Debug log
+          //console.log('User roles:', roles); // Debug log
           
           if (roles && Array.isArray(roles)) {
             if (roles.includes("ACCOUNTANT")) {
-              console.log('Navigating to accountant dashboard');
               router.push("/accountant-dashboard");
             } else if (roles.includes("CLERK")) {
-              console.log('Navigating to clerk dashboard');
               router.push("/local-Import");
             } else if (roles.includes("ADMIN")) {
-              console.log('Navigating to admin - using clerk dashboard as fallback');
               router.push("/auth/admin");
             } else if (roles.includes("USER")) {
               router.push("/dataupload");
@@ -126,7 +123,7 @@ export default function Login() {
           }
         } catch (decodeError) {
           console.error('Error decoding token:', decodeError);
-          console.log('Token content:', currentToken);
+          //console.log('Token content:', currentToken);
           // Fallback navigation
           router.push("/(local-receipts)/userinfo");
         }

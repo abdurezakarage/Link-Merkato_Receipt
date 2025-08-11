@@ -29,10 +29,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
           const isAuthEndpoint = url.includes('/auth/') || url.includes('/login') || url.includes('/token');
           
           if (isAuthEndpoint) {
-            console.log('Authentication endpoint returned 401, logging out');
+            //console.log('Authentication endpoint returned 401, logging out');
             logout();
           } else {
-            console.log('Non-auth endpoint returned 401, but not logging out automatically');
+            //console.log('Non-auth endpoint returned 401, but not logging out automatically');
             // You might want to handle this differently, like showing an error message
           }
         }
@@ -127,7 +127,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     
     // Try first API (SPRING_BASE_URL)
     try {
-      console.log('Attempting login with first API:', `${SPRING_BASE_URL}/auth/login`);
+      //console.log('Attempting login with first API:', `${SPRING_BASE_URL}/auth/login`);
       const response = await axios.post<LoginResponse>(`${SPRING_BASE_URL}/auth/login`, {
         username,
         password,
@@ -179,14 +179,14 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       // Set default axios authorization header
       axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
       
-      console.log('Login successful with first API');
+      //console.log('Login successful with first API');
       return userData
     } catch (firstApiError: any) {
-      console.log('First API login failed, trying second API:', firstApiError.message);
+      //console.log('First API login failed, trying second API:', firstApiError.message);
       
       // If first API fails, try second API (LinkBASE_URL)
       try {
-        console.log('Attempting login with second API:', `${LinkBASE_URL}/auth/login`);
+        //console.log('Attempting login with second API:', `${LinkBASE_URL}/auth/login`);
         const secondResponse = await axios.post<LoginResponse>(`${LinkBASE_URL}/auth/login`, {
           username,
           password,
@@ -238,7 +238,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         // Set default axios authorization header
         axios.defaults.headers.common['Authorization'] = `Bearer ${token}`;
         
-        console.log('Login successful with second API');
+        //console.log('Login successful with second API');
         return userData
       } catch (secondApiError: any) {
         // Both APIs failed
