@@ -171,23 +171,34 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                     required
                   >
                     <option value="">Select Nature</option>
-                    <option value="5">5-Taxable Sales</option>
-                    <option value="15">15-Zero rated sales</option>
-                    <option value="20">20-Tax exempt sales</option>
-                    <option value="25">25-Supplis subject to reverse tax</option>
-                    <option value="35">35-Tax Adjustment with debit</option>
-                    <option value="45">45-Tax Adjustment with credit</option>
-                    <option value="65">65-Local Purchase</option>
-                    <option value="75">75-Imported capital assets</option>
-                    <option value="85">85-Vat or unclaimed inputs</option>
-                    <option value="100">100-Local purchase inputs</option>
-                    <option value="110">110-Imported purchase inputs</option>
-                    <option value="120">120-General Expense inputs purchase</option>
-                    <option value="130">130-Purchase with no Vat</option>
-                    <option value="135">135-Duductable on Vat reverse</option>
-                    <option value="145">145-Tax adjustment with debit note for buyers</option>
-                    <option value="155">155-Tax Adjustment with credit note for buyers</option>
-
+                    
+                    {/* Revenue category: Show options 5-45 */}
+                    {(receiptCategory === 'Revenue' || isCRV || isOther) && (
+                      <>
+                        <option value="5">5-Taxable Sales</option>
+                        <option value="15">15-Zero rated sales</option>
+                        <option value="20">20-Tax exempt sales</option>
+                        <option value="25">25-Supplis subject to reverse tax</option>
+                        <option value="35">35-Tax Adjustment with debit</option>
+                        <option value="45">45-Tax Adjustment with credit</option>
+                      </>
+                    )}
+                    
+                    {/* Expense category: Show options 65-155 */}
+                    {(receiptCategory === 'Expense' || isCRV || isOther) && (
+                      <>
+                        <option value="65">65-Local Purchase</option>
+                        <option value="75">75-Imported capital assets</option>
+                        <option value="85">85-Vat or unclaimed inputs</option>
+                        <option value="100">100-Local purchase inputs</option>
+                        <option value="110">110-Imported purchase inputs</option>
+                        <option value="120">120-General Expense inputs purchase</option>
+                        <option value="130">130-Purchase with no Vat</option>
+                        <option value="135">135-Duductable on Vat reverse</option>
+                        <option value="145">145-Tax adjustment with debit note for buyers</option>
+                        <option value="155">155-Tax Adjustment with credit note for buyers</option>
+                      </>
+                    )}
                   </select>
                 </div>
               )}

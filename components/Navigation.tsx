@@ -4,6 +4,7 @@ import { usePathname, useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import { useAuth } from "../app/Context/AuthContext";
+import { CompanyData } from "../app/(local-receipts)/local-data-forms/types";
 
 /**
  * Navigation component with role-based access control:
@@ -14,7 +15,7 @@ import { useAuth } from "../app/Context/AuthContext";
  */
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
-  const { user, logout } = useAuth();
+  const { user, logout, token } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -88,6 +89,35 @@ export function Navigation() {
       }
     }
   }, [pathname]);
+
+//
+  // Parse JWT token to get company information
+  const parseJwt = (token: string): any => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
+
+  // Get company data from token
+  const getCompanyFromToken = (): CompanyData | null => {
+    if (!token) return null;
+    
+    const payload = parseJwt(token);
+    if (!payload) return null;
+
+    return {
+      tin_number: payload.tin_number || '',
+      company_name: payload.company_name || '',
+      company_email: payload.email || '',
+      company_address: payload.address || '',
+      created_by_username: payload.username || ''
+    };
+  };
+
+  // Get company data from token for display
+  const companyFromToken = getCompanyFromToken();
 
   return (
     <nav className="bg-white/95 backdrop-blur-sm shadow-lg fixed w-full z-50 top-0">
@@ -185,11 +215,7 @@ export function Navigation() {
                   <div className="hidden lg:block">
                     <button
                       className={`font-medium text-gray-900 focus:outline-none ${isAdmin ? 'hover:underline cursor-pointer' : 'opacity-50 cursor-not-allowed'}`}
-                      onClick={() => {
-                        if (isAdmin) {
-                          router.push('/auth/admin');
-                        }
-                      }}
+                    
                       disabled={!isAdmin}
                       title={isAdmin ? 'Go to Admin Page' : 'Only admin can access'}
                     >
@@ -197,7 +223,7 @@ export function Navigation() {
                     </button>
                  
                   </div>
-                  {user.company && (
+                  {companyFromToken && (
                     <div className="flex items-center space-x-1 text-xs text-gray-500">
                       <span className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
                         <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -209,7 +235,7 @@ export function Navigation() {
                         className="hover:text-blue-600 hover:underline cursor-pointer transition-colors"
                         title="View Upload History"
                       >
-                        {user.company.company_name}
+                        {companyFromToken.company_name}
                       </button>
                     </div>
                   )}
@@ -276,7 +302,7 @@ export function Navigation() {
                       </button>
                      
                     </div>
-                    {user.company && (
+                    {companyFromToken && (
                       <div className="flex items-center space-x-1 text-xs text-gray-500">
                         <span className="w-6 h-6 bg-blue-50 rounded-full flex items-center justify-center">
                           <svg className="w-3.5 h-3.5 text-blue-500" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -288,7 +314,7 @@ export function Navigation() {
                           className="hover:text-blue-600 hover:underline cursor-pointer transition-colors"
                           title="View Upload History"
                         >
-                          {user.company.company_name}
+                          {companyFromToken.company_name}
                         </button>
                       </div>
                     )}

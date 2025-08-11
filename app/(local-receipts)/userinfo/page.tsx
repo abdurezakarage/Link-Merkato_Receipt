@@ -3,7 +3,6 @@
 import React, { useState, useEffect } from 'react';
 import { useAuth } from '../../Context/AuthContext';
 import { useRouter } from 'next/navigation';
-import Navigation from '../../Nav/Navigation';
 import ProtectedRoute from '../../Context/ProtectedRoute';
 import type { CompanyData, ReceiptData, FormReportResponse } from '../../(local-receipts)/local-data-forms/types';
 import axios from 'axios';
