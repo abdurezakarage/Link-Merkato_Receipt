@@ -92,7 +92,7 @@ export default function Login() {
       setForm({ username: "", password: "" });
       
       // Add a small delay to ensure token is stored
-      await new Promise(resolve => setTimeout(resolve, 100));
+      await new Promise(resolve => setTimeout(resolve, 5));
       
       // Get the token from localStorage since the state might not be updated yet
       const currentToken = localStorage.getItem('token');

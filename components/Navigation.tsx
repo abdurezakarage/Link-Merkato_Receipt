@@ -314,39 +314,34 @@ export function Navigation() {
               >
                 Testimonials
               </button>
-              <button
-                onClick={() => { router.push('/local-Import'); setIsMenuOpen(false); }}
-                className={`block w-full text-left px-3 py-2 font-medium transition-colors ${
-                  isUser 
-                    ? 'text-gray-700 hover:text-blue-600 cursor-pointer' 
-                    : 'text-gray-400 cursor-not-allowed opacity-50'
-                }`}
-                disabled={!isUser}
-                title={isUser ? 'Go to Receipt Management' : 'Only users can access Receipt Management'}
-              >
-                Receipt Management
-              </button>
-              <button
-                onClick={() => { router.push('/dataupload'); setIsMenuOpen(false); }}
-                className={`block w-full text-left px-3 py-2 font-medium transition-colors ${
-                  isClerk 
-                    ? 'text-gray-700 hover:text-blue-600 cursor-pointer' 
-                    : 'text-gray-400 cursor-not-allowed opacity-50'
-                }`}
-                disabled={!isClerk}
-                title={isClerk ? 'Go to Data Upload' : 'Only clerks can access Data Upload'}
-              >
-                Upload data
-              </button>
-              {isClerk && (
+              {isUser && (
                 <button 
-                  onClick={() => { router.push('/(Import-Export-Receipts)/(clerk-dashboard)'); setIsMenuOpen(false); }}
-                  className="block w-full text-left px-3 py-2 font-medium transition-colors"
-                  title="Go to Clerk Dashboard"
+                  onClick={() => { router.push('/dataupload'); setIsMenuOpen(false); }}
+                  className="block w-full text-left px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  title="Go to Data Upload"
                 >
-                  Clerk Dashboard
+                  Upload Data
                 </button>
               )}
+              {isUser && (
+                <button 
+                  onClick={() => { router.push('/dataupload/history'); setIsMenuOpen(false); }}
+                  className="block w-full text-left px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  title="Go to user history"
+                >
+                  History
+                </button>
+              )}
+              {isClerk && (
+                <button 
+                  onClick={() => { router.push('/local-Import'); setIsMenuOpen(false); }}
+                  className="block w-full text-left px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  title="Go to Receipt Management"
+                >
+                  Receipt Management
+                </button>
+              )}
+          
               {isAccountant && (
                 <button 
                   onClick={() => { router.push('/accountant-dashboard'); setIsMenuOpen(false); }}
@@ -354,6 +349,15 @@ export function Navigation() {
                   title="Go to Accountant Dashboard"
                 >
                   Accountant Dashboard
+                </button>
+              )}
+              {isAdminRole && (
+                <button 
+                  onClick={() => { router.push('/auth/admin'); setIsMenuOpen(false); }}
+                  className="block w-full text-left px-3 py-2 text-gray-700 hover:text-blue-600 font-medium transition-colors"
+                  title="Go to Admin Page"
+                >
+                  Admin
                 </button>
               )}
               <button

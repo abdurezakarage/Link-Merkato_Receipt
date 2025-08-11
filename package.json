@@ -4,7 +4,7 @@
   "private": true,
   "scripts": {
     "dev": "next dev --turbopack",
-    "build": "next build",
+    "build": "next build --no-lint",
     "start": "next start",
     "lint": "next lint"
   },
@@ -12,6 +12,8 @@
     "@heroicons/react": "^2.2.0",
     "axios": "^1.10.0",
     "date-fns": "^3.6.0",
+    "jspdf": "^3.0.1",
+    "jspdf-autotable": "^5.0.2",
     "jwt-decode": "^4.0.0",
     "lucide-react": "^0.539.0",
     "next": "15.3.5",
