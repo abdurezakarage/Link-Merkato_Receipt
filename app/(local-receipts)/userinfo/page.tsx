@@ -331,10 +331,17 @@ const UserDashboard: React.FC = () => {
     },
     {
       title: 'VAT report',
-      description: 'Manage account settings',
+      description: 'Manage VAT report',
       icon: '💰',
       color: 'bg-purple-500',
       onClick: () => router.push('/monthly-Vat-Summary')
+    },
+    {
+      title: 'TOT report',
+      description: 'Manage TOT report',
+      icon: '💰',
+      color: 'bg-purple-500',
+      onClick: () => router.push('/monthly-Tot-Summary')
     }
   ];
 
@@ -527,7 +534,7 @@ const UserDashboard: React.FC = () => {
             {/* Quick Actions */}
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
                 {quickActions.map((action, index) => (
                   <QuickActionButton key={index} {...action} />
                 ))}

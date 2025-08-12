@@ -21,6 +21,7 @@ const authRoutes = [
   "/auth/login",
   "/auth/register",
   "/auth/forgetPassword",
+  "/auth/logout",
 ];
 
 function isProtectedRoute(pathname: string) {
