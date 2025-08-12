@@ -18,6 +18,7 @@ export default function RegisterPage() {
     wereda: "",
     kebele: "",
     region: "",
+    receipttype: "",
     username: "",
     password: "",
   });
@@ -25,7 +26,7 @@ export default function RegisterPage() {
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     setFormData({ ...formData, [e.target.name]: e.target.value });
   };
 
@@ -83,7 +84,7 @@ export default function RegisterPage() {
                 value={formData.firstname}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -95,7 +96,7 @@ export default function RegisterPage() {
                 value={formData.lastname}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -107,7 +108,7 @@ export default function RegisterPage() {
                 value={formData.companyname}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -119,7 +120,7 @@ export default function RegisterPage() {
                 value={formData.tinnumber}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -131,7 +132,7 @@ export default function RegisterPage() {
                 value={formData.email}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="email"
               />
             </div>
@@ -143,7 +144,7 @@ export default function RegisterPage() {
                 value={formData.phone_number}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="tel"
               />
             </div>
@@ -157,7 +158,7 @@ export default function RegisterPage() {
                 value={formData.wereda}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -169,7 +170,7 @@ export default function RegisterPage() {
                 value={formData.kebele}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -181,7 +182,7 @@ export default function RegisterPage() {
                 value={formData.region}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
@@ -195,11 +196,26 @@ export default function RegisterPage() {
                 value={formData.username}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="text"
               />
             </div>
             
+            <div>
+              <label className="block text-sm font-medium text-gray-700 mb-1">Receipt Type</label>
+              <select
+                name="receipttype"
+                value={formData.receipttype}
+                onChange={(e) => setFormData({ ...formData, receipttype: e.target.value })}
+                required
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
+              >
+                <option value="">Select Receipt Type</option>
+                <option value="VAT">VAT</option>
+                <option value="TOT">TOT</option>
+              </select>
+            </div>
+
             <div>
               <label className="block text-sm font-medium text-gray-700 mb-1">Password</label>
               <input
@@ -207,7 +223,7 @@ export default function RegisterPage() {
                 value={formData.password}
                 onChange={handleChange}
                 required
-                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200"
+                className="w-full p-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-200 text-black"
                 type="password"
               />
             </div>

@@ -9,9 +9,37 @@ import { CompanyData } from "../app/(local-receipts)/local-data-forms/types";
 
 export function Navigation() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [isVisible, setIsVisible] = useState(true);
+  const [lastScrollY, setLastScrollY] = useState(0);
   const { user, logout, token } = useAuth();
   const router = useRouter();
   const pathname = usePathname();
+
+  // Scroll behavior logic
+  useEffect(() => {
+    const handleScroll = () => {
+      const currentScrollY = window.scrollY;
+      
+      // Always show navigation at the top of the page
+      if (currentScrollY <= 100) {
+        setIsVisible(true);
+        setLastScrollY(currentScrollY);
+        return;
+      }
+      
+      // Hide navigation when scrolling down, show when scrolling up
+      if (currentScrollY > lastScrollY && isVisible) {
+        setIsVisible(false);
+      } else if (currentScrollY < lastScrollY && !isVisible) {
+        setIsVisible(true);
+      }
+      
+      setLastScrollY(currentScrollY);
+    };
+
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    return () => window.removeEventListener('scroll', handleScroll);
+  }, [isVisible, lastScrollY]);
 
   // Determine button label and target based on login state and current path
   let authButtonLabel = "Sign up";
@@ -114,7 +142,7 @@ export function Navigation() {
   const companyFromToken = getCompanyFromToken();
 
   return (
-    <nav className="bg-white/95 backdrop-blur-sm shadow-lg fixed w-full z-50 top-0">
+    <nav className="bg-white/98 backdrop-blur-md shadow-xl border-b border-gray-200 fixed w-full z-[9999] top-0">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex justify-between items-center h-16">
           {/* Logo */}
