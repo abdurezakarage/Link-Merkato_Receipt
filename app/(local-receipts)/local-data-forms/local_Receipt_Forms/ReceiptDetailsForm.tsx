@@ -128,11 +128,6 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({ form, setForm, 
             placeholder={form.receiptKind ? `Enter number after ${getReceiptNumberPrefix(form.receiptKind)}` : "Enter receipt number"}
             required 
           />
-          {form.receiptKind && (
-            <small className="text-gray-500 text-xs mt-1">
-              Prefix "{getReceiptNumberPrefix(form.receiptKind)}" will be automatically added
-            </small>
-          )}
         </div>
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Calendar Type*</label>

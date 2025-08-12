@@ -141,7 +141,7 @@ const SellerForm: React.FC<SellerFormProps> = ({
             Address
           </label>
           <input 
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white"
+            className="w-full px-3 py-3 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-400 bg-white text-black"
             name="sellerAddress"
             value={seller.address}
             onChange={e => handleInputChange('address', e.target.value)}

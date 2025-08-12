@@ -47,7 +47,7 @@ export default function RegisterPage() {
       const data = await response.text();
       if (!response.ok) throw new Error(data || "Registration failed");
 
-      router.push("/user/login");
+      router.push("/auth/login");
     } catch (err: any) {
       setError(err.message);
     } finally {

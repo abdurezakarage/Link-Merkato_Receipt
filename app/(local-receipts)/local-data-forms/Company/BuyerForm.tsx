@@ -118,7 +118,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
             Name
           </label>
           <input 
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-black"
             name="buyerName"
             value={buyer.name}
             onChange={e => handleInputChange('name', e.target.value)}
@@ -131,7 +131,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
             TIN
           </label>
           <input 
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-black"
             name="buyerTin"
             value={buyer.tin}
             onChange={e => handleInputChange('tin', e.target.value)}
@@ -144,7 +144,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
             Address
           </label>
           <input 
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white"
+            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-black"
             name="buyerAddress"
             value={buyer.address}
             onChange={e => handleInputChange('address', e.target.value)}

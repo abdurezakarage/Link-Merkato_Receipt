@@ -21,16 +21,25 @@ import { Rowdies } from "next/font/google";
 
 // Static data arrays
 const BANK_NAMES = [
-  "Commercial Bank of Ethiopia",
-  "Bank of Abyssinia", 
-  "Dashen Bank",
-  "Awash Bank",
-  "United Bank",
-  "Hibret Bank",
-  "Lion Bank",
-  "Cooperative Bank of Oromia",
-  "Development Bank of Ethiopia",
-  "National Bank of Ethiopia"
+ 'Abay Bank',
+'Addis International Bank',
+'Amhara Bank',
+'Awash International Bank',
+'Bank of Abyssinia',
+'Berhan International Bank',
+'Bunna International Bank',
+'Commercial Bank of Ethiopia',
+'Cooperative Bank of Oromia',
+'Dashen Bank',
+'Global Bank',
+'Lion International Bank',
+'Oromia International Bank',
+'Hibret Bank',
+'Wegagen Bank',
+'Zemen Bank',
+'Zemzem Bank',
+'Sinqe Bank',
+'Tsedey Bank',
 ];
 
 const PAYMENT_METHODS = ["Cash", "Bank"];
@@ -108,17 +117,6 @@ export default function LocalReceipt() {
     payment: false,
     withholding: false
   });
-
-  // Debug logging
-  useEffect(() => {
-    console.log('LocalReceipt auth state:', { 
-      hasUser: !!user, 
-      hasToken: !!token, 
-      isLoading,
-      tokenValid: isTokenValid(),
-      tokenValue: token ? `${token.substring(0, 20)}...` : 'no token'
-    });
-  }, [user, token, isLoading, isTokenValid]);
 
   // Handle section change for both receipt and no-receipt modes
   const handleSectionChange = (section: string) => {
@@ -1010,7 +1008,7 @@ export default function LocalReceipt() {
                     <div className="flex items-center gap-4">
                       <label className="font-semibold text-gray-700">Item Type*</label>
                       <select
-                        className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40"
+                        className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40 text-black"
                         name="itemType"
                         value={form.itemType}
                         onChange={e => setForm(f => ({ ...f, itemType: e.target.value }))}
@@ -1103,7 +1101,7 @@ export default function LocalReceipt() {
                         <div className="flex flex-col md:flex-row gap-6 items-end">
                           <div className="flex flex-col">
                             <label className="mb-1 font-semibold text-gray-700">Payment Method</label>
-                            <select className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40" name="paymentMethod" value={form.paymentMethod} onChange={handleChange}>
+                            <select className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40 text-black" name="paymentMethod" value={form.paymentMethod} onChange={handleChange}>
                               <option value="">Select Payment Method</option>
                               {paymentMethods.map((method, index) => (
                                 <option key={index} value={method}>{method}</option>
@@ -1113,12 +1111,12 @@ export default function LocalReceipt() {
                           {form.paymentMethod && form.paymentMethod.toLowerCase().includes('bank') && (
                             <div className="flex flex-col">
                               <label className="mb-1 font-semibold text-gray-700">Bank Name</label>
-                              <select 
-                                className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40" 
-                                name="bankName" 
-                                value={form.bankName} 
-                                onChange={handleChange}
-                              >
+                                          <select
+              className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-40 text-black"
+              name="bankName"
+              value={form.bankName}
+              onChange={handleChange}
+            >
                                 <option value="">Select Bank</option>
                                 {bankNames.map((bankName, index) => (
                                   <option key={index} value={bankName}>{bankName}</option>
@@ -1180,7 +1178,7 @@ export default function LocalReceipt() {
                             <div className="flex items-center gap-4 mb-2">
                               <label className="font-semibold text-gray-700">Does the receipt has Withholding?</label>
                               <select
-                                className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-32"
+                                className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 w-32 text-black"
                                 value={withholdingRequired}
                                 onChange={e => setWithholdingRequired(e.target.value)}
                               >
@@ -1214,7 +1212,7 @@ export default function LocalReceipt() {
                                 </button>
                                 <button 
                                   type="submit" 
-                                  className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60" 
+                                  className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60 text-black" 
                                   disabled={submitting}
                                   // onClick={() => console.log('Submit button clicked!')}
                                 >
@@ -1243,7 +1241,7 @@ export default function LocalReceipt() {
                             </button>
                             <button 
                               type="submit" 
-                              className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60" 
+                              className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60 text-black" 
                               disabled={submitting}
                               // onClick={() => console.log('Submit button clicked!')}
                             >

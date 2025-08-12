@@ -212,7 +212,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Supplier Name <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="supplierName" 
                     value={purchaseVoucherForm.supplierName}
                     onChange={handlePurchaseVoucherChange}
@@ -223,7 +223,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Supplier TIN <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="supplierTIN" 
                     value={purchaseVoucherForm.supplierTIN}
                     onChange={handlePurchaseVoucherChange}
@@ -235,7 +235,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Supplier Address <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="supplierAddress" 
                     value={purchaseVoucherForm.supplierAddress}
                     onChange={handlePurchaseVoucherChange}
@@ -246,7 +246,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Date <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="date" 
                     type="date" 
                     value={purchaseVoucherForm.date}
@@ -265,7 +265,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Purchase Receipt Number <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="purchaseReceiptNumber" 
                     value={purchaseVoucherForm.purchaseReceiptNumber}
                     onChange={handlePurchaseVoucherChange}
@@ -276,7 +276,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Description
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="description" 
                     value={purchaseVoucherForm.description}
                     onChange={handlePurchaseVoucherChange}
@@ -288,7 +288,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Amount Paid <span className="text-red-500">*</span>
                   </label>
                                     <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black" 
                     name="amountPaid" 
                     type="text" 
                     value={purchaseAmountDisplay}
@@ -369,7 +369,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Supplier Name <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-black" 
                     name="supplierName" 
                     value={withholdingForm.supplierName}
                     onChange={handleWithholdingChange}
@@ -381,7 +381,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Supplier TIN <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-black" 
                     name="supplierTIN" 
                     value={withholdingForm.supplierTIN}
                     onChange={handleWithholdingChange}
@@ -393,7 +393,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Withholding Receipt Number <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-black" 
                     name="withholdingReceiptNumber" 
                     value={withholdingForm.withholdingReceiptNumber}
                     onChange={handleWithholdingChange}
@@ -405,7 +405,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Date <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-black" 
                     name="date" 
                     type="date" 
                     value={withholdingForm.date}
@@ -425,7 +425,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Description
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-black" 
                     name="description" 
                     value={withholdingForm.description}
                     onChange={handleWithholdingChange}
@@ -437,7 +437,7 @@ const NoReceiptForms: React.FC<NoReceiptFormsProps> = ({ submitting, onSubmit, a
                     Amount Paid <span className="text-red-500">*</span>
                   </label>
                   <input 
-                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors" 
+                    className="w-full px-4 py-3 border border-gray-300 rounded-lg focus:ring-2 focus:ring-amber-500 focus:border-amber-500 transition-colors text-black" 
                     name="amountPaid" 
                     type="text" 
                     value={withholdingAmountDisplay}

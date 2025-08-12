@@ -96,7 +96,6 @@ export default function Login() {
       
       // Get the token from localStorage since the state might not be updated yet
       const currentToken = localStorage.getItem('token');
-      
       //console.log('Login successful, checking token:', !!currentToken);
       
       if (currentToken) {
@@ -104,7 +103,8 @@ export default function Login() {
           const decodedToken = parseJwt(currentToken);
           //console.log('Decoded token:', decodedToken);
           const roles = decodedToken.roles;
-          
+          const userId = decodedToken.user_id;
+          localStorage.setItem("userId", userId);
           //console.log('User roles:', roles); // Debug log
           
           if (roles && Array.isArray(roles)) {

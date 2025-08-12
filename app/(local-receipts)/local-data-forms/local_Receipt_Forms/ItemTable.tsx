@@ -91,7 +91,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">GL Account *</label>
                 <input
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                   name="glAccount"
                   value={item.glAccount || ''}
                   onChange={e => handleItemChange(idx, e)}
@@ -104,7 +104,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Declaration Number *</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="declarationNumber"
                     value={item.declarationNumber || ''}
                     onChange={e => handleItemChange(idx, e)}
@@ -118,7 +118,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">HS Code *</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="hsCode"
                     value={item.hsCode || ''}
                     onChange={e => handleItemChange(idx, e)}
@@ -132,7 +132,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Item Code *</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="itemCode"
                     value={item.itemCode || ''}
                     onChange={e => handleItemChange(idx, e)}
@@ -145,7 +145,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Tax Type *</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="taxType"
                     value={item.taxType || ''}
                     onChange={e => handleItemChange(idx, e)}
@@ -164,7 +164,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Nature *</label>
                   <select
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="nature"
                     value={item.nature || ''}
                     onChange={e => handleItemChange(idx, e)}
@@ -210,7 +210,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                   <label className="text-sm font-medium text-gray-700">Description</label>
                   {hasImportExport === 'yes' ? (
                     <select
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                       name="description"
                       value={item.description || ''}
                       onChange={e => handleItemChange(idx, e)}
@@ -226,7 +226,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                     </select>
                   ) : (
                     <input
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                       name="description"
                       value={item.description || ''}
                       onChange={e => handleItemChange(idx, e)}
@@ -240,7 +240,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Measurement *</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="unitOfMeasurement"
                     value={item.unitOfMeasurement || ''}
                     onChange={e => handleItemChange(idx, e)}
@@ -253,7 +253,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Quantity *</label>
                 <input
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                   type="number"
                   min="0"
                   step="1"
@@ -270,7 +270,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                   {isCRV ? 'Amount *' : 'Unit Cost *'}
                 </label>
                 <input
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                   type="number"
                   min="0"
                   step="0.01"
@@ -285,7 +285,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
               <div className="space-y-2">
                 <label className="text-sm font-medium text-gray-700">Total</label>
                 <input
-                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-gray-700 font-medium"
+                  className="w-full px-3 py-2 border border-gray-300 rounded-lg bg-gray-50 text-black font-medium"
                   type="number"
                   name="totalCost"
                   value={item.totalCost || ''}
@@ -298,7 +298,7 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Reason *</label>
                   <input
-                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="reasonOfReceiving"
                     value={item.reasonOfReceiving || ''}
                     onChange={e => handleItemChange(idx, e)}

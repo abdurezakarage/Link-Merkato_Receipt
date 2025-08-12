@@ -47,7 +47,7 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
       <div className="flex flex-col">
         <label className="mb-1 font-semibold text-gray-700">Withholding Receipt Number*</label>
         <input
-          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300"
+          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 text-black"
           name="receiptNumber"
           value={withholdingForm.receiptNumber}
           onChange={handleWithholdingChange}
@@ -57,7 +57,7 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
       <div className="flex flex-col">
         <label className="mb-1 font-semibold text-gray-700">Withholding Receipt Date*</label>
         <input
-          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300"
+          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 text-black"
           type="date"
           name="receiptDate"
           value={withholdingForm.receiptDate}
@@ -68,7 +68,7 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
       <div className="flex flex-col">
         <label className="mb-1 font-semibold text-gray-700">Description*</label>
         <input
-          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300"
+          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 text-black"
           name="transactionType"
           value={withholdingForm.transactionType}
           onChange={handleWithholdingChange}
@@ -78,18 +78,17 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
       <div className="flex flex-col">
         <label className="mb-1 font-semibold text-gray-700">Sales Invoice (Receipt) Number of Seller*</label>
         <input
-          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 bg-gray-50"
+          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-black"
           name="salesInvoiceNumber"
           value={withholdingForm.salesInvoiceNumber}
           onChange={handleWithholdingChange}
           required
-          placeholder="Auto-populated from main receipt"
         />
       </div>
       <div className="flex flex-col">
         <label className="mb-1 font-semibold text-gray-700">Sub Total Amount*</label>
         <input
-          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 bg-gray-50"
+          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-black"
           name="subTotal"
           type="number"
           value={withholdingForm.subTotal || subTotal}
@@ -101,7 +100,7 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
       <div className="flex flex-col">
         <label className="mb-1 font-semibold text-gray-700">Tax Withholding Amount (3%)</label>
         <input
-          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 bg-gray-50"
+          className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 bg-gray-50 text-black"
           name="taxWithholdingAmount"
           type="number"
           value={withholdingForm.taxWithholdingAmount || taxWithholdingAmount}
