@@ -2,7 +2,7 @@
 //const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
 
 // spring backend api
-export const SPRING_BASE_URL = "https://api.import.linkmerkato.com.etstat/api/v1";
+export const SPRING_BASE_URL = "https://api.import.linkmerkato.com.et/api/v1";
 
 // django api - use production URL by default, fallback to local if needed
 export const DJANGO_BASE_URL = "https://api.local.linkmerkato.com.et/api";
