@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
+import { Eye, Download, ChevronDown, ArrowLeft, File, Search } from "lucide-react";
 import { useRouter } from "next/navigation";
 
-interface RawTransportFile {
+interface TransportFile {
   userId: string;
   tinNumber: string;
   firstName: string;
@@ -15,6 +15,7 @@ interface RawTransportFile {
   companyName: string;
   imageBaseMainReceipt: string;
   imageBaseWithholidingReceipt: string;
+  declarationnumber: string;
 }
 
 interface UserDocument {
@@ -23,30 +24,17 @@ interface UserDocument {
   lastname: string;
   tinNumber: string;
   companyName: string;
+  declarationnumber: string;
   documents: DocumentFile[];
 }
 
 interface DocumentFile {
   label: string;
   base64Data: string;
+  declarationnumber: string;
 }
 
-const BASE_URL = "https://customreceiptmanagement.onrender.com";
-
-function createDataUrl(
-  base64String: string | null | undefined,
-  label: string
-): string {
-  if (!base64String) return "";
-  if (base64String.startsWith("data:")) return base64String;
-
-  let mimeType = "image/jpeg";
-  if (label.toLowerCase().includes("pdf")) {
-    mimeType = "application/pdf";
-  }
-
-  return `data:${mimeType};base64,${base64String}`;
-}
+const BASE_URL = "http://38.242.221.21:9090";
 
 function FilePreview({
   label,
@@ -72,10 +60,10 @@ function FilePreview({
   };
 
   return (
-    <div className="bg-gray-100 p-4 rounded shadow flex flex-col">
+    <div className="bg-gray-100 p-4 rounded-lg shadow flex flex-col">
       <h3 className="text-md font-semibold mb-2">{label}</h3>
       <div
-        className="w-full h-48 rounded cursor-pointer overflow-hidden flex items-center justify-center bg-gray-200"
+        className="w-full h-48 rounded-lg cursor-pointer overflow-hidden flex items-center justify-center bg-gray-200"
         onClick={() => (isImage || isPdf) && onPreviewClick(url, label)}
       >
         {isImage && (
@@ -94,7 +82,7 @@ function FilePreview({
         {(isImage || isPdf) && (
           <button
             onClick={() => onPreviewClick(url, label)}
-            className="flex-1 text-sm bg-purple-100 text-purple-600 px-4 py-2 rounded flex items-center justify-center gap-1"
+            className="flex-1 text-sm bg-purple-100 text-purple-600 px-4 py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-purple-200 transition"
           >
             <Eye size={16} />
             View
@@ -102,7 +90,7 @@ function FilePreview({
         )}
         <button
           onClick={handleDownload}
-          className="flex-1 text-sm bg-blue-100 text-blue-600 px-4 py-2 rounded flex items-center justify-center gap-1"
+          className="flex-1 text-sm bg-blue-100 text-blue-600 px-4 py-2 rounded-lg flex items-center justify-center gap-1 hover:bg-blue-200 transition"
         >
           <Download size={16} />
           Download
@@ -121,7 +109,23 @@ export default function TransportFileViewer() {
     label: string;
   } | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [searchInput, setSearchInput] = useState("");
   const router = useRouter();
+
+  const createDataUrl = (
+    base64String: string | null | undefined,
+    label: string
+  ): string => {
+    if (!base64String) return "";
+    if (base64String.startsWith("data:")) return base64String;
+
+    let mimeType = "image/jpeg";
+    if (label.toLowerCase().includes("pdf")) {
+      mimeType = "application/pdf";
+    }
+
+    return `data:${mimeType};base64,${base64String}`;
+  };
 
   const handleOpenPreview = (url: string, label: string) => {
     setPreviewFile({ url, label });
@@ -143,87 +147,99 @@ export default function TransportFileViewer() {
     });
   };
 
-  useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const token = localStorage.getItem("token");
-        if (!token) {
-          setError("No token found");
-          setLoading(false);
-          return;
+  const fetchTransportFiles = async (declarationnumber?: string) => {
+    try {
+      const token = localStorage.getItem("token");
+      if (!token) {
+        setError("No token found");
+        setLoading(false);
+        return;
+      }
+
+      let url = `${BASE_URL}/api/v1/clerk/TransportFileAll`;
+      if (declarationnumber) {
+        url = `${BASE_URL}/api/v1/clerk/TransportFileByDeclaration/${declarationnumber}`;
+      }
+
+      const res = await axios.get<TransportFile[]>(url, {
+        headers: { Authorization: `Bearer ${token}` },
+      });
+
+      if (res.data.length === 0) {
+        setError(
+          declarationnumber
+            ? `No documents found for declaration number: ${declarationnumber}`
+            : "No transport files available"
+        );
+        setUserDocuments([]);
+        return;
+      }
+
+      const grouped: Record<string, UserDocument> = {};
+
+      res.data.forEach((item) => {
+        const userId = item.userId;
+
+        if (!grouped[userId]) {
+          grouped[userId] = {
+            userId,
+            firstName: item.firstName,
+            lastname: item.lastname,
+            tinNumber: item.tinNumber,
+            companyName: item.companyName,
+            declarationnumber: item.declarationnumber,
+            documents: [],
+          };
         }
 
-        const res = await axios.get<RawTransportFile[]>(
-          `${BASE_URL}/api/v1/clerk/TransportFileAll`,
-          {
-            headers: { Authorization: `Bearer ${token}` },
-          }
-        );
+        if (item.imageBaseMainReceipt) {
+          grouped[userId].documents.push({
+            label: `${item.maintype} Receipt`,
+            base64Data: createDataUrl(item.imageBaseMainReceipt, "receipt"),
+            declarationnumber: item.declarationnumber,
+          });
+        }
 
-        const grouped: Record<string, UserDocument> = {};
+        if (item.imageBaseWithholidingReceipt) {
+          grouped[userId].documents.push({
+            label: `${item.withHoldihType} Withholding Receipt`,
+            base64Data: createDataUrl(item.imageBaseWithholidingReceipt, "receipt"),
+            declarationnumber: item.declarationnumber,
+          });
+        }
+      });
 
-        res.data.forEach((item) => {
-          const userId = item.userId;
+      setUserDocuments(Object.values(grouped));
+      setError(null);
+    } catch (err) {
+      setError("Failed to fetch transport files");
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-          if (!grouped[userId]) {
-            grouped[userId] = {
-              userId,
-              firstName: item.firstName,
-              lastname: item.lastname,
-              tinNumber: item.tinNumber,
-              companyName: item.companyName,
-              documents: [],
-            };
-          }
+  useEffect(() => {
+    fetchTransportFiles();
+  }, []);
 
-          if (item.imageBaseMainReceipt) {
-            grouped[userId].documents.push({
-              label: `${item.maintype} Receipt`,
-              base64Data: createDataUrl(item.imageBaseMainReceipt, "receipt"),
-            });
-          }
+  const handleSearch = () => {
+    setLoading(true);
+    fetchTransportFiles(searchInput);
+  };
 
-          if (item.imageBaseWithholidingReceipt) {
-            grouped[userId].documents.push({
-              label: `${item.withHoldihType} Withholding Receipt`,
-              base64Data: createDataUrl(
-                item.imageBaseWithholidingReceipt,
-                "receipt"
-              ),
-            });
-          }
-        });
-
-        setUserDocuments(Object.values(grouped));
-      } catch (err) {
-        setError("Failed to fetch transport files");
-        console.error(err);
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
-  }, [router]);
-
-  if (loading) {
-    return (
-      <div className="p-6 text-center text-blue-600">
-        Loading transport files...
-      </div>
-    );
-  }
-
-  if (error) {
-    return <div className="p-6 text-center text-red-600">{error}</div>;
-  }
+  const handleResetSearch = () => {
+    setSearchInput("");
+    setLoading(true);
+    fetchTransportFiles();
+  };
 
   if (previewFile) {
     const isImage = previewFile.url.startsWith("data:image");
     const isPdf = previewFile.url.startsWith("data:application/pdf");
 
     return (
-      <div className="p-4 bg-white rounded shadow-lg h-full flex flex-col">
+      <div className="p-4 bg-white rounded-lg shadow-lg h-full flex flex-col">
         <div className="flex items-center gap-4 border-b pb-4 mb-4">
           <button
             onClick={handleClosePreview}
@@ -261,24 +277,67 @@ export default function TransportFileViewer() {
       <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
         Transport Files
       </h2>
-      {userDocuments.length === 0 ? (
-        <p className="text-center text-gray-600">No documents available.</p>
+      
+      {/* Search Bar */}
+      <div className="mb-8 max-w-2xl mx-auto">
+        <div className="flex gap-2">
+          <div className="relative flex-grow">
+            <Search className="absolute left-3 top-3 h-4 w-4 text-gray-400" />
+            <input
+              type="text"
+              placeholder="Search by declaration number"
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              className="w-full pl-10 pr-4 py-2 border rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
+            />
+          </div>
+          <button
+            onClick={handleSearch}
+            className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+          >
+            Search
+          </button>
+          {searchInput && (
+            <button
+              onClick={handleResetSearch}
+              className="bg-gray-200 text-gray-700 px-4 py-2 rounded-lg hover:bg-gray-300 transition"
+            >
+              Clear
+            </button>
+          )}
+        </div>
+      </div>
+
+      {loading ? (
+        <div className="text-center py-8">
+          <div className="inline-block animate-spin rounded-full h-8 w-8 border-t-2 border-b-2 border-blue-500"></div>
+          <p className="mt-2 text-blue-600">Loading transport files...</p>
+        </div>
+      ) : error ? (
+        <div className="text-center py-8 text-red-600">{error}</div>
+      ) : userDocuments.length === 0 ? (
+        <div className="text-center py-8 text-gray-600">
+          No transport files found
+        </div>
       ) : (
         userDocuments.map((user) => (
           <div
-            key={user.userId}
-            className="bg-white rounded shadow p-6 mb-6 border border-gray-100"
+            key={`${user.userId}-${user.declarationnumber}`}
+            className="bg-white rounded-lg shadow p-6 mb-6 border border-gray-100"
           >
             <button
               onClick={() => toggleExpand(user.userId)}
-              className="w-full flex justify-between items-center text-left py-4 px-4 hover:bg-gray-50 rounded transition"
+              className="w-full flex justify-between items-center text-left py-4 px-4 hover:bg-gray-50 rounded-lg transition"
             >
               <div>
                 <h3 className="text-lg font-bold text-gray-800">
                   {user.companyName} ({user.tinNumber})
                 </h3>
                 <p className="text-gray-600 text-sm">
-                  User: {user.firstName} {user.lastname}
+                  {user.firstName} {user.lastname}
+                </p>
+                <p className="text-gray-600 text-sm mt-1">
+                  Declaration: {user.declarationnumber}
                 </p>
               </div>
               <ChevronDown
@@ -289,10 +348,10 @@ export default function TransportFileViewer() {
             </button>
             {expandedUsers.has(user.userId) && (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-                {user.documents.map((doc, i) => (
+                {user.documents.map((doc) => (
                   <FilePreview
-                    key={i}
-                    label={doc.label}
+                    key={`${user.userId}-${doc.label}-${doc.declarationnumber}`}
+                    label={`${doc.label} (${doc.declarationnumber})`}
                     url={doc.base64Data}
                     onPreviewClick={handleOpenPreview}
                   />

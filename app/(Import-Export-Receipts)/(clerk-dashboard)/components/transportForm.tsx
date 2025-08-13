@@ -27,17 +27,20 @@ export default function TransportFeeForm() {
     amountbeforetax: 0,
   });
 
+  const [declarationnumber, setDeclarationNumber] = useState<string>("");
   const [isWithholdingTaxApplicable, setIsWithholdingTaxApplicable] =
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
-  const [formSubmitted, setFormSubmitted] = useState<boolean>(false); // ✅ Track form submission
+  const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
     const { name, value, type } = e.target;
 
-    if (name === "isWithholdingTaxApplicable") {
+    if (name === "declarationnumber") {
+      setDeclarationNumber(value);
+    } else if (name === "isWithholdingTaxApplicable") {
       const isApplicable = value === "Yes";
       setIsWithholdingTaxApplicable(isApplicable);
       if (!isApplicable) {
@@ -59,19 +62,20 @@ export default function TransportFeeForm() {
     e.preventDefault();
     setMessage(null);
 
-    const token = localStorage.getItem("token");
-
-    if (!token) {
-      setMessage(
-        "Authentication error: Token missing. Please log in again. ❌"
-      );
+    if (!declarationnumber) {
+      setMessage("Declaration number is required");
       return;
     }
 
-    const payload: TransportFeePayload = formData;
+    const token = localStorage.getItem("token");
+
+    if (!token) {
+      setMessage("Authentication error: Token missing. Please log in again. ❌");
+      return;
+    }
 
     try {
-      const apiUrl = `https://customreceiptmanagement.onrender.com/api/v1/clerk/transportInfo/${97645398}`;
+      const apiUrl = `http://38.242.221.21:9090/api/v1/clerk/transportInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -79,7 +83,7 @@ export default function TransportFeeForm() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -89,6 +93,10 @@ export default function TransportFeeForm() {
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
+          
+          if (response.status === 409) {
+            alert("Declaration is already taken. Please use a different one.");
+          }
         } else {
           const errorText = await response.text();
           errorMessage = errorText || response.statusText || errorMessage;
@@ -99,18 +107,17 @@ export default function TransportFeeForm() {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
-        setMessage(
-          data.message || "Transport fee receipt submitted successfully! ✅"
-        );
+        const successMsg = data.message || "Transport fee receipt submitted successfully! ✅";
+        setMessage(successMsg);
       } else {
         const successText = await response.text();
-        setMessage(
-          successText || "Transport fee receipt submitted successfully! ✅"
-        );
+        const successMsg = successText || "Transport fee receipt submitted successfully! ✅";
+        setMessage(successMsg);
       }
 
-      setFormSubmitted(true); // ✅ Mark form as submitted
+      setFormSubmitted(true);
 
+      // Reset form
       setFormData({
         receiptnumber: "",
         receiptdate: "",
@@ -121,15 +128,21 @@ export default function TransportFeeForm() {
         withholdingamount: 0,
         amountbeforetax: 0,
       });
-
+      setDeclarationNumber("");
       setIsWithholdingTaxApplicable(false);
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        setMessage("Network error: Could not connect to the server. ❌");
+        const errMsg = "Network error: Could not connect to the server. ❌";
+        setMessage(errMsg);
       } else if (error instanceof Error) {
-        setMessage(`Failed to submit data. Error: ${error.message} ❌`);
+        const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
+        setMessage(errMsg);
+        if (!error.message.includes("Declaration is already taken")) {
+          // Handle other errors if needed
+        }
       } else {
-        setMessage("Failed to submit data. An unknown error occurred. ❌");
+        const errMsg = "Failed to submit data. An unknown error occurred. ❌";
+        setMessage(errMsg);
       }
     }
   };
@@ -143,6 +156,24 @@ export default function TransportFeeForm() {
               Transport Fee
             </h2>
 
+            {/* Declaration Number */}
+            <div className="mb-4">
+              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+                Declaration Number
+              </label>
+              <input
+                type="text"
+                id="declarationnumber"
+                name="declarationnumber"
+                value={declarationnumber}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                placeholder="D123456"
+                required
+              />
+            </div>
+
+            {/* Rest of your form fields remain the same */}
             {/* Amount Before Tax */}
             <div className="mb-4">
               <label

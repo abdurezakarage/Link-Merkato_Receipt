@@ -1,5 +1,4 @@
 "use client";
-
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent } from "react";
@@ -28,6 +27,7 @@ export default function ClearanceFeeForm() {
     amountbeforetax: 0,
   });
 
+  const [declarationnumber, setDeclarationNumber] = useState<string>("");
   const [isWithholdingTaxApplicable, setIsWithholdingTaxApplicable] =
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -38,7 +38,9 @@ export default function ClearanceFeeForm() {
   ) => {
     const { name, value, type } = e.target;
 
-    if (name === "isWithholdingTaxApplicable") {
+    if (name === "declarationnumber") {
+      setDeclarationNumber(value);
+    } else if (name === "isWithholdingTaxApplicable") {
       const isApplicable = value === "Yes";
       setIsWithholdingTaxApplicable(isApplicable);
       if (!isApplicable) {
@@ -60,27 +62,20 @@ export default function ClearanceFeeForm() {
     e.preventDefault();
     setMessage(null);
 
+    if (!declarationnumber) {
+      setMessage("Declaration number is required");
+      return;
+    }
+
     const token = localStorage.getItem("token");
+
     if (!token) {
       setMessage("Authentication error: Token missing. Please log in again. ❌");
       return;
     }
 
-    const payload: ClearanceFeePayload = {
-      ...formData,
-      withholdingtaxreceiptno: isWithholdingTaxApplicable
-        ? formData.withholdingtaxreceiptno
-        : "",
-      withholdingtaxReceiptdate: isWithholdingTaxApplicable
-        ? formData.withholdingtaxReceiptdate
-        : "",
-      withholdingamount: isWithholdingTaxApplicable
-        ? formData.withholdingamount
-        : 0,
-    };
-
     try {
-      const apiUrl = `https://customreceiptmanagement.onrender.com/api/v1/clerk/clearanceInfo/${97645398}`;
+      const apiUrl = `http://38.242.221.21:9090/api/v1/clerk/clearanceInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -88,7 +83,7 @@ export default function ClearanceFeeForm() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -98,6 +93,10 @@ export default function ClearanceFeeForm() {
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
+          
+          if (response.status === 409) {
+            alert("Declaration is already taken. Please use a different one.");
+          }
         } else {
           const errorText = await response.text();
           errorMessage = errorText || response.statusText || errorMessage;
@@ -108,17 +107,17 @@ export default function ClearanceFeeForm() {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
-        setMessage(
-          data.message || "Clearance fee receipt submitted successfully! ✅"
-        );
+        const successMsg = data.message || "Clearance fee receipt submitted successfully! ✅";
+        setMessage(successMsg);
       } else {
         const successText = await response.text();
-        setMessage(
-          successText || "Clearance fee receipt submitted successfully! ✅"
-        );
+        const successMsg = successText || "Clearance fee receipt submitted successfully! ✅";
+        setMessage(successMsg);
       }
 
       setFormSubmitted(true);
+
+      // Reset form
       setFormData({
         receiptnumber: "",
         receiptdate: "",
@@ -129,14 +128,21 @@ export default function ClearanceFeeForm() {
         withholdingamount: 0,
         amountbeforetax: 0,
       });
+      setDeclarationNumber("");
       setIsWithholdingTaxApplicable(false);
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        setMessage("Network error: Could not connect to the server. ❌");
+        const errMsg = "Network error: Could not connect to the server. ❌";
+        setMessage(errMsg);
       } else if (error instanceof Error) {
-        setMessage(`Failed to submit data. Error: ${error.message} ❌`);
+        const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
+        setMessage(errMsg);
+        if (!error.message.includes("Declaration is already taken")) {
+          // Handle other errors if needed
+        }
       } else {
-        setMessage("Failed to submit data. An unknown error occurred. ❌");
+        const errMsg = "Failed to submit data. An unknown error occurred. ❌";
+        setMessage(errMsg);
       }
     }
   };
@@ -144,22 +150,40 @@ export default function ClearanceFeeForm() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
+        {message && (
+          <div className={`mb-4 p-3 rounded ${
+            message.includes("✅")
+              ? "bg-green-100 text-green-700"
+              : "bg-red-100 text-red-700"
+          }`}>
+            {message}
+          </div>
+        )}
+        
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
               Clearance Fee
             </h2>
 
-            {message && (
-              <div className={`mb-4 p-3 rounded ${
-                message.includes("✅")
-                  ? "bg-green-100 text-green-800"
-                  : "bg-red-100 text-red-800"
-              }`}>
-                {message}
-              </div>
-            )}
+            {/* Declaration Number */}
+            <div className="mb-4">
+              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+                Declaration Number
+              </label>
+              <input
+                type="text"
+                id="declarationnumber"
+                name="declarationnumber"
+                value={declarationnumber}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                placeholder="D123456"
+                required
+              />
+            </div>
 
+            {/* Amount Before Tax */}
             <div className="mb-4">
               <label htmlFor="amountbeforetax" className="block font-medium mb-1">
                 Amount Before Tax
@@ -176,8 +200,12 @@ export default function ClearanceFeeForm() {
               />
             </div>
 
+            {/* Withholding Tax Applicable */}
             <div className="mb-4">
-              <label htmlFor="isWithholdingTaxApplicable" className="block font-medium mb-1">
+              <label
+                htmlFor="isWithholdingTaxApplicable"
+                className="block font-medium mb-1"
+              >
                 Withholding Tax Applicable?
               </label>
               <select
@@ -192,10 +220,14 @@ export default function ClearanceFeeForm() {
               </select>
             </div>
 
+            {/* Withholding Fields */}
             {isWithholdingTaxApplicable && (
               <>
                 <div className="mb-4">
-                  <label htmlFor="withholdingamount" className="block font-medium mb-1">
+                  <label
+                    htmlFor="withholdingamount"
+                    className="block font-medium mb-1"
+                  >
                     Withholding Amount
                   </label>
                   <input
@@ -211,7 +243,10 @@ export default function ClearanceFeeForm() {
                 </div>
 
                 <div className="mb-4">
-                  <label htmlFor="withholdingtaxreceiptno" className="block font-medium mb-1">
+                  <label
+                    htmlFor="withholdingtaxreceiptno"
+                    className="block font-medium mb-1"
+                  >
                     Withholding Tax Receipt No.
                   </label>
                   <input
@@ -246,6 +281,7 @@ export default function ClearanceFeeForm() {
               </>
             )}
 
+            {/* Receipt Details */}
             <div className="mb-4">
               <label htmlFor="receiptnumber" className="block font-medium mb-1">
                 Receipt Number
@@ -263,7 +299,10 @@ export default function ClearanceFeeForm() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="receiptmachinenumber" className="block font-medium mb-1">
+              <label
+                htmlFor="receiptmachinenumber"
+                className="block font-medium mb-1"
+              >
                 Receipt Machine Number
               </label>
               <input
@@ -279,7 +318,10 @@ export default function ClearanceFeeForm() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="receiptcalendar" className="block font-medium mb-1">
+              <label
+                htmlFor="receiptcalendar"
+                className="block font-medium mb-1"
+              >
                 Receipt Calendar
               </label>
               <input

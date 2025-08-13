@@ -18,7 +18,7 @@ export default function DeclarationList() {
 
       try {
         const res = await fetch(
-          `https://customreceiptmanagement.onrender.com/api/v1/clerk/declarationInfo/${userId}`,
+          `http://38.242.221.21:9090/api/v1/clerk/declarationInfo/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,

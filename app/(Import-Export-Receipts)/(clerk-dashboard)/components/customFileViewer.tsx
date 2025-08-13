@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaChevronDown } from "react-icons/fa";
+import Image from "next/image";
 
 interface DocumentFile {
   label: string;
@@ -13,15 +14,26 @@ interface UserDocument {
   userId: string;
   firstname: string;
   lastname: string;
-  tinNumebr: string;
+  tinNumber: string; // Changed from tinNumebr to tinNumber
   companyname: string;
   documents: DocumentFile[];
 }
 
-const BASE_URL = "https://customreceiptmanagement.onrender.com";
+interface ApiDocumentItem {
+  userId: string;
+  firstname: string;
+  lastname: string;
+  tinNumebr: string; // Keeping original API interface
+  companyname: string;
+  imagebaseCustomfile?: string;
+  imagebaseBankPermitfile?: string;
+  imageCummercialInvoicefile?: string;
+}
+
+const BASE_URL = "http://38.242.221.21:9090";
 
 const createDataUrl = (
-  base64String: string | null | undefined,
+  base64String: string | undefined | null,
   label: string
 ): string => {
   if (!base64String) return "";
@@ -110,13 +122,15 @@ function FilePreview({ label, url }: { label: string; url: string }) {
         </button>
       </div>
 
-      {/* Preview Container */}
       <div className="max-h-64 max-w-full overflow-auto border rounded bg-white">
         {isImage ? (
-          <img
+          <Image
             src={url}
             alt={label}
+            width={500}
+            height={300}
             className="max-h-60 w-full object-contain p-2"
+            unoptimized={true}
           />
         ) : isPdf ? (
           <iframe
@@ -141,13 +155,13 @@ export default function CustomFileViewer() {
   const [error, setError] = useState<string | null>(null);
   const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
-  const toggleExpand = (userId: string) => {
+  const toggleExpand = (tinNumber: string) => {
     setExpandedUsers((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(userId)) {
-        newSet.delete(userId);
+      if (newSet.has(tinNumber)) {
+        newSet.delete(tinNumber);
       } else {
-        newSet.add(userId);
+        newSet.add(tinNumber);
       }
       return newSet;
     });
@@ -165,7 +179,7 @@ export default function CustomFileViewer() {
           return;
         }
 
-        const response = await axios.get(
+        const response = await axios.get<ApiDocumentItem[]>(
           `${BASE_URL}/api/v1/clerk/customfileAll`,
           {
             headers: { Authorization: `Bearer ${token}` },
@@ -175,21 +189,21 @@ export default function CustomFileViewer() {
         const rawData = response.data;
         const grouped: Record<string, UserDocument> = {};
 
-        rawData.forEach((item: any) => {
-          const userId = item.userId;
-          if (!grouped[userId]) {
-            grouped[userId] = {
-              userId,
+        rawData.forEach((item) => {
+          const tinNumber = item.tinNumebr; // Using tinNumber as the key
+          if (!grouped[tinNumber]) {
+            grouped[tinNumber] = {
+              userId: item.userId,
               firstname: item.firstname,
               lastname: item.lastname,
-              tinNumebr: item.tinNumebr,
+              tinNumber: item.tinNumebr, // Mapping to corrected property name
               companyname: item.companyname,
               documents: [],
             };
           }
 
           if (item.imagebaseCustomfile) {
-            grouped[userId].documents.push({
+            grouped[tinNumber].documents.push({
               label: "Custom File",
               base64Data: createDataUrl(
                 item.imagebaseCustomfile,
@@ -198,7 +212,7 @@ export default function CustomFileViewer() {
             });
           }
           if (item.imagebaseBankPermitfile) {
-            grouped[userId].documents.push({
+            grouped[tinNumber].documents.push({
               label: "Bank Permit File",
               base64Data: createDataUrl(
                 item.imagebaseBankPermitfile,
@@ -207,7 +221,7 @@ export default function CustomFileViewer() {
             });
           }
           if (item.imageCummercialInvoicefile) {
-            grouped[userId].documents.push({
+            grouped[tinNumber].documents.push({
               label: "Commercial Invoice File",
               base64Data: createDataUrl(
                 item.imageCummercialInvoicefile,
@@ -218,17 +232,19 @@ export default function CustomFileViewer() {
         });
 
         setUserDocuments(Object.values(grouped));
-      } catch (err) {
+      } catch (err: unknown) {
         console.error("Error fetching files:", err);
-        if (axios.isAxiosError(err) && err.response) {
-          setError(
-            `Failed to fetch documents: ${err.response.status} - ${
-              err.response.data.message || err.response.statusText
-            }`
-          );
-        } else {
-          setError("An unexpected error occurred while fetching documents.");
+        let errorMessage = "An unexpected error occurred while fetching documents.";
+        
+        if (axios.isAxiosError(err)) {
+          errorMessage = err.response?.data?.message || 
+                        err.message || 
+                        `HTTP error! status: ${err.response?.status}`;
+        } else if (err instanceof Error) {
+          errorMessage = err.message;
         }
+        
+        setError(errorMessage);
       } finally {
         setLoading(false);
       }
@@ -265,11 +281,11 @@ export default function CustomFileViewer() {
       ) : (
         userDocuments.map((user) => (
           <div
-            key={user.userId}
+            key={user.tinNumber} // Using tinNumber as the key
             className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100"
           >
             <button
-              onClick={() => toggleExpand(user.userId)}
+              onClick={() => toggleExpand(user.tinNumber)} // Using tinNumber here
               className="w-full flex justify-between items-center text-left py-4 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
               <div>
@@ -278,7 +294,7 @@ export default function CustomFileViewer() {
                     {user.companyname}
                   </h3>
                   <span className="text-sm text-gray-500 font-medium">
-                    (TIN: {user.tinNumebr})
+                    (TIN: {user.tinNumber})
                   </span>
                 </div>
                 <p className="text-gray-600 text-sm mt-1">
@@ -287,17 +303,17 @@ export default function CustomFileViewer() {
               </div>
               <FaChevronDown
                 className={`text-gray-400 transition-transform duration-300 ${
-                  expandedUsers.has(user.userId) ? "rotate-180" : ""
+                  expandedUsers.has(user.tinNumber) ? "rotate-180" : ""
                 }`}
               />
             </button>
-            {expandedUsers.has(user.userId) && (
+            {expandedUsers.has(user.tinNumber) && (
               <div className="pt-4 border-t mt-4">
                 {user.documents.length > 0 ? (
                   <div className="grid grid-cols-1 gap-6 mt-6">
-                    {user.documents.map((doc, docIndex) => (
+                    {user.documents.map((doc, index) => (
                       <FilePreview
-                        key={docIndex}
+                        key={`${user.tinNumber}-${doc.label}-${index}`} // Unique key for each document
                         label={doc.label}
                         url={doc.base64Data}
                       />

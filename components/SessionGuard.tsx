@@ -8,7 +8,7 @@ interface SessionGuardProps {
   children: React.ReactNode;
 }
 
-const CHECK_INTERVAL = 1 * 60 * 1000; // 1 minute
+const CHECK_INTERVAL = 5 * 60 * 1000; // 1 minute
 
 const protectedRoutes = [
   "/dataupload",
@@ -18,8 +18,7 @@ const protectedRoutes = [
 ];
 
 const authRoutes = [
-  "/auth/login",
-  "/auth/register",
+ 
   "/auth/forgetPassword",
   "/auth/logout",
 ];

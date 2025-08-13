@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
 import { useRouter } from "next/navigation";
+import Image from "next/image";
 
 interface RawClearanceFile {
   userId: string;
@@ -31,7 +32,7 @@ interface DocumentFile {
   base64Data: string;
 }
 
-const BASE_URL = "https://customreceiptmanagement.onrender.com";
+const BASE_URL = "http://38.242.221.21:9090";
 
 function createDataUrl(
   base64String: string | null | undefined,
@@ -79,7 +80,13 @@ function FilePreview({
         onClick={() => (isImage || isPdf) && onPreviewClick(url, label)}
       >
         {isImage && (
-          <img src={url} alt={label} className="w-full h-full object-contain" />
+          <Image 
+            src={url} 
+            alt={label} 
+            width={500} 
+            height={300}
+            className="w-full h-full object-contain" 
+          />
         )}
         {isPdf && (
           <p className="text-blue-600 flex items-center gap-2">
@@ -131,13 +138,13 @@ export default function ClearanceFileViewer() {
     setPreviewFile(null);
   };
 
-  const toggleExpand = (userId: string) => {
+  const toggleExpand = (tinNumber: string) => {
     setExpandedUsers((prev) => {
       const newSet = new Set(prev);
-      if (newSet.has(userId)) {
-        newSet.delete(userId);
+      if (newSet.has(tinNumber)) {
+        newSet.delete(tinNumber);
       } else {
-        newSet.add(userId);
+        newSet.add(tinNumber);
       }
       return newSet;
     });
@@ -163,11 +170,11 @@ export default function ClearanceFileViewer() {
         const grouped: Record<string, UserDocument> = {};
 
         res.data.forEach((item) => {
-          const userId = item.userId;
+          const key = item.tinNumber; // Using tinNumber as the key
 
-          if (!grouped[userId]) {
-            grouped[userId] = {
-              userId,
+          if (!grouped[key]) {
+            grouped[key] = {
+              userId: item.userId,
               firstName: item.firstName,
               lastname: item.lastname,
               tinNumber: item.tinNumber,
@@ -177,14 +184,14 @@ export default function ClearanceFileViewer() {
           }
 
           if (item.imageBaseMainReceipt) {
-            grouped[userId].documents.push({
+            grouped[key].documents.push({
               label: `${item.maintype} Receipt`,
               base64Data: createDataUrl(item.imageBaseMainReceipt, "receipt"),
             });
           }
 
           if (item.imageBaseWithholidingReceipt) {
-            grouped[userId].documents.push({
+            grouped[key].documents.push({
               label: `${item.withHoldihType} Withholding Receipt`,
               base64Data: createDataUrl(
                 item.imageBaseWithholidingReceipt,
@@ -235,9 +242,11 @@ export default function ClearanceFileViewer() {
         </div>
         <div className="flex-grow overflow-auto">
           {isImage ? (
-            <img
+            <Image
               src={previewFile.url}
               alt={previewFile.label}
+              width={800}
+              height={600}
               className="max-w-full max-h-full mx-auto object-contain"
             />
           ) : isPdf ? (
@@ -266,11 +275,11 @@ export default function ClearanceFileViewer() {
       ) : (
         userDocuments.map((user) => (
           <div
-            key={user.userId}
+            key={user.tinNumber} // Using tinNumber as the key
             className="bg-white rounded shadow p-6 mb-6 border border-gray-100"
           >
             <button
-              onClick={() => toggleExpand(user.userId)}
+              onClick={() => toggleExpand(user.tinNumber)} // Using tinNumber here
               className="w-full flex justify-between items-center text-left py-4 px-4 hover:bg-gray-50 rounded transition"
             >
               <div>
@@ -283,11 +292,11 @@ export default function ClearanceFileViewer() {
               </div>
               <ChevronDown
                 className={`transition-transform ${
-                  expandedUsers.has(user.userId) ? "rotate-180" : ""
+                  expandedUsers.has(user.tinNumber) ? "rotate-180" : "" // Using tinNumber here
                 }`}
               />
             </button>
-            {expandedUsers.has(user.userId) && (
+            {expandedUsers.has(user.tinNumber) && ( // Using tinNumber here
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
                 {user.documents.map((doc, i) => (
                   <FilePreview

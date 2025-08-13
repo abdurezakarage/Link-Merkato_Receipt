@@ -59,15 +59,22 @@ export default function AllTaxViewer() {
   const [data, setData] = useState<TaxData[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-  const [expandedDeclarations, setExpandedDeclarations] = useState<Record<string, boolean>>({});
-  const [expandedCompanies, setExpandedCompanies] = useState<Record<string, boolean>>({});
+  const [expandedDeclarations, setExpandedDeclarations] = useState<
+    Record<string, boolean>
+  >({});
+  const [expandedCompanies, setExpandedCompanies] = useState<
+    Record<string, boolean>
+  >({});
+  const [lastExpandedDeclaration, setLastExpandedDeclaration] = useState<
+    string | null
+  >(null);
 
   useEffect(() => {
     const fetchData = async () => {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get<TaxData[]>(
-          "https://customreceiptmanagement.onrender.com/api/v1/accountant/alltax",
+          "http://38.242.221.21:9090/api/v1/accountant/alltax",
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -75,18 +82,25 @@ export default function AllTaxViewer() {
           }
         );
         setData(res.data);
-        
-        // Initialize all declarations as expanded
+        console.log(res.data);
+
+        // Initialize all declarations as collapsed
         const initialExpandedState = res.data.reduce((acc, item) => {
-          acc[item.declarationNumber] = true;
+          acc[item.declarationNumber] = false;
           return acc;
         }, {} as Record<string, boolean>);
         setExpandedDeclarations(initialExpandedState);
-        
-        // Initialize all companies as expanded
-        const uniqueCompanies = [...new Set(res.data.map(item => item.iteminfo[0]?.companyname || 'Unknown Company'))];
+
+        // Initialize all companies as collapsed
+        const uniqueCompanies = [
+          ...new Set(
+            res.data.map(
+              (item) => item.iteminfo[0]?.companyname || "Unknown Company"
+            )
+          ),
+        ];
         const initialCompanyState = uniqueCompanies.reduce((acc, company) => {
-          acc[company] = true;
+          acc[company] = false;
           return acc;
         }, {} as Record<string, boolean>);
         setExpandedCompanies(initialCompanyState);
@@ -101,22 +115,39 @@ export default function AllTaxViewer() {
   }, []);
 
   const toggleDeclaration = (declarationNumber: string) => {
-    setExpandedDeclarations(prev => ({
-      ...prev,
-      [declarationNumber]: !prev[declarationNumber]
-    }));
+    setExpandedDeclarations((prev) => {
+      const newState = { ...prev };
+
+      // If this declaration was the last expanded one, just collapse it
+      if (lastExpandedDeclaration === declarationNumber) {
+        newState[declarationNumber] = false;
+        setLastExpandedDeclaration(null);
+      } else {
+        // Collapse all declarations first
+        Object.keys(newState).forEach((key) => {
+          newState[key] = false;
+        });
+
+        // Then expand the clicked one
+        newState[declarationNumber] = true;
+        setLastExpandedDeclaration(declarationNumber);
+      }
+
+      return newState;
+    });
   };
 
   const toggleCompany = (companyName: string) => {
-    setExpandedCompanies(prev => ({
+    setExpandedCompanies((prev) => ({
       ...prev,
-      [companyName]: !prev[companyName]
+      [companyName]: !prev[companyName],
     }));
   };
 
   // Group data by company name
   const groupedData = data.reduce((acc, declaration) => {
-    const companyName = declaration.iteminfo[0]?.companyname || 'Unknown Company';
+    const companyName =
+      declaration.iteminfo[0]?.companyname || "Unknown Company";
     if (!acc[companyName]) {
       acc[companyName] = [];
     }
@@ -125,9 +156,11 @@ export default function AllTaxViewer() {
   }, {} as Record<string, TaxData[]>);
 
   const printDeclaration = (declarationNumber: string) => {
-    const printWindow = window.open('', '', 'width=900,height=650');
-    const declaration = data.find(d => d.declarationNumber === declarationNumber);
-    
+    const printWindow = window.open("", "", "width=900,height=650");
+    const declaration = data.find(
+      (d) => d.declarationNumber === declarationNumber
+    );
+
     if (printWindow && declaration) {
       printWindow.document.write(`
         <html>
@@ -159,7 +192,9 @@ export default function AllTaxViewer() {
           <body>
             <div class="header">
               <div class="declaration-number">Declaration #${declarationNumber}</div>
-              <div class="company-name">${declaration.iteminfo[0]?.companyname || 'Unknown Company'}</div>
+              <div class="company-name">${
+                declaration.iteminfo[0]?.companyname || "Unknown Company"
+              }</div>
               <div>${new Date().toLocaleDateString()}</div>
             </div>
 
@@ -199,7 +234,9 @@ export default function AllTaxViewer() {
                 </tr>
               </thead>
               <tbody>
-                ${declaration.iteminfo.map(item => `
+                ${declaration.iteminfo
+                  .map(
+                    (item) => `
                   <tr>
                     <td>${item.itemdescription}</td>
                     <td>${item.hscode}</td>
@@ -207,24 +244,40 @@ export default function AllTaxViewer() {
                     <td>${item.unitprice?.toLocaleString()} ETB</td>
                     <td>${item.tinnumber}</td>
                   </tr>
-                `).join('')}
+                `
+                  )
+                  .join("")}
               </tbody>
             </table>
 
             <div class="section-title">Tax Details</div>
             <div class="tax-grid">
-              ${declaration.iteminfo.flatMap(item => 
-                item.taxAmountPerItem?.map((tax, index) => 
-                  Object.entries(tax).map(([key, value]) => 
-                    value !== null ? `
+              ${declaration.iteminfo
+                .flatMap((item) =>
+                  item.taxAmountPerItem
+                    ?.map((tax, index) =>
+                      Object.entries(tax)
+                        .map(([key, value]) =>
+                          value !== null
+                            ? `
                       <div class="tax-item">
-                        <div class="tax-label">${key.replace(/([A-Z])/g, ' $1').trim()}</div>
-                        <div>${typeof value === 'number' ? value.toLocaleString() : value || 'N/A'} ETB</div>
+                        <div class="tax-label">${key
+                          .replace(/([A-Z])/g, " $1")
+                          .trim()}</div>
+                        <div>${
+                          typeof value === "number"
+                            ? value.toLocaleString()
+                            : value || "N/A"
+                        } ETB</div>
                       </div>
-                    ` : ''
-                  ).join('')
-                ).join('')
-              ).join('')}
+                    `
+                            : ""
+                        )
+                        .join("")
+                    )
+                    .join("")
+                )
+                .join("")}
             </div>
 
             <script>
@@ -240,17 +293,19 @@ export default function AllTaxViewer() {
     }
   };
 
-  if (loading) return (
-    <div className="flex justify-center items-center h-64">
-      <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
-    </div>
-  );
+  if (loading)
+    return (
+      <div className="flex justify-center items-center h-64">
+        <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500"></div>
+      </div>
+    );
 
-  if (error) return (
-    <div className="p-6 bg-red-50 text-red-600 rounded-lg mx-4 my-6">
-      {error}
-    </div>
-  );
+  if (error)
+    return (
+      <div className="p-6 bg-red-50 text-red-600 rounded-lg mx-4 my-6">
+        {error}
+      </div>
+    );
 
   if (!loading && !error && data.length === 0) {
     return (
@@ -262,12 +317,17 @@ export default function AllTaxViewer() {
 
   return (
     <div className="p-4 space-y-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">Tax Declarations by Company</h1>
-      
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">
+        Tax Declarations by Company
+      </h1>
+
       {Object.entries(groupedData).map(([companyName, declarations]) => (
-        <div key={companyName} className="border rounded-lg shadow-sm bg-white overflow-hidden">
+        <div
+          key={companyName}
+          className="border rounded-lg shadow-sm bg-white overflow-hidden"
+        >
           {/* Company Header */}
-          <div 
+          <div
             className="flex justify-between items-center p-4 bg-gray-100 hover:bg-gray-200 cursor-pointer border-b"
             onClick={() => toggleCompany(companyName)}
           >
@@ -277,23 +337,36 @@ export default function AllTaxViewer() {
               </div>
               <div>
                 <p className="text-sm text-gray-600">
-                  {declarations.length} declaration(s) • Total: {declarations.reduce((sum, dec) => sum + (dec.grandTotalInETB || 0), 0)?.toLocaleString()} ETB
+                  {declarations.length} declaration(s) • Total:{" "}
+                  {declarations
+                    .reduce((sum, dec) => sum + (dec.grandTotalInETB || 0), 0)
+                    ?.toLocaleString()}{" "}
+                  ETB
                 </p>
               </div>
             </div>
             <div className="text-gray-500">
-              {expandedCompanies[companyName] ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+              {expandedCompanies[companyName] ? (
+                <ChevronUp size={20} />
+              ) : (
+                <ChevronDown size={20} />
+              )}
             </div>
           </div>
 
           {expandedCompanies[companyName] && (
             <div className="space-y-4 p-4">
               {declarations.map((declaration) => (
-                <div key={declaration.declarationNumber} className="border rounded-lg shadow-xs bg-gray-50 overflow-hidden">
+                <div
+                  key={declaration.declarationNumber}
+                  className="border rounded-lg shadow-xs bg-gray-50 overflow-hidden"
+                >
                   {/* Declaration Header */}
-                  <div 
+                  <div
                     className="flex justify-between items-center p-3 bg-white hover:bg-gray-50 cursor-pointer border-b"
-                    onClick={() => toggleDeclaration(declaration.declarationNumber)}
+                    onClick={() =>
+                      toggleDeclaration(declaration.declarationNumber)
+                    }
                   >
                     <div className="flex items-center space-x-3">
                       <div className="bg-green-600 text-white px-2 py-1 rounded-md text-sm">
@@ -301,12 +374,13 @@ export default function AllTaxViewer() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">
-                          {declaration.iteminfo.length} item(s) • Total: {declaration.grandTotalInETB?.toLocaleString()} ETB
+                          {declaration.iteminfo.length} item(s) • Total:{" "}
+                          {declaration.grandTotalInETB?.toLocaleString()} ETB
                         </p>
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button 
+                      <button
                         onClick={(e) => {
                           e.stopPropagation();
                           printDeclaration(declaration.declarationNumber);
@@ -318,98 +392,190 @@ export default function AllTaxViewer() {
                         <span className="text-xs hidden md:inline">Print</span>
                       </button>
                       <div className="text-gray-500">
-                        {expandedDeclarations[declaration.declarationNumber] ? <ChevronUp size={18} /> : <ChevronDown size={18} />}
+                        {expandedDeclarations[declaration.declarationNumber] ? (
+                          <ChevronUp size={18} />
+                        ) : (
+                          <ChevronDown size={18} />
+                        )}
                       </div>
                     </div>
                   </div>
 
                   {expandedDeclarations[declaration.declarationNumber] && (
                     <div className="p-3 space-y-4 bg-white">
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
-                        {/* Summary Card */}
-                        <div className="bg-blue-50 p-3 rounded-lg border border-blue-100">
-                          <h3 className="font-medium text-blue-800 text-sm mb-2">Financial Summary</h3>
-                          <div className="space-y-1">
-                            <div className="flex justify-between py-1 border-b border-blue-100">
-                              <span className="text-gray-600 text-xs">Grand Total:</span>
-                              <span className="font-medium text-xs">{declaration.grandTotalInETB?.toLocaleString()} ETB</span>
+                      {/* Financial Summary Section with horizontal scroll */}
+                      <div className="border-b pb-3">
+                        <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                          Financial Summary
+                        </h3>
+                        <div className="overflow-x-auto">
+                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 min-w-[800px]">
+                            {/* Summary Card */}
+                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 min-w-[250px]">
+                              <h3 className="font-medium text-blue-800 text-sm mb-2">
+                                Totals
+                              </h3>
+                              <div className="space-y-1">
+                                <div className="flex justify-between py-1 border-b border-blue-100">
+                                  <span className="text-gray-600 text-xs">
+                                    Grand Total:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.grandTotalInETB?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-blue-100">
+                                  <span className="text-gray-600 text-xs">
+                                    Total Tax:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalTaxPerDeclaration?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total VAT:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalVatPerDeclaration?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex justify-between py-1 border-b border-blue-100">
-                              <span className="text-gray-600 text-xs">Total Tax:</span>
-                              <span className="font-medium text-xs">{declaration.totalTaxPerDeclaration?.toLocaleString()} ETB</span>
-                            </div>
-                            <div className="flex justify-between py-1">
-                              <span className="text-gray-600 text-xs">Total VAT:</span>
-                              <span className="font-medium text-xs">{declaration.totalVatPerDeclaration?.toLocaleString()} ETB</span>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Taxes Card */}
-                        <div className="bg-green-50 p-3 rounded-lg border border-green-100">
-                          <h3 className="font-medium text-green-800 text-sm mb-2">Tax Breakdown</h3>
-                          <div className="space-y-1">
-                            <div className="flex justify-between py-1 border-b border-green-100">
-                              <span className="text-gray-600 text-xs">Duty Tax:</span>
-                              <span className="font-medium text-xs">{declaration.totaldutyTax?.toLocaleString()} ETB</span>
+                            {/* Taxes Card */}
+                            <div className="bg-green-50 p-3 rounded-lg border border-green-100 min-w-[250px]">
+                              <h3 className="font-medium text-green-800 text-sm mb-2">
+                                Tax Breakdown
+                              </h3>
+                              <div className="space-y-1">
+                                <div className="flex justify-between py-1 border-b border-green-100">
+                                  <span className="text-gray-600 text-xs">
+                                    Duty Tax:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totaldutyTax?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-green-100">
+                                  <span className="text-gray-600 text-xs">
+                                    Excise Tax:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalexciseTax?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Social Welfare:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalsocialWelfareTax?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                              </div>
                             </div>
-                            <div className="flex justify-between py-1 border-b border-green-100">
-                              <span className="text-gray-600 text-xs">Excise Tax:</span>
-                              <span className="font-medium text-xs">{declaration.totalexciseTax?.toLocaleString()} ETB</span>
-                            </div>
-                            <div className="flex justify-between py-1">
-                              <span className="text-gray-600 text-xs">Social Welfare:</span>
-                              <span className="font-medium text-xs">{declaration.totalsocialWelfareTax?.toLocaleString()} ETB</span>
-                            </div>
-                          </div>
-                        </div>
 
-                        {/* Fees Card */}
-                        <div className="bg-purple-50 p-3 rounded-lg border border-purple-100">
-                          <h3 className="font-medium text-purple-800 text-sm mb-2">Fees & Charges</h3>
-                          <div className="space-y-1">
-                            <div className="flex justify-between py-1 border-b border-purple-100">
-                              <span className="text-gray-600 text-xs">Bank Service:</span>
-                              <span className="font-medium text-xs">{declaration.totalBankService?.toLocaleString()} ETB</span>
-                            </div>
-                            <div className="flex justify-between py-1 border-b border-purple-100">
-                              <span className="text-gray-600 text-xs">Transit Fee:</span>
-                              <span className="font-medium text-xs">{declaration.totalTransitorFee?.toLocaleString()} ETB</span>
-                            </div>
-                            <div className="flex justify-between py-1">
-                              <span className="text-gray-600 text-xs">Warehouse Fee:</span>
-                              <span className="font-medium text-xs">{declaration.totalWareHouseFee?.toLocaleString()} ETB</span>
+                            {/* Fees Card */}
+                            <div className="bg-purple-50 p-3 rounded-lg border border-purple-100 min-w-[250px]">
+                              <h3 className="font-medium text-purple-800 text-sm mb-2">
+                                Fees & Charges
+                              </h3>
+                              <div className="space-y-1">
+                                <div className="flex justify-between py-1 border-b border-purple-100">
+                                  <span className="text-gray-600 text-xs">
+                                    Bank Service:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalBankService?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1 border-b border-purple-100">
+                                  <span className="text-gray-600 text-xs">
+                                    Transit Fee:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalTransitorFee?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Warehouse Fee:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalWareHouseFee?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                              </div>
                             </div>
                           </div>
                         </div>
                       </div>
 
                       {/* Items Section */}
-                      <div className="border-t pt-3">
+                      <div className="border-b pb-3">
                         <div className="flex justify-between items-center mb-2">
-                          <h3 className="text-sm font-semibold text-gray-800">Items Details</h3>
-                          <span className="text-xs text-gray-500">{declaration.iteminfo.length} items</span>
+                          <h3 className="text-sm font-semibold text-gray-800">
+                            Items Details
+                          </h3>
+                          <span className="text-xs text-gray-500">
+                            {declaration.iteminfo.length} items
+                          </span>
                         </div>
-                        
+
                         <div className="overflow-x-auto">
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
                               <tr>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Description</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">HS Code</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Quantity</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Unit Price</th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">TIN</th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Description
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  HS Code
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Quantity
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Unit Price
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  TIN
+                                </th>
                               </tr>
                             </thead>
                             <tbody className="bg-white divide-y divide-gray-200">
                               {declaration.iteminfo.map((item, i) => (
-                                <tr key={i} className={i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}>
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">{item.itemdescription}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{item.hscode}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{item.quantity}</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{item.unitprice?.toLocaleString()} ETB</td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">{item.tinnumber}</td>
+                                <tr
+                                  key={i}
+                                  className={
+                                    i % 2 === 0 ? "bg-white" : "bg-gray-50"
+                                  }
+                                >
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
+                                    {item.itemdescription}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {item.hscode}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {item.quantity}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {item.unitprice?.toLocaleString()} ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {item.tinnumber}
+                                  </td>
                                 </tr>
                               ))}
                             </tbody>
@@ -417,27 +583,42 @@ export default function AllTaxViewer() {
                         </div>
                       </div>
 
-                      {/* Tax Details Section */}
-                      {declaration.iteminfo.some(item => item.taxAmountPerItem?.length > 0) && (
-                        <div className="border-t pt-3">
-                          <h3 className="text-sm font-semibold text-gray-800 mb-2">Tax Details</h3>
-                          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
-                            {declaration.iteminfo.flatMap(item => 
-                              item.taxAmountPerItem?.map((tax, index) => 
-                                Object.entries(tax).map(([key, value]) => 
-                                  value !== null && (
-                                    <div key={`${key}-${index}`} className="bg-white p-2 rounded-lg border border-gray-200 shadow-xs">
-                                      <h4 className="font-medium text-gray-700 capitalize text-xs mb-1">
-                                        {key.replace(/([A-Z])/g, ' $1').trim()}
-                                      </h4>
-                                      <p className="text-gray-900 font-semibold text-xs">
-                                        {typeof value === 'number' ? value.toLocaleString() : value || 'N/A'} ETB
-                                      </p>
-                                    </div>
+                      {/* Tax Details Section with horizontal scroll */}
+                      {declaration.iteminfo.some(
+                        (item) => item.taxAmountPerItem?.length > 0
+                      ) && (
+                        <div className="pt-3">
+                          <h3 className="text-sm font-semibold text-gray-800 mb-2">
+                            Tax Details
+                          </h3>
+                          <div className="overflow-x-auto">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-w-[800px]">
+                              {declaration.iteminfo.flatMap((item) =>
+                                item.taxAmountPerItem?.map((tax, index) =>
+                                  Object.entries(tax).map(
+                                    ([key, value]) =>
+                                      value !== null && (
+                                        <div
+                                          key={`${key}-${index}`}
+                                          className="bg-white p-2 rounded-lg border border-gray-200 shadow-xs min-w-[200px]"
+                                        >
+                                          <h4 className="font-medium text-gray-700 capitalize text-xs mb-1">
+                                            {key
+                                              .replace(/([A-Z])/g, " $1")
+                                              .trim()}
+                                          </h4>
+                                          <p className="text-gray-900 font-semibold text-xs">
+                                            {typeof value === "number"
+                                              ? value.toLocaleString()
+                                              : value || "N/A"}{" "}
+                                            ETB
+                                          </p>
+                                        </div>
+                                      )
                                   )
                                 )
-                              )
-                            )}
+                              )}
+                            </div>
                           </div>
                         </div>
                       )}

@@ -37,7 +37,7 @@ export default function RegisterPage() {
 
     try {
       const response = await fetch(
-        "https://customreceiptmanagement.onrender.com/api/v1/auth/register",
+        "http://38.242.221.21:9090/api/v1/auth/register",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },

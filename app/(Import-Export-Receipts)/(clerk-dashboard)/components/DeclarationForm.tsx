@@ -1,13 +1,14 @@
 "use client";
 
-import { useRouter } from "next/navigation"; // ✅ for App Router
+import { useRouter } from "next/navigation";
 import { useState } from "react";
 
 // --- Type Definitions ---
 type TaxDto = {
   name: string;
-  value: number;
+  value: number; // Stores decimal value (e.g., 0.15 for 15%)
   codename: string;
+  percentage?: number; // Optional field for display purposes
 };
 
 type ItemManagementDto = {
@@ -36,14 +37,14 @@ type FormData = {
 
 // --- Tax Options ---
 const TAX_OPTIONS = [
-  { name: "DutyTax", value: 10.0, codename: "DutyTax" },
-  { name: "ExciseTax", value: 10.0, codename: "ExciseTax" },
-  { name: "Surtax", value: 2.0, codename: "Surtax" },
-  { name: "SocialWelfareTax", value: 1.0, codename: "SocialWelfareTax" },
-  { name: "VAT", value: 15.0, codename: "VAT" },
-  { name: "WITHHOLDINGTAX", value: 2.0, codename: "WITHHOLDINGTAX" },
+  { name: "DutyTax", value: 0.10, codename: "DutyTax", percentage: 10 },
+  { name: "ExciseTax", value: 0.10, codename: "ExciseTax", percentage: 10 },
+  { name: "Surtax", value: 0.02, codename: "Surtax", percentage: 2 },
+  { name: "SocialWelfareTax", value: 0.01, codename: "SocialWelfareTax", percentage: 1 },
+  { name: "VAT", value: 0.15, codename: "VAT", percentage: 15 },
+  { name: "WITHHOLDINGTAX", value: 0.02, codename: "WITHHOLDINGTAX", percentage: 2 },
   { name: "ScanningFee", value: 100.0, codename: "ScanningFee" },
-  { name: "ScanningFeeVAT", value: 15.0, codename: "ScanningFeeVAT" },
+  { name: "ScanningFeeVAT", value: 0.15, codename: "ScanningFeeVAT", percentage: 15 },
 ];
 
 // --- Helper Components ---
@@ -54,6 +55,9 @@ function InputField({
   value,
   onChange,
   required = true,
+  min,
+  placeholder,
+  step,
 }: {
   label: string;
   name: string;
@@ -61,11 +65,14 @@ function InputField({
   value: any;
   onChange: (e: React.ChangeEvent<HTMLInputElement>) => void;
   required?: boolean;
+  min?: string;
+  placeholder?: string;
+  step?: string;
 }) {
   return (
     <div className="flex flex-col w-full">
       <label htmlFor={name} className="font-medium mb-1 text-sm">
-        {label}
+        {label} {required && <span className="text-red-500">*</span>}
       </label>
       <input
         type={type}
@@ -75,6 +82,9 @@ function InputField({
         onChange={onChange}
         className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
         required={required}
+        min={min}
+        placeholder={placeholder}
+        step={step}
       />
     </div>
   );
@@ -116,7 +126,26 @@ function ItemRow({
       handleTaxChange(itemIndex, taxIndex, "name", selectedTax.name);
       handleTaxChange(itemIndex, taxIndex, "value", selectedTax.value);
       handleTaxChange(itemIndex, taxIndex, "codename", selectedTax.codename);
+      handleTaxChange(
+        itemIndex, 
+        taxIndex, 
+        "percentage", 
+        selectedTax.percentage ?? selectedTax.value * 100
+      );
     }
+  };
+
+  const handleTaxPercentageChange = (
+    itemIndex: number,
+    taxIndex: number,
+    e: React.ChangeEvent<HTMLInputElement>
+  ) => {
+    const inputValue = e.target.value;
+    const percentageValue = inputValue === '' ? 0 : parseFloat(inputValue);
+    const decimalValue = percentageValue / 100;
+
+    handleTaxChange(itemIndex, taxIndex, "value", decimalValue);
+    handleTaxChange(itemIndex, taxIndex, "percentage", percentageValue);
   };
 
   return (
@@ -163,6 +192,7 @@ function ItemRow({
             className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
             required
             min="1"
+            step="1"
           />
         </td>
         <td className="px-2 py-1 border border-gray-200">
@@ -170,7 +200,7 @@ function ItemRow({
             type="number"
             value={item.unitCost}
             onChange={(e) =>
-              handleItemChange(index, "unitCost", Number(e.target.value))
+              handleItemChange(index, "unitCost", parseFloat(e.target.value) || 0)
             }
             className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
             required
@@ -213,33 +243,25 @@ function ItemRow({
             </select>
           </td>
           <td className="px-2 py-1 border border-gray-200">
-            <input
-              type="number"
-              value={tax.value}
-              onChange={(e) =>
-                handleTaxChange(
-                  index,
-                  taxIndex,
-                  "value",
-                  Number(e.target.value)/100
-                )
-              }
-              className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
-              required
-              min="0"
-              step="0.00001"
-              // readOnly
-            />
+            <div className="flex items-center">
+              <input
+                type="number"
+                value={tax.percentage ?? ''}
+                onChange={(e) => handleTaxPercentageChange(index, taxIndex, e)}
+                className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+                required
+                min="0"
+                placeholder="15"
+                step="any"
+              />
+              <span className="ml-1 text-xs">%</span>
+            </div>
           </td>
           <td className="px-2 py-1 border border-gray-200">
             <input
               type="text"
               value={tax.codename}
-              onChange={(e) =>
-                handleTaxChange(index, taxIndex, "codename", e.target.value)
-              }
               className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
-              required
               readOnly
             />
           </td>
@@ -273,6 +295,7 @@ function ItemRow({
 // --- Main Form Component ---
 export default function DeclarationForm() {
   const router = useRouter();
+  const [tinNumber, setTinNumber] = useState<string>("");
   const [formData, setFormData] = useState<FormData>({
     custombranchname: "",
     declarationnumber: "",
@@ -285,12 +308,18 @@ export default function DeclarationForm() {
     djibouticost: 0,
     othercost1: 0,
     itemManagementdto: [],
-    // Initial state for top-level taxes is an empty array
     taxApplicationdto: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+
+  const handleTinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const value = e.target.value;
+    if (/^\d{0,15}$/.test(value)) {
+      setTinNumber(value);
+    }
+  };
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
@@ -300,7 +329,7 @@ export default function DeclarationForm() {
         name.includes("amount") ||
         name.includes("Cost") ||
         name.includes("rate")
-          ? Number(value)
+          ? parseFloat(value) || 0
           : value,
     });
   };
@@ -311,7 +340,14 @@ export default function DeclarationForm() {
     value: any
   ) => {
     const newItems = [...formData.itemManagementdto];
-    newItems[index] = { ...newItems[index], [field]: value };
+    newItems[index] = { 
+      ...newItems[index], 
+      [field]: field === 'quantity' 
+        ? Math.max(1, Number(value))
+        : field === 'unitCost'
+          ? parseFloat(value) || 0
+          : value 
+    };
     setFormData({ ...formData, itemManagementdto: newItems });
   };
 
@@ -324,7 +360,9 @@ export default function DeclarationForm() {
     const newItems = [...formData.itemManagementdto];
     newItems[itemIndex].taxApplicationdto[taxIndex] = {
       ...newItems[itemIndex].taxApplicationdto[taxIndex],
-      [field]: value,
+      [field]: field === 'value' 
+        ? parseFloat(value) || 0
+        : value
     };
     setFormData({ ...formData, itemManagementdto: newItems });
   };
@@ -340,8 +378,12 @@ export default function DeclarationForm() {
           unitofmeasurement: "",
           quantity: 1,
           unitCost: 0,
-          // Automatically add an initial tax to the new item
-          taxApplicationdto: [{ name: "", value: 0, codename: "" }],
+          taxApplicationdto: [{ 
+            name: "", 
+            value: 0, 
+            codename: "",
+            percentage: 0 
+          }],
         },
       ],
     });
@@ -353,6 +395,7 @@ export default function DeclarationForm() {
       name: "",
       value: 0,
       codename: "",
+      percentage: 0
     });
     setFormData({ ...formData, itemManagementdto: newItems });
   };
@@ -375,6 +418,13 @@ export default function DeclarationForm() {
   };
 
   const validateForm = () => {
+    if (!tinNumber) {
+      throw new Error("TIN number is required");
+    }
+    if (!/^\d{9,15}$/.test(tinNumber)) {
+      throw new Error("TIN number must be 9-15 digits");
+    }
+
     if (!formData.custombranchname) {
       throw new Error("Branch name is required");
     }
@@ -383,6 +433,12 @@ export default function DeclarationForm() {
     }
     if (!formData.declarationdispensedate) {
       throw new Error("Declaration date is required");
+    }
+    if (formData.fobamountusdt < 0) {
+      throw new Error("FOB amount cannot be negative");
+    }
+    if (formData.exchangerate < 0) {
+      throw new Error("Exchange rate cannot be negative");
     }
     if (formData.itemManagementdto.length === 0) {
       throw new Error("At least one item is required");
@@ -396,13 +452,20 @@ export default function DeclarationForm() {
         throw new Error(`Description is required for item ${index + 1}`);
       }
       if (item.quantity <= 0) {
-        throw new Error(
-          `Quantity must be greater than 0 for item ${index + 1}`
-        );
+        throw new Error(`Quantity must be greater than 0 for item ${index + 1}`);
       }
       if (item.unitCost < 0) {
         throw new Error(`Unit cost cannot be negative for item ${index + 1}`);
       }
+
+      item.taxApplicationdto.forEach((tax, taxIndex) => {
+        if (!tax.name) {
+          throw new Error(`Tax type is required for tax ${taxIndex + 1} in item ${index + 1}`);
+        }
+        if (tax.value < 0) {
+          throw new Error(`Tax value cannot be negative for tax ${taxIndex + 1} in item ${index + 1}`);
+        }
+      });
     });
   };
 
@@ -426,7 +489,6 @@ export default function DeclarationForm() {
         throw new Error("You don't have permission to submit declarations.");
       }
 
-      // Step 1: Consolidate all unique taxes from all items for the top-level array.
       const allUniqueTaxes = new Map<string, TaxDto>();
       formData.itemManagementdto.forEach((item) => {
         item.taxApplicationdto.forEach((tax) => {
@@ -436,37 +498,17 @@ export default function DeclarationForm() {
         });
       });
 
-      // Step 2: Construct the final submission data object.
       const submissionData = {
-        custombranchname: formData.custombranchname,
-        declarationnumber: formData.declarationnumber,
-        declarationdispensedate: formData.declarationdispensedate,
-        fobamountusdt: Number(formData.fobamountusdt),
-        exchangerate: Number(formData.exchangerate),
-        externalfreight: Number(formData.externalfreight),
-        insuranceCost: Number(formData.insuranceCost),
-        inlandfreight1: Number(formData.inlandfreight1),
-        djibouticost: Number(formData.djibouticost),
-        othercost1: Number(formData.othercost1),
-
-        // This array contains each item with its own list of taxes.
+        ...formData,
         itemManagementdto: formData.itemManagementdto.map((item) => ({
-          hscode: item.hscode,
-          itemdescription: item.itemdescription,
-          unitofmeasurement: item.unitofmeasurement,
-          quantity: Number(item.quantity),
-          unitCost: Number(item.unitCost),
+          ...item,
           taxApplicationdto: item.taxApplicationdto,
         })),
-
-        // This array contains all unique taxes from the entire declaration.
         taxApplicationdto: Array.from(allUniqueTaxes.values()),
       };
 
-      console.log("Full Submission Data:", submissionData);
-
       const response = await fetch(
-        `https://customreceiptmanagement.onrender.com/api/v1/clerk/declarationInfo/${1234554321}`,
+        `http://38.242.221.21:9090/api/v1/clerk/declarationInfo/${tinNumber}`,
         {
           method: "POST",
           headers: {
@@ -477,14 +519,31 @@ export default function DeclarationForm() {
         }
       );
 
-      const responseData = await response.text();
-      console.log("API Response:", responseData);
-
-      if (!response.ok) {
-        throw new Error(responseData || "Submission failed");
+      // First read the response as text
+      const responseText = await response.text();
+      
+      // Try to parse it as JSON, fall back to text if it fails
+      let responseData;
+      try {
+        responseData = JSON.parse(responseText);
+      } catch {
+        responseData = responseText;
       }
 
-      alert("Declaration submitted successfully!");
+      if (!response.ok) {
+        throw new Error(
+          typeof responseData === 'object' 
+            ? responseData.message || "Submission failed"
+            : responseData || "Submission failed"
+        );
+      }
+
+      // Handle success response
+      const successMessage = typeof responseData === 'object'
+        ? responseData.message || "Declaration submitted successfully!"
+        : responseData || "Declaration submitted successfully!";
+      
+      alert(successMessage);
 
       // Reset form
       setFormData({
@@ -501,14 +560,13 @@ export default function DeclarationForm() {
         itemManagementdto: [],
         taxApplicationdto: [],
       });
+      setTinNumber("");
+
     } catch (err: any) {
       console.error("Submission Error:", err);
       setError(err.message || "Failed to submit declaration");
 
-      if (
-        err.message.includes("expired") ||
-        err.message.includes("permission")
-      ) {
+      if (err.message.includes("expired") || err.message.includes("permission")) {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
         localStorage.removeItem("roles");
@@ -537,6 +595,14 @@ export default function DeclarationForm() {
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <InputField
+            label="TIN Number"
+            name="tinNumber"
+            value={tinNumber}
+            onChange={handleTinChange}
+            //pattern="\d{9,15}"
+            //title="TIN must be 9-15 digits"
+          />
+          <InputField
             label="Branch Name"
             name="custombranchname"
             value={formData.custombranchname}
@@ -556,11 +622,13 @@ export default function DeclarationForm() {
             onChange={handleChange}
           />
           <InputField
-            label="FOB Amount"
+            label="FOB Amount (USD)"
             name="fobamountusdt"
             type="number"
             value={formData.fobamountusdt}
             onChange={handleChange}
+            min="0"
+            step="0.01"
           />
           <InputField
             label="Exchange Rate"
@@ -568,6 +636,8 @@ export default function DeclarationForm() {
             type="number"
             value={formData.exchangerate}
             onChange={handleChange}
+            min="0"
+            step="0.0001"
           />
           <InputField
             label="External Freight"
@@ -575,6 +645,8 @@ export default function DeclarationForm() {
             type="number"
             value={formData.externalfreight}
             onChange={handleChange}
+            min="0"
+            step="0.01"
           />
           <InputField
             label="Insurance Cost"
@@ -582,6 +654,8 @@ export default function DeclarationForm() {
             type="number"
             value={formData.insuranceCost}
             onChange={handleChange}
+            min="0"
+            step="0.01"
           />
           <InputField
             label="Inland Freight"
@@ -589,6 +663,8 @@ export default function DeclarationForm() {
             type="number"
             value={formData.inlandfreight1}
             onChange={handleChange}
+            min="0"
+            step="0.01"
           />
           <InputField
             label="Djibouti Cost"
@@ -596,12 +672,17 @@ export default function DeclarationForm() {
             type="number"
             value={formData.djibouticost}
             onChange={handleChange}
+            min="0"
+            step="0.01"
           />
           <InputField
             label="Other Cost"
             name="othercost1"
+            type="number"
             value={formData.othercost1}
             onChange={handleChange}
+            min="0"
+            step="0.01"
           />
         </div>
 

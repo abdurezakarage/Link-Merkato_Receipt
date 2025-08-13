@@ -3,6 +3,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
+import Image from "next/image";
+
 // Removed useRouter as it's not used in this specific component for navigation.
 
 interface CommercialInvoiceFile {
@@ -23,7 +25,7 @@ interface UserDocument {
   commercialInvoiceUrl: string;
 }
 
-const BASE_URL = "https://customreceiptmanagement.onrender.com"; // Base URL for the API
+const BASE_URL = "http://38.242.221.21:9090"; // Base URL for the API
 
 /**
  * Converts a base64 string to a data URL, ensuring it has the correct prefix.
@@ -124,11 +126,11 @@ function CommercialInvoiceCard({
                         Click to preview PDF
                       </p>
                       <p className="text-gray-500 text-sm mt-1">
-                        {user.companyname}'s Commercial Invoice
+                        {`${user.companyname}'s Commercial Invoice`}
                       </p>
                     </div>
                   ) : (
-                    <img
+                    <Image
                       src={user.commercialInvoiceUrl}
                       alt="Commercial Invoice"
                       className="max-h-full max-w-full object-contain"
@@ -276,7 +278,7 @@ export default function CommercialInvoiceViewer() {
           <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
             <div className="bg-gray-50 px-6 py-4 border-b">
               <h2 className="text-xl font-bold text-gray-800">
-                {previewFile.companyName}'s Commercial Invoice
+              {`${previewFile.companyName}'s Commercial Invoice`}
               </h2>
             </div>
             <div className="h-[calc(100vh-200px)] flex items-center justify-center">
@@ -291,7 +293,8 @@ export default function CommercialInvoiceViewer() {
                   sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 />
               ) : (
-                <img
+
+                <Image
                   src={previewFile.url}
                   alt="Commercial Invoice"
                   className="max-w-full max-h-full object-contain p-4" // Added p-4 for padding
@@ -305,32 +308,28 @@ export default function CommercialInvoiceViewer() {
   }
 
   // Main view: display list of commercial invoice cards
-  return (
-    <div className="p-4 bg-gray-50 min-h-screen flex justify-center items-start">
-      <div className="w-full max-w-4xl">
-        {" "}
-        {/* Set max-w for the main grid to 2/3 */}
-        <h1 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-          Commercial Invoices
-        </h1>
-        {userDocuments.length === 0 ? (
-          <div className="bg-white rounded-lg shadow p-8 text-center border border-gray-200">
-            <p className="text-gray-600">No commercial invoices available.</p>
-          </div>
-        ) : (
-          <div className="grid grid-cols-1 gap-6">
-            {" "}
-            {/* Changed to 1 column for accordion style */}
-            {userDocuments.map((user) => (
-              <CommercialInvoiceCard
-                key={user.userId}
-                user={user}
-                onPreviewClick={handleOpenPreview}
-              />
-            ))}
-          </div>
-        )}
-      </div>
+ return (
+  <div className="p-4 bg-gray-50 min-h-screen flex justify-center items-start">
+    <div className="w-full max-w-4xl">
+      <h1 className="text-2xl font-bold text-gray-800 mb-8 text-center">
+        Commercial Invoices
+      </h1>
+      {userDocuments.length === 0 ? (
+        <div key="no-invoices" className="bg-white rounded-lg shadow p-8 text-center border border-gray-200">
+          <p className="text-gray-600">No commercial invoices available.</p>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 gap-6">
+          {userDocuments.map((user) => (
+            <CommercialInvoiceCard
+              key={`${user.userId}-${user.tinNumebr}`}
+              user={user}
+              onPreviewClick={handleOpenPreview}
+            />
+          ))}
+        </div>
+      )}
     </div>
-  );
+  </div>
+);
 }

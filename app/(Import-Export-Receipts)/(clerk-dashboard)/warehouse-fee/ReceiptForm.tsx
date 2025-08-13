@@ -27,6 +27,7 @@ export default function WarehouseFeeForm() {
     amountbeforetax: 0,
   });
 
+  const [declarationnumber, setDeclarationNumber] = useState<string>("");
   const [isWithholdingTaxApplicable, setIsWithholdingTaxApplicable] =
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -37,7 +38,9 @@ export default function WarehouseFeeForm() {
   ) => {
     const { name, value, type } = e.target;
 
-    if (name === "isWithholdingTaxApplicable") {
+    if (name === "declarationnumber") {
+      setDeclarationNumber(value);
+    } else if (name === "isWithholdingTaxApplicable") {
       const isApplicable = value === "Yes";
       setIsWithholdingTaxApplicable(isApplicable);
       if (!isApplicable) {
@@ -59,6 +62,11 @@ export default function WarehouseFeeForm() {
     e.preventDefault();
     setMessage(null);
 
+    if (!declarationnumber) {
+      setMessage("Declaration number is required");
+      return;
+    }
+
     const token = localStorage.getItem("token");
 
     if (!token) {
@@ -66,10 +74,8 @@ export default function WarehouseFeeForm() {
       return;
     }
 
-    const payload: WarehouseFeePayload = formData;
-
     try {
-      const apiUrl = `https://customreceiptmanagement.onrender.com/api/v1/clerk/warehouseInfo/${97645398}`;
+      const apiUrl = `http://38.242.221.21:9090/api/v1/clerk/warehouseInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -77,7 +83,7 @@ export default function WarehouseFeeForm() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(formData),
       });
 
       if (!response.ok) {
@@ -87,6 +93,10 @@ export default function WarehouseFeeForm() {
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
+          
+          if (response.status === 409) {
+            alert("Declaration is already taken. Please use a different one.");
+          }
         } else {
           const errorText = await response.text();
           errorMessage = errorText || response.statusText || errorMessage;
@@ -97,18 +107,14 @@ export default function WarehouseFeeForm() {
       const contentType = response.headers.get("content-type");
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
-        setMessage(
-          data.message || "Warehouse fee receipt submitted successfully! ✅"
-        );
+       
       } else {
         const successText = await response.text();
-        setMessage(
-          successText || "Warehouse fee receipt submitted successfully! ✅"
-        );
       }
 
       setFormSubmitted(true);
 
+      // Reset form
       setFormData({
         receiptnumber: "",
         receiptdate: "",
@@ -119,15 +125,21 @@ export default function WarehouseFeeForm() {
         withholdingamount: 0,
         amountbeforetax: 0,
       });
-
+      setDeclarationNumber("");
       setIsWithholdingTaxApplicable(false);
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        setMessage("Network error: Could not connect to the server. ❌");
+        const errMsg = "Network error: Could not connect to the server. ❌";
+        setMessage(errMsg);
       } else if (error instanceof Error) {
-        setMessage(`Failed to submit data. Error: ${error.message} ❌`);
+        const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
+        setMessage(errMsg);
+        if (!error.message.includes("Declaration is already taken")) {
+          // Handle other errors if needed
+        }
       } else {
-        setMessage("Failed to submit data. An unknown error occurred. ❌");
+        const errMsg = "Failed to submit data. An unknown error occurred. ❌";
+        setMessage(errMsg);
       }
     }
   };
@@ -135,11 +147,33 @@ export default function WarehouseFeeForm() {
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
+        {message && (
+          <div className={`mb-4 p-3 rounded ${message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+            {message}
+          </div>
+        )}
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
               Warehouse Fee
             </h2>
+
+            {/* Declaration Number */}
+            <div className="mb-4">
+              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+                Declaration Number
+              </label>
+              <input
+                type="text"
+                id="declarationnumber"
+                name="declarationnumber"
+                value={declarationnumber}
+                onChange={handleChange}
+                className="w-full border rounded px-3 py-2"
+                placeholder="D123456"
+                required
+              />
+            </div>
 
             {/* Amount Before Tax */}
             <div className="mb-4">

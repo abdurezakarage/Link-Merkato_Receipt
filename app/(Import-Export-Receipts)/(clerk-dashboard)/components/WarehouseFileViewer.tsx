@@ -3,7 +3,7 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Download, X, Eye, ChevronDown, File, ArrowLeft } from "lucide-react";
-
+import Image from 'next/image';
 // ---------------- Interfaces ----------------
 interface RawWarehouseFile {
   userId: string;
@@ -31,7 +31,7 @@ interface DocumentFile {
   base64Data: string;
 }
 
-const BASE_URL = "https://customreceiptmanagement.onrender.com";
+const BASE_URL = "http://38.242.221.21:9090";
 
 // ---------------- Helper ----------------
 const createDataUrl = (
@@ -87,7 +87,7 @@ function FilePreview({
           onClick={() => onPreviewClick(url, label)}
         >
           {isImage && (
-            <img
+            <Image
               src={url}
               alt={label}
               className="w-full h-full object-contain"
@@ -125,11 +125,11 @@ export default function WarehouseFileViewer() {
   const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
-
   const [previewFile, setPreviewFile] = useState<{
     url: string;
     label: string;
   } | null>(null);
+  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
 
   const handleOpenPreview = (url: string, label: string) => {
     setPreviewFile({ url, label });
@@ -139,12 +139,10 @@ export default function WarehouseFileViewer() {
     setPreviewFile(null);
   };
 
-  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
-
-  const toggleExpand = (userId: string) => {
+  const toggleExpand = (tinNumber: string) => {
     setExpandedUsers((prev) => {
       const newSet = new Set(prev);
-      newSet.has(userId) ? newSet.delete(userId) : newSet.add(userId);
+      newSet.has(tinNumber) ? newSet.delete(tinNumber) : newSet.add(tinNumber);
       return newSet;
     });
   };
@@ -168,10 +166,10 @@ export default function WarehouseFileViewer() {
         const grouped: Record<string, UserDocument> = {};
 
         res.data.forEach((item) => {
-          const userId = item.userId;
-          if (!grouped[userId]) {
-            grouped[userId] = {
-              userId,
+          const key = item.tinNumber; // Using tinNumber as the key
+          if (!grouped[key]) {
+            grouped[key] = {
+              userId: item.userId,
               firstName: item.firstName,
               lastname: item.lastname,
               tinNumber: item.tinNumber,
@@ -181,7 +179,7 @@ export default function WarehouseFileViewer() {
           }
 
           if (item.imageBaseMainReceipt) {
-            grouped[userId].documents.push({
+            grouped[key].documents.push({
               label: `${item.maintype} Receipt`,
               base64Data: createDataUrl(
                 item.imageBaseMainReceipt,
@@ -191,7 +189,7 @@ export default function WarehouseFileViewer() {
           }
 
           if (item.imageBaseWithholidingReceipt) {
-            grouped[userId].documents.push({
+            grouped[key].documents.push({
               label: `${item.withHoldihType} Withholding Receipt`,
               base64Data: createDataUrl(
                 item.imageBaseWithholidingReceipt,
@@ -221,7 +219,6 @@ export default function WarehouseFileViewer() {
     fetchFiles();
   }, []);
 
-  // -------------- Loading/Error State --------------
   if (loading) {
     return (
       <div className="flex items-center justify-center h-full text-xl text-blue-600">
@@ -259,7 +256,6 @@ export default function WarehouseFileViewer() {
     );
   }
 
-  // -------------- Preview View --------------
   if (previewFile) {
     const isImage = previewFile.url.startsWith("data:image");
     const isPdf = previewFile.url.startsWith("data:application/pdf");
@@ -277,7 +273,7 @@ export default function WarehouseFileViewer() {
         </div>
         <div className="flex-grow overflow-auto">
           {isImage ? (
-            <img
+            <Image
               src={previewFile.url}
               alt={previewFile.label}
               className="max-w-full max-h-full mx-auto object-contain"
@@ -298,7 +294,6 @@ export default function WarehouseFileViewer() {
     );
   }
 
-  // -------------- Main Render --------------
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
@@ -311,11 +306,11 @@ export default function WarehouseFileViewer() {
       ) : (
         userDocuments.map((user) => (
           <div
-            key={user.userId}
+            key={user.tinNumber}
             className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100"
           >
             <button
-              onClick={() => toggleExpand(user.userId)}
+              onClick={() => toggleExpand(user.tinNumber)}
               className="w-full flex justify-between items-center text-left py-4 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-200"
             >
               <div>
@@ -328,17 +323,17 @@ export default function WarehouseFileViewer() {
               </div>
               <ChevronDown
                 className={`text-gray-400 transition-transform duration-300 ${
-                  expandedUsers.has(user.userId) ? "rotate-180" : ""
+                  expandedUsers.has(user.tinNumber) ? "rotate-180" : ""
                 }`}
               />
             </button>
-            {expandedUsers.has(user.userId) && (
+            {expandedUsers.has(user.tinNumber) && (
               <div className="pt-4 border-t mt-4">
                 {user.documents.length > 0 ? (
                   <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-                    {user.documents.map((doc, docIndex) => (
+                    {user.documents.map((doc) => (
                       <FilePreview
-                        key={docIndex}
+                        key={`${user.tinNumber}-${doc.label}`}
                         label={doc.label}
                         url={doc.base64Data}
                         onPreviewClick={handleOpenPreview}

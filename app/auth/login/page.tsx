@@ -115,7 +115,7 @@ export default function Login() {
             } else if (roles.includes("ADMIN")) {
               router.push("/auth/admin");
             } else if (roles.includes("USER")) {
-              router.push("/dataupload");
+              router.push("/owner");
             }
           } else {
       

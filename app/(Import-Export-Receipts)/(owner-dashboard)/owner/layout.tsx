@@ -10,7 +10,8 @@ import {
   FiCheckCircle,
 } from "react-icons/fi";
 
-export default function ownerDashboardLayout({
+// The function name must start with an uppercase letter to be a valid React component
+export default function OwnerDashboardLayout({
   children,
 }: {
   children: React.ReactNode;

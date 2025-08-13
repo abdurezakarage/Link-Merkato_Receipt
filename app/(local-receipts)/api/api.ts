@@ -2,10 +2,10 @@
 //const BASE_URL = process.env.NEXT_PUBLIC_BASE_URL || "";
 
 // spring backend api
-export const SPRING_BASE_URL = "https://customreceiptmanagement.onrender.com/api/v1";
+export const SPRING_BASE_URL = "http://38.242.221.21:9090/api/v1";
 
 // django api - use production URL by default, fallback to local if needed
-export const DJANGO_BASE_URL = "https://local-receipt-management-system.onrender.com/api";
+export const DJANGO_BASE_URL = "http://38.242.221.21:8001/api";
 //export const DJANGO_BASE_URL = "http://192.168.1.5:8000/api";  //local api
 
 // login api for user and admin
