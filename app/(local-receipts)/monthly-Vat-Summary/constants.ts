@@ -138,5 +138,5 @@ export const excludeVATCodes = ['15', '20', '85', '130'];
 // Generate year options (current year and previous 5 years)
 export const generateYearOptions = (): number[] => {
   const currentYear = new Date().getFullYear();
-  return Array.from({ length: 6 }, (_, i) => currentYear - i);
+  return Array.from({ length: 3 }, (_, i) => currentYear - i+1);
 };

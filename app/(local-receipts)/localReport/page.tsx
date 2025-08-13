@@ -680,11 +680,11 @@ const ReportPage: React.FC = () => {
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
             {/* Year Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Year</label>
+              <label className="block text-sm font-medium text-black mb-2">Year</label>
               <select
                 value={selectedYear}
                 onChange={(e) => handleYearChange(Number(e.target.value))}
-                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                className="w-full px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
               >
                 {yearOptions.map(year => (
                   <option key={year} value={year}>{year}</option>
@@ -694,7 +694,7 @@ const ReportPage: React.FC = () => {
 
             {/* Month Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Months</label>
+              <label className="block text-sm font-medium text-black mb-2">Months</label>
               <div className="grid grid-cols-2 gap-2 max-h-32 overflow-y-auto">
                 {monthOptions.map(month => (
                   <label key={month.monthNumber} className="flex items-center">
@@ -704,7 +704,7 @@ const ReportPage: React.FC = () => {
                       onChange={() => handleMonthChange(month.monthNumber)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">{month.label}</span>
+                    <span className="ml-2 text-sm text-black">{month.label}</span>
                   </label>
                 ))}
               </div>
@@ -712,7 +712,7 @@ const ReportPage: React.FC = () => {
 
             {/* Category Filter */}
             <div>
-              <label className="block text-sm font-medium text-gray-700 mb-2">Categories</label>
+              <label className="block text-sm font-medium text-black mb-2">Categories</label>
               <div className="space-y-2">
                 {receiptCategories.map(category => (
                   <label key={category.value} className="flex items-center">
@@ -722,7 +722,7 @@ const ReportPage: React.FC = () => {
                       onChange={() => handleCategoryChange(category.value)}
                       className="rounded border-gray-300 text-blue-600 focus:ring-blue-500"
                     />
-                    <span className="ml-2 text-sm text-gray-700">{category.label}</span>
+                    <span className="ml-2 text-sm text-black">{category.label}</span>
                   </label>
                 ))}
               </div>
@@ -743,7 +743,7 @@ const ReportPage: React.FC = () => {
                   <select
                     value={downloadFormat}
                     onChange={(e) => setDownloadFormat(e.target.value as DownloadFormat)}
-                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                    className="flex-1 px-3 py-2 text-sm border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500 text-black"
                   >
                     <option value="csv">CSV Format</option>
                     <option value="pdf">PDF Format</option>

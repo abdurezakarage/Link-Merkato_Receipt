@@ -73,7 +73,7 @@ const EditableField: React.FC<EditableFieldProps> = ({
         step="0.01"
         min="0"
         placeholder=""
-        className={`border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors w-32 bg-white ${className}`}
+        className={`border border-gray-300 rounded-md px-3 py-2 text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 hover:border-gray-400 transition-colors w-32 bg-white text-black ${className}`}
       />
       {!isEditing && type === 'currency' && value > 0 && (
         <div className="absolute right-2 top-1/2 transform -translate-y-1/2 text-xs text-gray-400 pointer-events-none">
