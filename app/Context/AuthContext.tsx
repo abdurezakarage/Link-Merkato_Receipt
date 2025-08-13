@@ -242,12 +242,12 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         return userData
       } catch (secondApiError: any) {
         // Both APIs failed
-        const firstErrorMessage = firstApiError.response?.data?.message || 'First API login failed';
-        const secondErrorMessage = secondApiError.response?.data?.message || 'Second API login failed';
+        const firstErrorMessage = firstApiError.response?.data?.message || 'login failed';
+        const secondErrorMessage = secondApiError.response?.data?.message || 'login failed';
         
-        const combinedErrorMessage = `Login failed on both APIs. First API: ${firstErrorMessage}. Second API: ${secondErrorMessage}`;
-        setError(combinedErrorMessage);
-        throw new Error(combinedErrorMessage);
+        //const combinedErrorMessage = `Login failed on both APIs. First API: ${firstErrorMessage}. Second API: ${secondErrorMessage}`;
+        setError("Login failed");
+        throw new Error("Login failed");
       }
     } finally {
       setIsLoading(false);

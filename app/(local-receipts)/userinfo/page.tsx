@@ -336,13 +336,13 @@ const UserDashboard: React.FC = () => {
       color: 'bg-purple-500',
       onClick: () => router.push('/monthly-Vat-Summary')
     },
-    {
-      title: 'TOT report',
-      description: 'Manage TOT report',
-      icon: '💰',
-      color: 'bg-purple-500',
-      onClick: () => router.push('/monthly-Tot-Summary')
-    }
+    // {
+    //   title: 'TOT report',
+    //   description: 'Manage TOT report',
+    //   icon: '💰',
+    //   color: 'bg-purple-500',
+    //   onClick: () => router.push('/monthly-Tot-Summary')
+    // }
   ];
 
   const handleProfileUpdate = () => {
