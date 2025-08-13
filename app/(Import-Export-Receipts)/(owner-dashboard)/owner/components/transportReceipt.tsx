@@ -45,7 +45,7 @@ export default function ReceiptUpload() {
 
     try {
       const response = await fetch(
-        `http://38.242.221.21:9090/api/v1/user/transport/${userId}`,
+        `https://38.242.221.21:9090/api/v1/user/transport/${userId}`,
         {
           method: "POST",
           headers: {

@@ -75,7 +75,7 @@ export default function WarehouseFeeForm() {
     }
 
     try {
-      const apiUrl = `http://38.242.221.21:9090/api/v1/clerk/warehouseInfo/${declarationnumber}`;
+      const apiUrl = `https://38.242.221.21:9090/api/v1/clerk/warehouseInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",

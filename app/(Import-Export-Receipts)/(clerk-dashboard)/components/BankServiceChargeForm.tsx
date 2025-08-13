@@ -93,7 +93,7 @@ export default function BankServiceFeeForm() {
 
     try {
       const response = await fetch(
-        `http://38.242.221.21:9090/api/v1/clerk/bankInfo/${declarationnumber}`,
+        `https://38.242.221.21:9090/api/v1/clerk/bankInfo/${declarationnumber}`,
         {
           method: "POST",
           headers: {

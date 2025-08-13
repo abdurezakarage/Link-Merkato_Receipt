@@ -32,7 +32,7 @@ interface DocumentFile {
   base64Data: string;
 }
 
-const BASE_URL = "http://38.242.221.21:9090";
+const BASE_URL = "https://38.242.221.21:9090";
 
 function createDataUrl(
   base64String: string | null | undefined,

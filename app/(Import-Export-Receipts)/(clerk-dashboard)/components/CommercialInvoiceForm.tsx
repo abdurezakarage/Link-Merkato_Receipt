@@ -90,7 +90,7 @@ export default function CommercialInvoiceForm() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `http://38.242.221.21:9090/api/v1/clerk/commercialinvoice/${declarationnumber}`,
+        `https://38.242.221.21:9090/api/v1/clerk/commercialinvoice/${declarationnumber}`,
         {
           method: "POST",
           headers: {
