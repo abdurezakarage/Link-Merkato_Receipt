@@ -40,7 +40,7 @@ export default function ReceiptUpload() {
 
     try {
       const response = await fetch(
-        `https://38.242.221.21:9090/api/v1/user/clearance/${userId}`,
+        `https://api.import.linkmerkato.com.et/api/v1/user/clearance/${userId}`,
         {
           method: "POST",
           headers: {

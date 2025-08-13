@@ -30,7 +30,7 @@ interface ApiDocumentItem {
   imageCummercialInvoicefile?: string;
 }
 
-const BASE_URL = "https://38.242.221.21:9090";
+const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 const createDataUrl = (
   base64String: string | undefined | null,

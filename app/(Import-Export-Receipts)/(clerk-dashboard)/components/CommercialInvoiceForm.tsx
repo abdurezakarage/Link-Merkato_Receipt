@@ -90,7 +90,7 @@ export default function CommercialInvoiceForm() {
     setIsLoading(true);
     try {
       const response = await fetch(
-        `https://38.242.221.21:9090/api/v1/clerk/commercialinvoice/${declarationnumber}`,
+        `https://api.import.linkmerkato.com.et/api/v1/clerk/commercialinvoice/${declarationnumber}`,
         {
           method: "POST",
           headers: {

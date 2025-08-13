@@ -31,7 +31,7 @@ interface DocumentFile {
   base64Data: string;
 }
 
-const BASE_URL = "https://38.242.221.21:9090";
+const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 // ---------------- Helper ----------------
 const createDataUrl = (

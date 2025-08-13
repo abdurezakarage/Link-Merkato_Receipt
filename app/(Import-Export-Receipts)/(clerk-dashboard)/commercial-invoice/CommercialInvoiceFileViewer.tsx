@@ -25,7 +25,7 @@ interface UserDocument {
   commercialInvoiceUrl: string;
 }
 
-const BASE_URL = "https://38.242.221.21:9090"; // Base URL for the API
+const BASE_URL = "https://api.import.linkmerkato.com.et"; // Base URL for the API
 
 /**
  * Converts a base64 string to a data URL, ensuring it has the correct prefix.

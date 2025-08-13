@@ -75,7 +75,7 @@ export default function ClearanceFeeForm() {
     }
 
     try {
-      const apiUrl = `https://38.242.221.21:9090/api/v1/clerk/clearanceInfo/${declarationnumber}`;
+      const apiUrl = `https://api.import.linkmerkato.com.et/api/v1/clerk/clearanceInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",

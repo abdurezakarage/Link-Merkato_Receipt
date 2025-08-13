@@ -48,7 +48,7 @@ export default function CustomDocumentsUpload() {
 
     try {
       const response = await fetch(
-        `https://38.242.221.21:9090/api/v1/user/customdocument/${userId}`,
+        `https://api.import.linkmerkato.com.et/api/v1/user/customdocument/${userId}`,
         {
           method: "POST",
           headers: {

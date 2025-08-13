@@ -93,7 +93,7 @@ export default function BankServiceFeeForm() {
 
     try {
       const response = await fetch(
-        `https://38.242.221.21:9090/api/v1/clerk/bankInfo/${declarationnumber}`,
+        `https://api.import.linkmerkato.com.et/api/v1/clerk/bankInfo/${declarationnumber}`,
         {
           method: "POST",
           headers: {

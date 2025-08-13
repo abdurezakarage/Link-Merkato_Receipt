@@ -63,7 +63,7 @@ interface GroupedFiles {
   clearance: Array<ClearanceFile & { type: "clearance" }>;
 }
 
-const BASE_URL = "https://38.242.221.21:9090";
+const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 export default function AllFilesFetcher() {
   const [warehouseFiles, setWarehouseFiles] = useState<WarehouseFile[]>([]);

@@ -37,7 +37,7 @@ export default function RegisterPage() {
 
     try {
       const response = await fetch(
-        "https://38.242.221.21:9090/api/v1/auth/register",
+        "https://api.import.linkmerkato.com.et/api/v1/auth/register",
         {
           method: "POST",
           headers: { "Content-Type": "application/json" },
