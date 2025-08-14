@@ -3,7 +3,8 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { Download, X, Eye, ChevronDown, File, ArrowLeft } from "lucide-react";
-import Image from 'next/image';
+import Image from "next/image";
+
 // ---------------- Interfaces ----------------
 interface RawWarehouseFile {
   userId: string;
@@ -33,23 +34,41 @@ interface DocumentFile {
 
 const BASE_URL = "https://api.import.linkmerkato.com.et";
 
-// ---------------- Helper ----------------
+// ---------------- Helper Functions ----------------
 const createDataUrl = (
   base64String: string | null | undefined,
   label: string
 ): string => {
   if (!base64String) return "";
-  if (base64String.startsWith("data:")) return base64String;
 
-  let mimeType = "image/jpeg";
+  // If already a data URL, return as-is
+  if (base64String.startsWith("data:")) {
+    return base64String;
+  }
+
+  // Determine MIME type based on label
+  let mimeType = "image/jpeg"; // default
   if (label.toLowerCase().includes("pdf")) {
     mimeType = "application/pdf";
   }
 
-  return `data:${mimeType};base64,${base64String}`;
+  // Clean the base64 string (remove existing prefixes or whitespace)
+  const cleanedBase64 = base64String
+    .replace(/^data:image\/\w+;base64,/, "")
+    .replace(/\s/g, "");
+
+  // Validate base64
+  try {
+    // This will throw if invalid base64
+    window.atob(cleanedBase64);
+    return `data:${mimeType};base64,${cleanedBase64}`;
+  } catch (e) {
+    console.error("Invalid base64 string for:", label);
+    return "";
+  }
 };
 
-// ---------------- FilePreview ----------------
+// ---------------- FilePreview Component ----------------
 function FilePreview({
   label,
   url,
@@ -86,17 +105,27 @@ function FilePreview({
           className="w-full h-48 rounded cursor-pointer overflow-hidden flex items-center justify-center bg-gray-200"
           onClick={() => onPreviewClick(url, label)}
         >
-          {isImage && (
-            <Image
-              src={url}
-              alt={label}
-              className="w-full h-full object-contain"
-            />
-          )}
-          {isPdf && (
+          {isImage ? (
+            <div className="relative w-full h-full">
+              <Image
+                src={url}
+                alt={label}
+                fill
+                className="object-contain"
+                unoptimized={true}
+                onError={(e) => {
+                  const target = e.target as HTMLImageElement;
+                  target.onerror = null;
+                  target.src = "/image-error-placeholder.png";
+                }}
+              />
+            </div>
+          ) : isPdf ? (
             <p className="text-blue-600 text-center p-4 flex items-center gap-2">
               <File size={20} /> Click to view PDF
             </p>
+          ) : (
+            <p className="text-gray-500">Unsupported file format</p>
           )}
         </div>
       </div>
@@ -166,7 +195,7 @@ export default function WarehouseFileViewer() {
         const grouped: Record<string, UserDocument> = {};
 
         res.data.forEach((item) => {
-          const key = item.tinNumber; // Using tinNumber as the key
+          const key = item.tinNumber;
           if (!grouped[key]) {
             grouped[key] = {
               userId: item.userId,
@@ -179,23 +208,29 @@ export default function WarehouseFileViewer() {
           }
 
           if (item.imageBaseMainReceipt) {
-            grouped[key].documents.push({
-              label: `${item.maintype} Receipt`,
-              base64Data: createDataUrl(
-                item.imageBaseMainReceipt,
-                `${item.maintype} Receipt`
-              ),
-            });
+            const url = createDataUrl(
+              item.imageBaseMainReceipt,
+              `${item.maintype} Receipt`
+            );
+            if (url) {
+              grouped[key].documents.push({
+                label: `${item.maintype} Receipt`,
+                base64Data: url,
+              });
+            }
           }
 
           if (item.imageBaseWithholidingReceipt) {
-            grouped[key].documents.push({
-              label: `${item.withHoldihType} Withholding Receipt`,
-              base64Data: createDataUrl(
-                item.imageBaseWithholidingReceipt,
-                `${item.withHoldihType} Withholding Receipt`
-              ),
-            });
+            const url = createDataUrl(
+              item.imageBaseWithholidingReceipt,
+              `${item.withHoldihType} Withholding Receipt`
+            );
+            if (url) {
+              grouped[key].documents.push({
+                label: `${item.withHoldihType} Withholding Receipt`,
+                base64Data: url,
+              });
+            }
           }
         });
 
@@ -273,11 +308,15 @@ export default function WarehouseFileViewer() {
         </div>
         <div className="flex-grow overflow-auto">
           {isImage ? (
-            <Image
-              src={previewFile.url}
-              alt={previewFile.label}
-              className="max-w-full max-h-full mx-auto object-contain"
-            />
+            <div className="relative w-full h-full">
+              <Image
+                src={previewFile.url}
+                alt={previewFile.label}
+                fill
+                className="object-contain"
+                unoptimized={true}
+              />
+            </div>
           ) : isPdf ? (
             <iframe
               src={previewFile.url}
