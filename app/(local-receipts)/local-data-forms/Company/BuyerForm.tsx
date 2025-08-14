@@ -46,7 +46,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
         // Check for alternative field names and nested structures
         const tinNumber = payload?.tin_number || payload?.tin || payload?.company?.tin_number;
         const companyName = payload?.company_name || payload?.company?.company_name || payload?.company?.name;
-        const address = payload?.address || payload?.company?.address || payload?.company?.company_address || "";
+        const address = payload?.Region || payload?.region || payload?.address || payload?.company?.Region || payload?.company?.region || payload?.company?.address || payload?.company?.company_address || "";
         
         
         if (payload && tinNumber && companyName) {
