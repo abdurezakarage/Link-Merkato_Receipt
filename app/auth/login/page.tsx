@@ -105,6 +105,7 @@ export default function Login() {
           const roles = decodedToken.roles;
           const userId = decodedToken.user_id;
           localStorage.setItem("userId", userId);
+          localStorage.setItem("roles", JSON.stringify(roles));
           //console.log('User roles:', roles); // Debug log
           
           if (roles && Array.isArray(roles)) {

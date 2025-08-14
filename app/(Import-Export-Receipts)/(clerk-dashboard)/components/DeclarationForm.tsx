@@ -507,13 +507,23 @@ export default function DeclarationForm() {
 
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
-      const roles = JSON.parse(localStorage.getItem("roles") || "[]");
+      const rolesString = localStorage.getItem("roles");
+      let roles: string[] = [];
 
       if (!token || !userId) {
         throw new Error("Session expired. Please log in again.");
       }
 
-      if (!roles.includes("CLERK")) {
+      try {
+        if (rolesString) {
+          roles = JSON.parse(rolesString);
+        }
+      } catch (error) {
+        console.error("Error parsing roles:", error);
+        throw new Error("Error reading user roles. Please log in again.");
+      }
+
+      if (!roles || !Array.isArray(roles) || !roles.includes("CLERK")) {
         throw new Error("You don't have permission to submit declarations.");
       }
 
@@ -594,15 +604,15 @@ export default function DeclarationForm() {
       console.error("Submission Error:", err);
       setError(err.message || "Failed to submit declaration");
 
-      if (
-        err.message.includes("expired") ||
-        err.message.includes("permission")
-      ) {
-        localStorage.removeItem("token");
-        localStorage.removeItem("userId");
-        localStorage.removeItem("roles");
-        router.push("/companies");
-      }
+      // if (
+      //   err.message.includes("expired") ||
+      //   err.message.includes("permission")
+      // ) {
+      //   localStorage.removeItem("token");
+      //   localStorage.removeItem("userId");
+      //   localStorage.removeItem("roles");
+      //   router.push("/declaration");
+      // }
     } finally {
       setLoading(false);
     }
