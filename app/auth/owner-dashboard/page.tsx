@@ -75,6 +75,33 @@ export default function OwnerDashboard() {
                </div>
              </Link>
            </Card>
+           <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+             <Link href="/monthly-Vat-Summary" className="block">
+               <div className="p-6 text-center">
+                 <div className="w-16 h-16 bg-green-100 rounded-full flex items-center justify-center mx-auto mb-4 group-hover:bg-green-200 transition-colors">
+                   <svg
+                     className="w-8 h-8 text-green-600"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                     />
+                   </svg>
+                 </div>
+                 <h3 className="text-xl font-semibold text-gray-900 mb-2">
+                  Monthly vat Report
+                 </h3>
+                 <p className="text-gray-600">
+                 See monthly vat report summary here
+                 </p>
+               </div>
+             </Link>
+           </Card>
         </div>
 
                  {/* Theoretical Notes Section */}
