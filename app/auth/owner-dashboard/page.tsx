@@ -116,7 +116,7 @@ export default function OwnerDashboard() {
                        strokeLinecap="round"
                        strokeLinejoin="round"
                        strokeWidth={2}
-                       d="M18 9v3m0 0v3m0-3h3m-3 0h-3m-2-5a4 4 0 11-8 0 4 4 0 018 0zM3 20a6 6 0 0112 0v1H3v-1z"
+                       d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
                      />
                    </svg>
                  </div>
@@ -296,8 +296,8 @@ export default function OwnerDashboard() {
              </div>
            </Card>
 
-                     <Card>
-             {/* <div className="p-6">
+           {/* <Card>
+             <div className="p-6">
                <h3 className="text-lg font-semibold text-gray-900 mb-4">
                  Recent Activity
                </h3>
@@ -324,8 +324,8 @@ export default function OwnerDashboard() {
                    </div>
                  </div>
                </div>
-             </div> */}
-           </Card>
+             </div>
+           </Card> */}
         </div>
       </div>
     </div>

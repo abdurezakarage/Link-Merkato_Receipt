@@ -175,14 +175,14 @@ export function Navigation() {
            
             {isUser && (
               <button 
-                onClick={() => router.push('/dataupload')}
+                onClick={() => router.push('/auth/owner-dashboard')}
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 title="Go to Clerk Dashboard"
               >
-               Upload Data
+               Owner Dashboard
               </button>
             )}
-              {isUser && (
+              {/* {isUser && (
               <button 
                 onClick={() => router.push('/dataupload/history')}
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
@@ -190,7 +190,7 @@ export function Navigation() {
               >
                History
               </button>
-            )}
+            )} */}
             {isClerk && (
               <button 
                 onClick={() => router.push('/local-Import')}
@@ -209,15 +209,15 @@ export function Navigation() {
                 Accountant Dashboard
               </button>
             )}
-             {isAdminRole && (
+             {/* {isAdminRole && (
               <button 
-                onClick={() => router.push('/auth/admin')}
+                onClick={() => router.push('/')}
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 title="Go to Admin Page"
               >
                 Admin
               </button>
-            )}
+            )} */}
             <button 
               onClick={() => handleSectionNavigation('contact')}
               className="text-gray-700 hover:text-blue-600 font-medium transition-colors"

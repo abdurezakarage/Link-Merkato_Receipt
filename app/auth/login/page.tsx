@@ -116,7 +116,7 @@ export default function Login() {
             } else if (roles.includes("CLERK")) {
               router.push("/local-Import");
             } else if (roles.includes("ADMIN")) {
-              router.push("/auth/admin");
+              router.push("/");
             } else if (roles.includes("USER")) {
               router.push("/auth/owner-dashboard");
             }

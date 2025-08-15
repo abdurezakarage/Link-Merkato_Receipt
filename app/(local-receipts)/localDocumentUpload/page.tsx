@@ -30,8 +30,12 @@ export default function LocalDocumentUpload() {
     const [attachment, setAttachment] = useState<File | null>(null);
     const [submitting, setSubmitting] = useState(false);
     const [error, setError] = useState("");
-    const [success, setSuccess] = useState("");;
+    const [success, setSuccess] = useState("");
     const [withholding, setWithholding] = useState<File | null>(null);
+    const [receiptNumber, setReceiptNumber] = useState("");
+    const [receiptDate, setReceiptDate] = useState("");
+    const [hasWithholding, setHasWithholding] = useState<"yes" | "no">("no");
+    const [withholdingReceiptNumber, setWithholdingReceiptNumber] = useState("");
 
 //extract tin_number from companydata
   // Parse JWT token to get company information
@@ -58,14 +62,22 @@ export default function LocalDocumentUpload() {
     const handleWithholdingFile = (file: File | null) => {
       setWithholding(file);
     };
+
+    // Handle withholding option change
+    const handleWithholdingChange = (value: "yes" | "no") => {
+      setHasWithholding(value);
+      if (value === "no") {
+        setWithholdingReceiptNumber("");
+        setWithholding(null);
+      }
+    };
+
     // Handle form submit
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       setSubmitting(true);
       
       try {
-
-
         const tin_number = localStorage.getItem("tin_number");
       
         // Check if userId exists
@@ -74,10 +86,43 @@ export default function LocalDocumentUpload() {
           setSubmitting(false);
           return;
         }
+
+        // Validate required fields
+        if (!receiptNumber.trim()) {
+          setError("Receipt number is required.");
+          setSubmitting(false);
+          return;
+        }
+
+        if (!receiptDate) {
+          setError("Receipt date is required.");
+          setSubmitting(false);
+          return;
+        }
+
+        // Validate withholding fields if withholding is yes
+        if (hasWithholding === "yes") {
+          if (!withholdingReceiptNumber.trim()) {
+            setError("Withholding receipt number is required when withholding is selected.");
+            setSubmitting(false);
+            return;
+          }
+          if (!withholding) {
+            setError("Withholding document is required when withholding is selected.");
+            setSubmitting(false);
+            return;
+          }
+        }
+
         // Handle file uploads if present
-        if (MainReceipt || attachment || withholding) {
+        if (MainReceipt || attachment || (hasWithholding === "yes" && withholding)) {
           try { 
             const fileFormData = new FormData();
+            
+            // Add receipt metadata
+            fileFormData.append("receipt_number", receiptNumber);
+            fileFormData.append("receipt_date", receiptDate);
+            fileFormData.append("has_withholding", hasWithholding);
             
             if (MainReceipt) {
               fileFormData.append("main_receipt_data.main_receipt", MainReceipt);
@@ -91,10 +136,11 @@ export default function LocalDocumentUpload() {
               fileFormData.append("main_receipt_data.attachment_content_type", attachment.type);
             }
             
-            if (withholding) {
+            if (hasWithholding === "yes" && withholding) {
               fileFormData.append("withholding_receipt_data.withholding_receipt", withholding);
               fileFormData.append("withholding_receipt_data.withholding_receipt_filename", withholding.name);
               fileFormData.append("withholding_receipt_data.withholding_receipt_content_type", withholding.type);
+              fileFormData.append("withholding_receipt_number", withholdingReceiptNumber);
             }
             
             const uploadResponse = await axios.post(`${DJANGO_BASE_URL}/upload-receipt-documents/${tin_number}`, fileFormData, {
@@ -126,16 +172,13 @@ export default function LocalDocumentUpload() {
     }
 
     return (
-        <div className="in-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 ">
-          <div className="container mx-auto px-4 py-8 max-w-6xl">
+        <div className="in-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6 text-black ">
+          
+          <div className="container mx-auto px-4 py-8 max-w-6xl bg-white rounded-lg shadow-md p-6">
+          <h2 className="text-2xl font-bold text-center mb-6">Upload Local Receipts</h2>
           <form onSubmit={handleSubmit}>
                 {/*Documents Section */}
-                <FormSection
-                  title="upload Documents"
-                  description="upload documents"
-                  isActive={true}
-                 isCompleted={true}
-                >
+               
  {/* Error and Success Messages */}
  {error && (
                   <div className="mt-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded-md">
@@ -148,14 +191,44 @@ export default function LocalDocumentUpload() {
                   </div>
                 )}
                   {/* File Upload Section */}
+
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                    {/* Receipt Number */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Receipt Number *
+                      </label>
+                      <input
+                        type="text"
+                        name="receiptNumber"
+                        value={receiptNumber}
+                        onChange={(e) => setReceiptNumber(e.target.value)}
+                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
+
+                    {/* Receipt Date */}
+                    <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Receipt Date *
+                      </label>
+                      <input
+                        type="date"
+                        name="receiptDate"
+                        value={receiptDate}
+                        onChange={(e) => setReceiptDate(e.target.value)}
+                        className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                        required
+                      />
+                    </div>
                     <FileUpload
-                      label="Upload Receipt"
+                      label="Upload Receipt *"
                       accept="image/*,.pdf"
                       onChange={handleMainReceiptChange}
                       value={MainReceipt}
                       maxSize={10}
-                      required={false}
+                      required={true}
                     />
                     <FileUpload
                       label="Upload Attachment"
@@ -165,14 +238,69 @@ export default function LocalDocumentUpload() {
                       maxSize={10}
                       required={false}
                     />
-                     <FileUpload
-                      label="Attach Withholding Document"
-                      accept="image/*,.pdf"
-                      onChange={handleWithholdingFile}
-                      value={withholding}
-                      maxSize={10}
-                      required={false}
-                    />
+                     {/* Withholding Option */}
+                     <div className="mb-6">
+                      <label className="block text-sm font-medium text-gray-700 mb-2">
+                        Does this receipt have withholding? *
+                      </label>
+                      <div className="flex gap-4">
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="hasWithholding"
+                            value="yes"
+                            checked={hasWithholding === "yes"}
+                            onChange={(e) => handleWithholdingChange(e.target.value as "yes" | "no")}
+                            className="mr-2"
+                          />
+                          Yes
+                        </label>
+                        <label className="flex items-center">
+                          <input
+                            type="radio"
+                            name="hasWithholding"
+                            value="no"
+                            checked={hasWithholding === "no"}
+                            onChange={(e) => handleWithholdingChange(e.target.value as "yes" | "no")}
+                            className="mr-2"
+                          />
+                          No
+                        </label>
+                      </div>
+                    </div>
+                    {/* Conditional Withholding Fields */}
+                    {hasWithholding === "yes" && (
+                      <>
+                        {/* Withholding Receipt Number */}
+                        <div className="mb-6">
+                          <label className="block text-sm font-medium text-gray-700 mb-2">
+                            Withholding Receipt Number *
+                          </label>
+                          <input
+                            type="text"
+                            name="withholdingReceiptNumber"
+                            value={withholdingReceiptNumber}
+                            onChange={(e) => setWithholdingReceiptNumber(e.target.value)}
+                            className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                            required
+                          />
+
+
+
+                          
+                        </div>
+                        
+                        {/* Withholding Document */}
+                        <FileUpload
+                          label="Attach Withholding Document *"
+                          accept="image/*,.pdf"
+                          onChange={handleWithholdingFile}
+                          value={withholding}
+                          maxSize={10}
+                          required={true}
+                        />
+                      </>
+                    )}
                   </div>
                   <div className="flex justify-end mt-8">
                       {/* Submit Button */}
@@ -188,7 +316,7 @@ export default function LocalDocumentUpload() {
 
                
                   </div>
-                </FormSection>
+             
 
               
             </form>
