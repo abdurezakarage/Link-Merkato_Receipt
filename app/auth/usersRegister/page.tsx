@@ -96,8 +96,7 @@ export default function Register() {
         return;
       }
       
-      console.log("User ID:", userId);
-      
+    
       try {
         // Omit confirmPassword by creating a new object without it
         const dataToSend = { ...form };

@@ -104,10 +104,12 @@ export default function Login() {
           //console.log('Decoded token:', decodedToken);
           const roles = decodedToken.roles;
           const userId = decodedToken.user_id;
+          const tin_number = decodedToken.tin_number;
           localStorage.setItem("userId", userId);
           localStorage.setItem("roles", JSON.stringify(roles));
+          localStorage.setItem("tin_number", tin_number);
           //console.log('User roles:', roles); // Debug log
-          
+
           if (roles && Array.isArray(roles)) {
             if (roles.includes("ACCOUNTANT")) {
               router.push("/accountant-dashboard");

@@ -71,7 +71,7 @@ const ReportPage: React.FC = () => {
   const [downloading, setDownloading] = useState(false);
 
   // Cloudinary base for public documents
-  const CLOUDINARY_BASE_URL = 'https://res.cloudinary.com/detylqmth/';
+  const CLOUDINARY_BASE_URL = 'https://api.local.linkmerkato.com.et/';
 
   const resolveDocumentUrl = (documentPathOrUrl: string): string => {
     if (!documentPathOrUrl) return '';
