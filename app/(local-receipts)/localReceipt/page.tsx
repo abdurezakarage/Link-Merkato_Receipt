@@ -1,7 +1,7 @@
 
 "use client";
 
-import React, { useState, useEffect, useCallback, useMemo } from "react";
+import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
 import type { Item, SellerInfo, BuyerInfo, FormState, WithholdingForm, ReceiptKind, ReceiptKindsResponse } from "../local-data-forms/types";
@@ -46,7 +46,20 @@ const BANK_NAMES = [
 
 const PAYMENT_METHODS = ["Cash", "Bank"];
 
-export default function LocalReceipt() {
+// Loading component for Suspense fallback
+function LoadingFallback() {
+  return (
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-[#f7faff] to-[#f3f6fd]">
+      <div className="text-center">
+        <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-600 mx-auto mb-4"></div>
+        <p className="text-gray-600">Loading receipt form...</p>
+      </div>
+    </div>
+  );
+}
+
+// Main LocalReceipt component that uses useSearchParams
+function LocalReceiptContent() {
   const { user, logout, token, isLoading } = useAuth();
   const searchParams = useSearchParams();
   
@@ -1360,5 +1373,14 @@ export default function LocalReceipt() {
       )}
     </div>
     </ProtectedRoute>
+  );
+}
+
+// Export wrapped component with Suspense boundary
+export default function LocalReceipt() {
+  return (
+    <Suspense fallback={<LoadingFallback />}>
+      <LocalReceiptContent />
+    </Suspense>
   );
 }
