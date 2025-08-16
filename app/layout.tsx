@@ -3,6 +3,7 @@ import "./globals.css";
 import { Navigation } from "../components/Navigation";
 import SessionGuard from "../components/SessionGuard";
 import { AuthProvider } from "./Context/AuthContext";
+import { Footer } from "../components/footer";
 
 export const metadata: Metadata = {
   title: "Link Merkato",
@@ -24,6 +25,7 @@ export default function RootLayout({
           <SessionGuard>
             {children}
           </SessionGuard>
+          <Footer />
         </AuthProvider>
       </body>
     </html>

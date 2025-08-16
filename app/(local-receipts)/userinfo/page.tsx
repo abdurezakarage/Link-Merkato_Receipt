@@ -316,6 +316,13 @@ const UserDashboard: React.FC = () => {
 
   const quickActions = [
     {
+      title: 'Attached Receipts',
+      description: 'Create a new receipt entry from the attached documents',
+      icon: '📄',
+      color: 'bg-blue-500',
+                      onClick: () => router.push('/localDocument')
+    },
+    {
       title: 'New Receipt',
       description: 'Create a new receipt entry',
       icon: '➕',
@@ -329,13 +336,13 @@ const UserDashboard: React.FC = () => {
       color: 'bg-green-500',
                       onClick: () => router.push('/localReport')
     },
-    {
-      title: 'VAT report',
-      description: 'Manage VAT report',
-      icon: '💰',
-      color: 'bg-purple-500',
-      onClick: () => router.push('/monthly-Vat-Summary')
-    },
+    // {
+    //   title: 'VAT report',
+    //   description: 'Manage VAT report',
+    //   icon: '💰',
+    //   color: 'bg-purple-500',
+    //   onClick: () => router.push('/monthly-Vat-Summary')
+    // },
     // {
     //   title: 'TOT report',
     //   description: 'Manage TOT report',
@@ -534,7 +541,7 @@ const UserDashboard: React.FC = () => {
             {/* Quick Actions */}
             <div>
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Quick Actions</h2>
-              <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                 {quickActions.map((action, index) => (
                   <QuickActionButton key={index} {...action} />
                 ))}

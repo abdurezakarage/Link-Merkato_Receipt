@@ -4,6 +4,11 @@ export interface MonthOption {
   monthNumber: number;
 }
 
+export interface DateRange {
+  startDate: string; // Format: YYYY-MM-DD
+  endDate: string;   // Format: YYYY-MM-DD
+}
+
 export interface NatureCodeMapping {
   [key: string]: {
     label: string;

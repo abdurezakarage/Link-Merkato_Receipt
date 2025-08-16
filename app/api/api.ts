@@ -6,11 +6,15 @@ export const register_api = `${BASE_URL}/auth/register`;
 // login api
 export const login_api = `${BASE_URL}/auth/login`;
 //forgot password api
-export const request_otp_api = `${BASE_URL}/auth/request-otp`;
-export const verify_otp_api = `${BASE_URL}/auth/verify-otp`;
-export const forgot_password_api = `${BASE_URL}/auth/changepassword`;
-export const resend_otp_api = `${BASE_URL}/auth/resendotp`;
+export const forget_password_Base_url = "https://api.import.linkmerkato.com.et/api/v1"
+
+
+export const request_otp_api = `${forget_password_Base_url}/auth/request-otp`;
+export const verify_otp_api = `${forget_password_Base_url}/auth/verify-otp`;
+export const forgot_password_api = `${forget_password_Base_url}/auth/changepassword`;
+export const resend_otp_api = `${forget_password_Base_url}/auth/resendotp`;
 // upload data api
+
 export const local_receipt = `${BASE_URL}/user/localReceiptDocument`; 
 export const export_receipt = `${BASE_URL}/user/exportDocuments`; 
 export const import_receipt = `${BASE_URL}/user/importDocuments`;

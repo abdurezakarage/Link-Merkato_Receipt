@@ -1,5 +1,5 @@
 import { ReceiptData } from '../local-data-forms/types';
-import { VATSummaryData, EditableValues, SectionTotals, MonthOption } from './types';
+import { VATSummaryData, EditableValues, SectionTotals, MonthOption, DateRange } from './types';
 import { natureCodeMappings, monthOptions, excludeVATCodes } from './constants';
 
 // Currency formatting utility
@@ -29,6 +29,38 @@ export const filterReceiptsByMonth = (
     const receiptMonth = receiptDate.getMonth() + 1;
     return receiptYear === year && receiptMonth === month;
   });
+};
+
+// Filter receipts by date range
+export const filterReceiptsByDateRange = (
+  receiptsData: ReceiptData[], 
+  dateRange: DateRange
+): ReceiptData[] => {
+  const startDate = new Date(dateRange.startDate);
+  const endDate = new Date(dateRange.endDate);
+  
+  // Set time to start of day for startDate and end of day for endDate
+  startDate.setHours(0, 0, 0, 0);
+  endDate.setHours(23, 59, 59, 999);
+  
+  return receiptsData.filter((receipt) => {
+    const receiptDate = new Date(receipt.receipt_date);
+    return receiptDate >= startDate && receiptDate <= endDate;
+  });
+};
+
+// Format date range for display
+export const formatDateRange = (dateRange: DateRange): string => {
+  const startDate = new Date(dateRange.startDate);
+  const endDate = new Date(dateRange.endDate);
+  
+  const options: Intl.DateTimeFormatOptions = { 
+    year: 'numeric', 
+    month: 'short', 
+    day: 'numeric' 
+  };
+  
+  return `${startDate.toLocaleDateString('en-US', options)} - ${endDate.toLocaleDateString('en-US', options)}`;
 };
 
 // Calculate VAT summary by nature codes

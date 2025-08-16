@@ -3,6 +3,7 @@
 
 import React, { useState, useEffect, useCallback, useMemo } from "react";
 import axios from "axios";
+import { useSearchParams } from "next/navigation";
 import type { Item, SellerInfo, BuyerInfo, FormState, WithholdingForm, ReceiptKind, ReceiptKindsResponse } from "../local-data-forms/types";
 import SellerForm from "../local-data-forms/Company/SellerForm";
 import BuyerForm from "../local-data-forms/Company/BuyerForm";
@@ -16,6 +17,7 @@ import FileUpload from "../local-data-forms/local_Receipt_Forms/FileUpload";
 import Sidebar from "../local-data-forms/local_Receipt_Forms/Sidebar";
 import FormSection from "../local-data-forms/local_Receipt_Forms/FormSection";
 import ModeSelector from "../local-data-forms/local_Receipt_Forms/ModeSelector";
+import DocumentViewer from "../localDocument/DocumentViewer";
 import { DJANGO_BASE_URL } from "../api/api";
 import { Rowdies } from "next/font/google";
 
@@ -46,6 +48,7 @@ const PAYMENT_METHODS = ["Cash", "Bank"];
 
 export default function LocalReceipt() {
   const { user, logout, token, isLoading } = useAuth();
+  const searchParams = useSearchParams();
   
   // Token validation function
   const isTokenValid = useCallback(() => {
@@ -104,6 +107,18 @@ export default function LocalReceipt() {
   const [receiptCategoriesData, setReceiptCategoriesData] = useState<any[]>([]);
   const [receiptTypesData, setReceiptTypesData] = useState<any[]>([]);
   
+  // Document viewing state
+  const [documentViewMode, setDocumentViewMode] = useState(false);
+  const [documentData, setDocumentData] = useState<{
+    documentId: string;
+    receiptNumber: string;
+    receiptDate: string;
+    mainReceiptUrl: string;
+    attachmentUrl: string;
+    withholdingReceiptUrl: string;
+    hasWithholding: boolean;
+  } | null>(null);
+  
 
 
   // Sidebar and form section management
@@ -141,6 +156,42 @@ export default function LocalReceipt() {
       setActiveSection('receipt-details');
     }
   }, [noReceiptMode, activeSection]);
+
+  // Handle URL parameters for document viewing
+  useEffect(() => {
+    const documentId = searchParams.get('documentId');
+    const receiptNumber = searchParams.get('receiptNumber');
+    const mainReceiptUrl = searchParams.get('mainReceiptUrl');
+    const attachmentUrl = searchParams.get('attachmentUrl');
+    const withholdingReceiptUrl = searchParams.get('withholdingReceiptUrl');
+    const hasWithholding = searchParams.get('hasWithholding') === 'true';
+
+    // Only enable document view mode if we have a documentId and receiptNumber
+    if (documentId && receiptNumber) {
+      setDocumentViewMode(true);
+      setDocumentData({
+        documentId,
+        receiptNumber,
+        receiptDate: '', // No longer using receiptDate from URL
+        mainReceiptUrl: mainReceiptUrl || '',
+        attachmentUrl: attachmentUrl || '',
+        withholdingReceiptUrl: withholdingReceiptUrl || '',
+        hasWithholding
+      });
+
+      // Pre-populate form with document data (only receipt number)
+      setForm(prevForm => ({
+        ...prevForm,
+        receiptNumber: receiptNumber || ''
+        // receiptDate removed - user will enter manually
+      }));
+
+      // Set withholding if applicable
+      if (hasWithholding) {
+        setWithholdingRequired('yes');
+      }
+    }
+  }, [searchParams]);
 
 
   // Memoized setter functions to prevent infinite re-renders
@@ -760,7 +811,7 @@ export default function LocalReceipt() {
           });
         } catch (uploadError) {
           console.error('File upload error:', uploadError);
-          setError("Receipt submitted successfully, but failed to upload documents. Please try again.");
+          setError("failed to upload documents. Please try again.");
           setSubmitting(false);
           return;
         }
@@ -846,10 +897,52 @@ export default function LocalReceipt() {
               noReceiptMode={noReceiptMode}
               setNoReceiptMode={setNoReceiptMode}
             />
-            {/* Main Content */}
-            <div className={`flex-1 p-4 lg:p-6 transition-all duration-300 lg:relative lg:overflow-y-auto ${!sidebarOpen ? 'lg:ml-0' : ''}`}>
-              {/* Floating toggle button when sidebar is collapsed on desktop */}
-              {!sidebarOpen && (
+            
+            {/* Main Content Area - Split when in document view mode */}
+            <div className={`flex flex-1 transition-all duration-300 ${!sidebarOpen ? 'lg:ml-0' : ''}`}>
+              {/* Document Viewer - Only shown when in document view mode */}
+              {documentViewMode && documentData && (
+                <div className="w-1/2 border-r border-gray-200 bg-white">
+                  <DocumentViewer
+                    mainReceiptUrl={documentData.mainReceiptUrl}
+                    attachmentUrl={documentData.attachmentUrl}
+                    withholdingReceiptUrl={documentData.withholdingReceiptUrl}
+                    receiptNumber={documentData.receiptNumber}
+                    receiptDate={documentData.receiptDate}
+                    hasWithholding={documentData.hasWithholding}
+                  />
+                </div>
+              )}
+              
+              {/* Form Content */}
+              <div className={`${documentViewMode ? 'w-1/2' : 'w-full'} p-4 lg:p-6 lg:relative lg:overflow-y-auto bg-gray-50`}>
+                {/* Document View Toggle - Show exit button when in document view mode */}
+                {documentViewMode && (
+                  <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <svg className="w-5 h-5 text-blue-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                        </svg>
+                        <span className="text-blue-800 font-medium">Document Viewer Active</span>
+                      </div>
+                      <button
+                        onClick={() => {
+                          setDocumentViewMode(false);
+                          setDocumentData(null);
+                          // Clear URL parameters
+                          window.history.replaceState({}, '', '/localReceipt');
+                        }}
+                        className="px-3 py-1.5 bg-blue-600 text-white rounded text-sm hover:bg-blue-700 transition-colors"
+                      >
+                        Exit Split View
+                      </button>
+                    </div>
+                  </div>
+                )}
+                
+                {/* Floating toggle button when sidebar is collapsed on desktop */}
+                {!sidebarOpen && (
                 <button
                   onClick={() => setSidebarOpen(true)}
                   className="fixed top-20 left-4 z-40 hidden lg:flex items-center justify-center w-12 h-12 bg-blue-600 text-white rounded-full shadow-lg hover:bg-blue-700 transition-colors"
@@ -1259,6 +1352,7 @@ export default function LocalReceipt() {
                   )}
                 </div>
               </form>
+              </div>
             </div>
           </div>
 

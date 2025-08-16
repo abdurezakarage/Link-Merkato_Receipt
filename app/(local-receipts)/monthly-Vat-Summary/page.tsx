@@ -6,18 +6,19 @@ import { DJANGO_BASE_URL } from '../api/api';
 import { FormReportResponse, ReceiptData } from '../local-data-forms/types';
 
 // Import types and utilities
-import { EditableValues, ManualAdjustments } from './types';
+import { EditableValues, ManualAdjustments, DateRange } from './types';
 import { 
   calculateVATSummary, 
   calculateSectionTotals, 
   getCurrentValues, 
   validateValues,
-  filterReceiptsByMonth
+  filterReceiptsByDateRange,
+  formatDateRange
 } from './utils';
 import { downloadPDF, downloadCSV } from './export-utils';
 
 // Import components
-import MonthYearFilters from './components/MonthYearFilters';
+import DateRangeFilters from './components/DateRangeFilters';
 import SummaryCards from './components/SummaryCards';
 import VATTables from './components/VATTables';
 import FinalCalculation from './components/FinalCalculation';
@@ -28,8 +29,16 @@ const MonthlySummaryPage: React.FC = () => {
   const [filteredReceipts, setFilteredReceipts] = useState<ReceiptData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [selectedMonth, setSelectedMonth] = useState<number>(new Date().getMonth() + 1);
-  const [selectedYear, setSelectedYear] = useState<number>(new Date().getFullYear());
+  
+  // Initialize with current month date range
+  const currentDate = new Date();
+  const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
+  const endOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth() + 1, 0);
+  
+  const [dateRange, setDateRange] = useState<DateRange>({
+    startDate: startOfMonth.toISOString().split('T')[0],
+    endDate: endOfMonth.toISOString().split('T')[0]
+  });
   const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
   
   // Edit mode state
@@ -53,7 +62,7 @@ const MonthlySummaryPage: React.FC = () => {
 
       if (response.data.results) {
         setReceipts(response.data.results);
-        handleFilterReceipts(response.data.results, selectedMonth, selectedYear);
+        handleFilterReceipts(response.data.results, dateRange);
       } else {
         setError('Failed to fetch receipt data');
       }
@@ -65,19 +74,14 @@ const MonthlySummaryPage: React.FC = () => {
     }
   };
 
-  const handleFilterReceipts = (receiptsData: ReceiptData[], month: number, year: number) => {
-    const filtered = filterReceiptsByMonth(receiptsData, month, year);
+  const handleFilterReceipts = (receiptsData: ReceiptData[], dateRange: DateRange) => {
+    const filtered = filterReceiptsByDateRange(receiptsData, dateRange);
     setFilteredReceipts(filtered);
   };
 
-  const handleMonthChange = (monthNumber: number) => {
-    setSelectedMonth(monthNumber);
-    handleFilterReceipts(receipts, monthNumber, selectedYear);
-  };
-
-  const handleYearChange = (year: number) => {
-    setSelectedYear(year);
-    handleFilterReceipts(receipts, selectedMonth, year);
+  const handleDateRangeChange = (newDateRange: DateRange) => {
+    setDateRange(newDateRange);
+    handleFilterReceipts(receipts, newDateRange);
   };
 
   useEffect(() => {
@@ -233,8 +237,7 @@ const MonthlySummaryPage: React.FC = () => {
   // Download handlers
   const handleDownloadPDF = () => {
     downloadPDF(
-      selectedMonth,
-      selectedYear,
+      dateRange,
       currentValues,
       vatSummary,
       sectionTotals,
@@ -246,8 +249,7 @@ const MonthlySummaryPage: React.FC = () => {
 
   const handleDownloadCSV = () => {
     downloadCSV(
-      selectedMonth,
-      selectedYear,
+      dateRange,
       vatSummary,
       totalOutputVAT,
       totalInputVAT,
@@ -271,15 +273,13 @@ const MonthlySummaryPage: React.FC = () => {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         {/* Header */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Monthly VAT Summary</h1>
+          <h1 className="text-3xl font-bold text-gray-900">VAT Summary Report</h1>
         </div>
 
         {/* Filters Section */}
-        <MonthYearFilters
-          selectedMonth={selectedMonth}
-          selectedYear={selectedYear}
-          onMonthChange={handleMonthChange}
-          onYearChange={handleYearChange}
+        <DateRangeFilters
+          dateRange={dateRange}
+          onDateRangeChange={handleDateRangeChange}
           onRefresh={fetchReceipts}
           loading={loading}
           hasUnsavedChanges={hasUnsavedChanges}

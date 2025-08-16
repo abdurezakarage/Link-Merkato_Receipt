@@ -197,7 +197,7 @@ export function Navigation() {
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 title="Go to Clerk Dashboard"
               >
-                Receipt Management
+                Receipt
               </button>
             )}
             {isAccountant && (
@@ -206,7 +206,7 @@ export function Navigation() {
                 className="text-gray-700 hover:text-blue-600 font-medium transition-colors"
                 title="Go to Accountant Dashboard"
               >
-                Accountant Dashboard
+                Accountant
               </button>
             )}
              {/* {isAdminRole && (

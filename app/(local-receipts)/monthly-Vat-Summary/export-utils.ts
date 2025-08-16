@@ -1,12 +1,11 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 import { natureCodeMappings } from './constants';
-import { formatCurrency, getMonthName } from './utils';
-import { EditableValues, VATSummaryData, SectionTotals, ManualAdjustments } from './types';
+import { formatCurrency, formatDateRange } from './utils';
+import { EditableValues, VATSummaryData, SectionTotals, ManualAdjustments, DateRange } from './types';
 
 export const downloadPDF = (
-  selectedMonth: number,
-  selectedYear: number,
+  dateRange: DateRange,
   currentValues: EditableValues,
   vatSummary: { [key: string]: VATSummaryData },
   sectionTotals: SectionTotals,
@@ -23,7 +22,7 @@ export const downloadPDF = (
   
   // Period Information
   doc.setFontSize(12);
-  doc.text(`Period: ${getMonthName(selectedMonth)} ${selectedYear}`, pageWidth / 2, 35, { align: 'center' });
+  doc.text(`Period: ${formatDateRange(dateRange)}`, pageWidth / 2, 35, { align: 'center' });
   doc.text(`Report Generated: ${new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
@@ -334,20 +333,21 @@ export const downloadPDF = (
   });
   
   // Save the PDF
-  doc.save(`VAT_Form_Structure_${getMonthName(selectedMonth)}_${selectedYear}.pdf`);
+  const startDate = new Date(dateRange.startDate).toISOString().split('T')[0];
+  const endDate = new Date(dateRange.endDate).toISOString().split('T')[0];
+  doc.save(`VAT_Form_Structure_${startDate}_to_${endDate}.pdf`);
 };
 
 export const downloadCSV = (
-  selectedMonth: number,
-  selectedYear: number,
+  dateRange: DateRange,
   vatSummary: { [key: string]: VATSummaryData },
   totalOutputVAT: number,
   totalInputVAT: number,
   vatDue: number
 ) => {
   // Create CSV content with header information
-  let csvContent = 'MONTHLY VAT SUMMARY REPORT\n';
-  csvContent += `Period: ${getMonthName(selectedMonth)} ${selectedYear}\n`;
+  let csvContent = 'VAT SUMMARY REPORT\n';
+  csvContent += `Period: ${formatDateRange(dateRange)}\n`;
   csvContent += `Report Generated: ${new Date().toLocaleDateString('en-US', { 
     year: 'numeric', 
     month: 'long', 
@@ -384,8 +384,10 @@ export const downloadCSV = (
   const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
   const link = document.createElement('a');
   const url = URL.createObjectURL(blob);
+  const startDate = new Date(dateRange.startDate).toISOString().split('T')[0];
+  const endDate = new Date(dateRange.endDate).toISOString().split('T')[0];
   link.setAttribute('href', url);
-  link.setAttribute('download', `VAT_Summary_${getMonthName(selectedMonth)}_${selectedYear}.csv`);
+  link.setAttribute('download', `VAT_Summary_${startDate}_to_${endDate}.csv`);
   link.style.visibility = 'hidden';
   document.body.appendChild(link);
   link.click();
