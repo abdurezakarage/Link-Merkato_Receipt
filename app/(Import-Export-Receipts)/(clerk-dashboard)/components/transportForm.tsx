@@ -2,7 +2,7 @@
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 interface TransportFeePayload {
   receiptnumber: string;
@@ -32,6 +32,7 @@ export default function TransportFeeForm() {
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -61,16 +62,21 @@ export default function TransportFeeForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
+    setIsSubmitting(true);
 
     if (!declarationnumber) {
       setMessage("Declaration number is required");
+      setIsSubmitting(false);
       return;
     }
 
     const token = localStorage.getItem("token");
 
     if (!token) {
-      setMessage("Authentication error: Token missing. Please log in again. ❌");
+      setMessage(
+        "Authentication error: Token missing. Please log in again. ❌"
+      );
+      setIsSubmitting(false);
       return;
     }
 
@@ -93,9 +99,11 @@ export default function TransportFeeForm() {
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-          
+
           if (response.status === 409) {
-            alert("Declaration is already taken. Please use a different one.");
+            setMessage(
+              "Declaration is already taken. Please use a different one."
+            );
           }
         } else {
           const errorText = await response.text();
@@ -104,17 +112,9 @@ export default function TransportFeeForm() {
         throw new Error(errorMessage);
       }
 
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        const successMsg = data.message || "Transport fee receipt submitted successfully! ✅";
-        setMessage(successMsg);
-      } else {
-        const successText = await response.text();
-        const successMsg = successText || "Transport fee receipt submitted successfully! ✅";
-        setMessage(successMsg);
-      }
-
+      // Handle successful response
+      // const successMsg = "Transport fee receipt submitted successfully! ✅";
+      // setMessage(successMsg);
       setFormSubmitted(true);
 
       // Reset form
@@ -132,24 +132,32 @@ export default function TransportFeeForm() {
       setIsWithholdingTaxApplicable(false);
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        const errMsg = "Network error: Could not connect to the server. ❌";
-        setMessage(errMsg);
+        setMessage("Network error: Could not connect to the server. ❌");
       } else if (error instanceof Error) {
-        const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
-        setMessage(errMsg);
-        if (!error.message.includes("Declaration is already taken")) {
-          // Handle other errors if needed
-        }
+        setMessage(`Failed to submit data. Error: ${error.message} ❌`);
       } else {
-        const errMsg = "Failed to submit data. An unknown error occurred. ❌";
-        setMessage(errMsg);
+        setMessage("Failed to submit data. An unknown error occurred. ❌");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
+        {message && (
+          <div
+            className={`mb-4 p-3 rounded ${
+              message.includes("✅")
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
+            {message}
+          </div>
+        )}
+
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -158,7 +166,10 @@ export default function TransportFeeForm() {
 
             {/* Declaration Number */}
             <div className="mb-4">
-              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+              <label
+                htmlFor="declarationnumber"
+                className="block font-medium mb-1"
+              >
                 Declaration Number
               </label>
               <input
@@ -173,7 +184,6 @@ export default function TransportFeeForm() {
               />
             </div>
 
-            {/* Rest of your form fields remain the same */}
             {/* Amount Before Tax */}
             <div className="mb-4">
               <label
@@ -281,7 +291,7 @@ export default function TransportFeeForm() {
               </>
             )}
 
-            {/* Other Receipt Details */}
+            {/* Receipt Details */}
             <div className="mb-4">
               <label htmlFor="receiptnumber" className="block font-medium mb-1">
                 Receipt Number
@@ -343,7 +353,9 @@ export default function TransportFeeForm() {
               <DatePicker
                 id="receiptdate"
                 selected={
-                  formData.receiptdate ? new Date(formData.receiptdate) : null
+                  formData.receiptdate
+                    ? parse(formData.receiptdate, "dd-MM-yyyy", new Date())
+                    : null
                 }
                 onChange={(date: Date | null) => {
                   const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
@@ -360,9 +372,12 @@ export default function TransportFeeForm() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+              disabled={isSubmitting}
+              className={`w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Submit
+              {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </form>
         ) : (
@@ -371,13 +386,10 @@ export default function TransportFeeForm() {
               ✅ Form Submitted Successfully!
             </h2>
             <button
-              onClick={() => {
-                setFormSubmitted(false);
-                setMessage(null);
-              }}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+              onClick={() => setFormSubmitted(false)}
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
             >
-              Submit Another
+              Submit Another Transport Fee
             </button>
           </div>
         )}

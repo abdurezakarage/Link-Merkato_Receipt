@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { ChevronDown, ChevronUp, Printer } from "lucide-react";
+import { ChevronDown, ChevronUp, Printer, Search } from "lucide-react";
 
 interface TaxAmountPerItem {
   dpvAmountPerDeclaration: number | null;
@@ -16,7 +16,6 @@ interface TaxAmountPerItem {
   vat: number | null;
   withholdingTax: number | null;
 }
-
 interface ItemInfo {
   bankServicePerItem: number | null;
   companyname: string;
@@ -57,6 +56,9 @@ interface TaxData {
 
 export default function AllTaxViewer() {
   const [data, setData] = useState<TaxData[]>([]);
+  const [filteredData, setFilteredData] = useState<Record<string, TaxData[]>>(
+    {}
+  );
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedDeclarations, setExpandedDeclarations] = useState<
@@ -68,6 +70,7 @@ export default function AllTaxViewer() {
   const [lastExpandedDeclaration, setLastExpandedDeclaration] = useState<
     string | null
   >(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   useEffect(() => {
     const fetchData = async () => {
@@ -82,7 +85,10 @@ export default function AllTaxViewer() {
           }
         );
         setData(res.data);
-        console.log(res.data);
+
+        // Initialize filtered data with all data
+        const grouped = groupDataByCompany(res.data);
+        setFilteredData(grouped);
 
         // Initialize all declarations as collapsed
         const initialExpandedState = res.data.reduce((acc, item) => {
@@ -92,13 +98,7 @@ export default function AllTaxViewer() {
         setExpandedDeclarations(initialExpandedState);
 
         // Initialize all companies as collapsed
-        const uniqueCompanies = [
-          ...new Set(
-            res.data.map(
-              (item) => item.iteminfo[0]?.companyname || "Unknown Company"
-            )
-          ),
-        ];
+        const uniqueCompanies = Object.keys(grouped);
         const initialCompanyState = uniqueCompanies.reduce((acc, company) => {
           acc[company] = false;
           return acc;
@@ -113,6 +113,33 @@ export default function AllTaxViewer() {
     };
     fetchData();
   }, []);
+
+  // Helper function to group data by company
+  const groupDataByCompany = (data: TaxData[]) => {
+    return data.reduce((acc, declaration) => {
+      const companyName =
+        declaration.iteminfo[0]?.companyname || "Unknown Company";
+      if (!acc[companyName]) {
+        acc[companyName] = [];
+      }
+      acc[companyName].push(declaration);
+      return acc;
+    }, {} as Record<string, TaxData[]>);
+  };
+
+  // Filter data based on search term
+  useEffect(() => {
+    if (searchTerm.trim() === "") {
+      setFilteredData(groupDataByCompany(data));
+    } else {
+      const filtered = data.filter((declaration) =>
+        declaration.declarationNumber
+          .toLowerCase()
+          .includes(searchTerm.toLowerCase())
+      );
+      setFilteredData(groupDataByCompany(filtered));
+    }
+  }, [searchTerm, data]);
 
   const toggleDeclaration = (declarationNumber: string) => {
     setExpandedDeclarations((prev) => {
@@ -143,17 +170,6 @@ export default function AllTaxViewer() {
       [companyName]: !prev[companyName],
     }));
   };
-
-  // Group data by company name
-  const groupedData = data.reduce((acc, declaration) => {
-    const companyName =
-      declaration.iteminfo[0]?.companyname || "Unknown Company";
-    if (!acc[companyName]) {
-      acc[companyName] = [];
-    }
-    acc[companyName].push(declaration);
-    return acc;
-  }, {} as Record<string, TaxData[]>);
 
   const printDeclaration = (declarationNumber: string) => {
     const printWindow = window.open("", "", "width=900,height=650");
@@ -317,11 +333,43 @@ export default function AllTaxViewer() {
 
   return (
     <div className="p-4 space-y-6 max-w-7xl mx-auto">
-      <h1 className="text-2xl font-bold text-gray-800 mb-6">
-        Tax Declarations by Company
-      </h1>
+      <h1 className="text-2xl font-bold text-gray-800 mb-6">Tax Information</h1>
 
-      {Object.entries(groupedData).map(([companyName, declarations]) => (
+      {/* Search Bar */}
+      <div className="relative max-w-md mb-6">
+        <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+          <Search className="h-5 w-5 text-gray-400" />
+        </div>
+        <input
+          type="text"
+          className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+          placeholder="Search by declaration number..."
+          value={searchTerm}
+          onChange={(e) => setSearchTerm(e.target.value)}
+        />
+        {searchTerm && (
+          <button
+            onClick={() => setSearchTerm("")}
+            className="absolute inset-y-0 right-0 pr-3 flex items-center"
+          >
+            <svg
+              className="h-4 w-4 text-gray-400"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M6 18L18 6M6 6l12 12"
+              />
+            </svg>
+          </button>
+        )}
+      </div>
+
+      {Object.entries(filteredData).map(([companyName, declarations]) => (
         <div
           key={companyName}
           className="border rounded-lg shadow-sm bg-white overflow-hidden"
@@ -338,10 +386,6 @@ export default function AllTaxViewer() {
               <div>
                 <p className="text-sm text-gray-600">
                   {declarations.length} declaration(s) • Total:{" "}
-                  {declarations
-                    .reduce((sum, dec) => sum + (dec.grandTotalInETB || 0), 0)
-                    ?.toLocaleString()}{" "}
-                  ETB
                 </p>
               </div>
             </div>
@@ -374,8 +418,7 @@ export default function AllTaxViewer() {
                       </div>
                       <div>
                         <p className="text-sm text-gray-600">
-                          {declaration.iteminfo.length} item(s) • Total:{" "}
-                          {declaration.grandTotalInETB?.toLocaleString()} ETB
+                          {declaration.iteminfo.length} item(s){" "}
                         </p>
                       </div>
                     </div>
@@ -427,7 +470,7 @@ export default function AllTaxViewer() {
                                 </div>
                                 <div className="flex justify-between py-1 border-b border-blue-100">
                                   <span className="text-gray-600 text-xs">
-                                    Total Tax:
+                                    Total custom Tax:
                                   </span>
                                   <span className="font-medium text-xs">
                                     {declaration.totalTaxPerDeclaration?.toLocaleString()}{" "}
@@ -436,34 +479,17 @@ export default function AllTaxViewer() {
                                 </div>
                                 <div className="flex justify-between py-1">
                                   <span className="text-gray-600 text-xs">
-                                    Total VAT:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalVatPerDeclaration?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-
-                            {/* Taxes Card */}
-                            <div className="bg-green-50 p-3 rounded-lg border border-green-100 min-w-[250px]">
-                              <h3 className="font-medium text-green-800 text-sm mb-2">
-                                Tax Breakdown
-                              </h3>
-                              <div className="space-y-1">
-                                <div className="flex justify-between py-1 border-b border-green-100">
-                                  <span className="text-gray-600 text-xs">
-                                    Duty Tax:
+                                    Total duty Tax:
                                   </span>
                                   <span className="font-medium text-xs">
                                     {declaration.totaldutyTax?.toLocaleString()}{" "}
                                     ETB
                                   </span>
                                 </div>
-                                <div className="flex justify-between py-1 border-b border-green-100">
+
+                                <div className="flex justify-between py-1">
                                   <span className="text-gray-600 text-xs">
-                                    Excise Tax:
+                                    Total exciseTax:
                                   </span>
                                   <span className="font-medium text-xs">
                                     {declaration.totalexciseTax?.toLocaleString()}{" "}
@@ -472,10 +498,82 @@ export default function AllTaxViewer() {
                                 </div>
                                 <div className="flex justify-between py-1">
                                   <span className="text-gray-600 text-xs">
-                                    Social Welfare:
+                                    Total surtax:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalsurtax?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total socialWelfareTax:
                                   </span>
                                   <span className="font-medium text-xs">
                                     {declaration.totalsocialWelfareTax?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total vat:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalvat?.toLocaleString()} ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total withholdingTax:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalwithholdingTax?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total scanningFee:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalscanningFee?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total scanningFeeVAT:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalscanningFeeVAT?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total dpv Amount Per Declaration :
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totaldpvAmountPerDeclaration?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total Withholding:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalWithholding?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
+
+                                <div className="flex justify-between py-1">
+                                  <span className="text-gray-600 text-xs">
+                                    Total WareHouseFee:
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalWareHouseFee?.toLocaleString()}{" "}
                                     ETB
                                   </span>
                                 </div>
@@ -515,6 +613,16 @@ export default function AllTaxViewer() {
                                     ETB
                                   </span>
                                 </div>
+
+                                <div className="flex justify-between py-1 border-b border-purple-100">
+                                  <span className="text-gray-600 text-xs">
+                                    transport Fee Per Item :
+                                  </span>
+                                  <span className="font-medium text-xs">
+                                    {declaration.totalTransportFee?.toLocaleString()}{" "}
+                                    ETB
+                                  </span>
+                                </div>
                               </div>
                             </div>
                           </div>
@@ -537,7 +645,7 @@ export default function AllTaxViewer() {
                             <thead className="bg-gray-50">
                               <tr>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Description
+                                  Item
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   HS Code
@@ -591,8 +699,8 @@ export default function AllTaxViewer() {
                           <h3 className="text-sm font-semibold text-gray-800 mb-2">
                             Tax Details
                           </h3>
-                          <div className="overflow-x-auto">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-w-[800px]">
+                          <div className="overflow-x-auto ">
+                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-w-[800px] ">
                               {declaration.iteminfo.flatMap((item) =>
                                 item.taxAmountPerItem?.map((tax, index) =>
                                   Object.entries(tax).map(
@@ -600,14 +708,14 @@ export default function AllTaxViewer() {
                                       value !== null && (
                                         <div
                                           key={`${key}-${index}`}
-                                          className="bg-white p-2 rounded-lg border border-gray-200 shadow-xs min-w-[200px]"
+                                          className="bg-red-50 p-2 rounded-lg border border-gray-800 shadow-xs min-w-[200px]"
                                         >
-                                          <h4 className="font-medium text-gray-700 capitalize text-xs mb-1">
+                                          <h4 className="font-medium text-black-700 capitalize text-xs mb-1">
                                             {key
                                               .replace(/([A-Z])/g, " $1")
                                               .trim()}
                                           </h4>
-                                          <p className="text-gray-900 font-semibold text-xs">
+                                          <p className="text-black-900 font-bold text-xs">
                                             {typeof value === "number"
                                               ? value.toLocaleString()
                                               : value || "N/A"}{" "}
@@ -630,6 +738,13 @@ export default function AllTaxViewer() {
           )}
         </div>
       ))}
+
+      {/* Show message when no results found */}
+      {searchTerm && Object.keys(filteredData).length === 0 && (
+        <div className="p-6 text-center text-gray-500">
+          No declarations found matching "{searchTerm}"
+        </div>
+      )}
     </div>
   );
 }

@@ -26,10 +26,11 @@ export default function BankServiceFeeForm() {
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (name === "declarationnumber") {
       setDeclarationNumber(value);
       if (isDuplicate) {
@@ -40,13 +41,13 @@ export default function BankServiceFeeForm() {
       if (type === "number") {
         const numValue = value === "" ? 0 : parseFloat(value);
         if (!isNaN(numValue)) {
-          setFormData(prev => ({
+          setFormData((prev) => ({
             ...prev,
             [name]: numValue,
           }));
         }
       } else {
-        setFormData(prev => ({
+        setFormData((prev) => ({
           ...prev,
           [name]: value,
         }));
@@ -54,40 +55,22 @@ export default function BankServiceFeeForm() {
     }
   };
 
-  const parseResponse = async (response: Response) => {
-    const contentType = response.headers.get("content-type");
-    
-    try {
-      if (contentType?.includes("application/json")) {
-        return await response.json();
-      } else {
-        const text = await response.text();
-        // Try to parse as JSON anyway in case content-type is missing
-        try {
-          return JSON.parse(text);
-        } catch {
-          return { message: text };
-        }
-      }
-    } catch (error) {
-      console.error("Error parsing response:", error);
-      return { message: "Unable to parse server response" };
-    }
-  };
-
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
     setIsDuplicate(false);
-    
+    setIsSubmitting(true);
+
     if (!declarationnumber) {
       setMessage("Declaration number is required");
+      setIsSubmitting(false);
       return;
     }
 
     const token = localStorage.getItem("token");
     if (!token) {
       setMessage("Authentication error: Please log in again. ❌");
+      setIsSubmitting(false);
       return;
     }
 
@@ -104,20 +87,31 @@ export default function BankServiceFeeForm() {
         }
       );
 
-      const result = await parseResponse(response);
-
       if (!response.ok) {
-        if (response.status === 409 || result.message?.toLowerCase().includes("already exists")) {
-          setMessage("This declaration number already exists. Please use a different one. ❌");
-          setIsDuplicate(true);
-          const input = document.getElementById("declarationnumber");
-          input?.classList.add("border-red-500", "ring-2", "ring-red-200");
-          return;
+        const contentType = response.headers.get("content-type");
+        let errorMessage = `HTTP error! status: ${response.status}`;
+
+        if (contentType?.includes("application/json")) {
+          const errorData = await response.json();
+          errorMessage = errorData.message || errorMessage;
+
+          if (
+            response.status === 409 ||
+            errorMessage.toLowerCase().includes("already exists")
+          ) {
+            setMessage(
+              "This declaration number already exists. Please use a different one. ❌"
+            );
+            setIsDuplicate(true);
+            setIsSubmitting(false);
+            const input = document.getElementById("declarationnumber");
+            input?.classList.add("border-red-500", "ring-2", "ring-red-200");
+            return;
+          }
         }
-        throw new Error(result.message || `HTTP error! status: ${response.status}`);
+        throw new Error(errorMessage);
       }
 
-      setMessage(result.message || "Bank permit details submitted successfully! ✅");
       setFormSubmitted(true);
 
       // Reset form
@@ -131,28 +125,33 @@ export default function BankServiceFeeForm() {
         bankservice: 0,
       });
       setDeclarationNumber("");
-
     } catch (error) {
       console.error("Submission error:", error);
-      
+
       let errorMessage = "An unknown error occurred. ❌";
       if (error instanceof Error) {
-        errorMessage = error.message.includes("Failed to fetch") 
+        errorMessage = error.message.includes("Failed to fetch")
           ? "Network error. Please check your connection. ❌"
           : `Error: ${error.message} ❌`;
       }
-      
+
       setMessage(errorMessage);
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white p-6 rounded shadow text-black">
+      <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
-          <div className={`mb-4 p-3 rounded ${
-            message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          }`}>
+          <div
+            className={`mb-4 p-3 rounded ${
+              message.includes("✅")
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {message}
           </div>
         )}
@@ -165,7 +164,10 @@ export default function BankServiceFeeForm() {
 
             {/* Declaration Number */}
             <div className="mb-4">
-              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+              <label
+                htmlFor="declarationnumber"
+                className="block font-medium mb-1"
+              >
                 Declaration Number
               </label>
               <input
@@ -175,7 +177,9 @@ export default function BankServiceFeeForm() {
                 value={declarationnumber}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  isDuplicate ? "border-red-500 ring-2 ring-red-200" : "border-gray-300"
+                  isDuplicate
+                    ? "border-red-500 ring-2 ring-red-200"
+                    : "border-gray-300"
                 }`}
                 placeholder="D123456"
                 required
@@ -217,7 +221,10 @@ export default function BankServiceFeeForm() {
 
             <div className="grid grid-cols-1 gap-4 mb-4">
               <div>
-                <label htmlFor="permitamount" className="block font-medium mb-1">
+                <label
+                  htmlFor="permitamount"
+                  className="block font-medium mb-1"
+                >
                   Permit Amount
                 </label>
                 <input
@@ -279,7 +286,10 @@ export default function BankServiceFeeForm() {
               </div>
 
               <div>
-                <label htmlFor="bankpermitdate" className="block font-medium mb-1">
+                <label
+                  htmlFor="bankpermitdate"
+                  className="block font-medium mb-1"
+                >
                   Permit Date
                 </label>
                 <input
@@ -296,9 +306,12 @@ export default function BankServiceFeeForm() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+              disabled={isSubmitting}
+              className={`w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 ${
+                isSubmitting ? "opacity-70 cursor-not-allowed" : ""
+              }`}
             >
-              Submit
+              {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </form>
         ) : (
@@ -311,7 +324,7 @@ export default function BankServiceFeeForm() {
                 setFormSubmitted(false);
                 setMessage(null);
               }}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded-md hover:bg-blue-700 transition"
             >
               Submit Another
             </button>

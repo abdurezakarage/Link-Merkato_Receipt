@@ -2,7 +2,7 @@
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 interface WarehouseFeePayload {
   receiptnumber: string;
@@ -32,6 +32,8 @@ export default function WarehouseFeeForm() {
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -40,6 +42,10 @@ export default function WarehouseFeeForm() {
 
     if (name === "declarationnumber") {
       setDeclarationNumber(value);
+      if (isDuplicate) {
+        setIsDuplicate(false);
+        e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
+      }
     } else if (name === "isWithholdingTaxApplicable") {
       const isApplicable = value === "Yes";
       setIsWithholdingTaxApplicable(isApplicable);
@@ -61,16 +67,22 @@ export default function WarehouseFeeForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
+    setIsSubmitting(true);
+    setIsDuplicate(false);
 
     if (!declarationnumber) {
       setMessage("Declaration number is required");
+      setIsSubmitting(false);
       return;
     }
 
     const token = localStorage.getItem("token");
 
     if (!token) {
-      setMessage("Authentication error: Token missing. Please log in again. ❌");
+      setMessage(
+        "Authentication error: Token missing. Please log in again. ❌"
+      );
+      setIsSubmitting(false);
       return;
     }
 
@@ -93,9 +105,19 @@ export default function WarehouseFeeForm() {
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-          
-          if (response.status === 409) {
-            alert("Declaration is already taken. Please use a different one.");
+
+          if (
+            response.status === 409 ||
+            errorMessage.toLowerCase().includes("already exists")
+          ) {
+            setMessage(
+              "This declaration number already exists. Please use a different one. ❌"
+            );
+            setIsDuplicate(true);
+            const input = document.getElementById("declarationnumber");
+            input?.classList.add("border-red-500", "ring-2", "ring-red-200");
+            setIsSubmitting(false);
+            return;
           }
         } else {
           const errorText = await response.text();
@@ -104,14 +126,8 @@ export default function WarehouseFeeForm() {
         throw new Error(errorMessage);
       }
 
-      const contentType = response.headers.get("content-type");
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-       
-      } else {
-        const successText = await response.text();
-      }
-
+      const successMsg = "Warehouse fee receipt submitted successfully! ✅";
+      setMessage(successMsg);
       setFormSubmitted(true);
 
       // Reset form
@@ -129,29 +145,32 @@ export default function WarehouseFeeForm() {
       setIsWithholdingTaxApplicable(false);
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        const errMsg = "Network error: Could not connect to the server. ❌";
-        setMessage(errMsg);
+        setMessage("Network error: Could not connect to the server. ❌");
       } else if (error instanceof Error) {
-        const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
-        setMessage(errMsg);
-        if (!error.message.includes("Declaration is already taken")) {
-          // Handle other errors if needed
-        }
+        setMessage(`Failed to submit data. Error: ${error.message} ❌`);
       } else {
-        const errMsg = "Failed to submit data. An unknown error occurred. ❌";
-        setMessage(errMsg);
+        setMessage("Failed to submit data. An unknown error occurred. ❌");
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white p-6 rounded shadow text-black">
+      <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
-          <div className={`mb-4 p-3 rounded ${message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"}`}>
+          <div
+            className={`mb-4 p-3 rounded ${
+              message.includes("✅")
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {message}
           </div>
         )}
+
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -159,8 +178,11 @@ export default function WarehouseFeeForm() {
             </h2>
 
             {/* Declaration Number */}
-            <div className="mb-4 ">
-              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+            <div className="mb-4">
+              <label
+                htmlFor="declarationnumber"
+                className="block font-medium mb-1"
+              >
                 Declaration Number
               </label>
               <input
@@ -169,7 +191,11 @@ export default function WarehouseFeeForm() {
                 name="declarationnumber"
                 value={declarationnumber}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className={`w-full border rounded px-3 py-2 ${
+                  isDuplicate
+                    ? "border-red-500 ring-2 ring-red-200"
+                    : "border-gray-300"
+                }`}
                 placeholder="D123456"
                 required
               />
@@ -191,7 +217,7 @@ export default function WarehouseFeeForm() {
                   formData.amountbeforetax === 0 ? "" : formData.amountbeforetax
                 }
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="1000.00"
                 required
               />
@@ -210,7 +236,7 @@ export default function WarehouseFeeForm() {
                 name="isWithholdingTaxApplicable"
                 value={isWithholdingTaxApplicable ? "Yes" : "No"}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
@@ -237,7 +263,7 @@ export default function WarehouseFeeForm() {
                         : formData.withholdingamount
                     }
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="500.00"
                     required
                   />
@@ -256,7 +282,7 @@ export default function WarehouseFeeForm() {
                     name="withholdingtaxreceiptno"
                     value={formData.withholdingtaxreceiptno}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="WHT-789"
                     required
                   />
@@ -275,14 +301,14 @@ export default function WarehouseFeeForm() {
                     name="withholdingtaxReceiptdate"
                     value={formData.withholdingtaxReceiptdate}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     required
                   />
                 </div>
               </>
             )}
 
-            {/* Other Receipt Details */}
+            {/* Receipt Details */}
             <div className="mb-4">
               <label htmlFor="receiptnumber" className="block font-medium mb-1">
                 Receipt Number
@@ -293,7 +319,7 @@ export default function WarehouseFeeForm() {
                 name="receiptnumber"
                 value={formData.receiptnumber}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="R123456"
                 required
               />
@@ -312,7 +338,7 @@ export default function WarehouseFeeForm() {
                 name="receiptmachinenumber"
                 value={formData.receiptmachinenumber}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="M98765"
                 required
               />
@@ -331,7 +357,7 @@ export default function WarehouseFeeForm() {
                 name="receiptcalendar"
                 value={formData.receiptcalendar}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Gregorian"
                 required
               />
@@ -344,7 +370,9 @@ export default function WarehouseFeeForm() {
               <DatePicker
                 id="receiptdate"
                 selected={
-                  formData.receiptdate ? new Date(formData.receiptdate) : null
+                  formData.receiptdate
+                    ? parse(formData.receiptdate, "dd-MM-yyyy", new Date())
+                    : null
                 }
                 onChange={(date: Date | null) => {
                   const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
@@ -355,15 +383,18 @@ export default function WarehouseFeeForm() {
                 }}
                 dateFormat="dd/MM/yyyy"
                 placeholderText="dd/mm/yyyy"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+              disabled={isSubmitting}
+              className={`w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Submit
+              {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </form>
         ) : (
@@ -376,7 +407,7 @@ export default function WarehouseFeeForm() {
                 setFormSubmitted(false);
                 setMessage(null);
               }}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
             >
               Submit Another
             </button>

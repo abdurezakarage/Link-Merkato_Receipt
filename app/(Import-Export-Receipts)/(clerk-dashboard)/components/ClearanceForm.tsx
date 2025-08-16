@@ -2,7 +2,7 @@
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent } from "react";
-import { format } from "date-fns";
+import { format, parse } from "date-fns";
 
 interface ClearanceFeePayload {
   receiptnumber: string;
@@ -32,6 +32,7 @@ export default function ClearanceFeeForm() {
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // Moved inside component
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -61,16 +62,21 @@ export default function ClearanceFeeForm() {
   const handleSubmit = async (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     setMessage(null);
+    setIsSubmitting(true);
 
     if (!declarationnumber) {
       setMessage("Declaration number is required");
+      setIsSubmitting(false);
       return;
     }
 
     const token = localStorage.getItem("token");
 
     if (!token) {
-      setMessage("Authentication error: Token missing. Please log in again. ❌");
+      setMessage(
+        "Authentication error: Token missing. Please log in again. ❌"
+      );
+      setIsSubmitting(false);
       return;
     }
 
@@ -93,7 +99,7 @@ export default function ClearanceFeeForm() {
         if (contentType && contentType.includes("application/json")) {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
-          
+
           if (response.status === 409) {
             alert("Declaration is already taken. Please use a different one.");
           }
@@ -105,16 +111,17 @@ export default function ClearanceFeeForm() {
       }
 
       const contentType = response.headers.get("content-type");
+      let successMsg = "Clearance fee receipt submitted successfully! ✅";
+
       if (contentType && contentType.includes("application/json")) {
         const data = await response.json();
-        const successMsg = data.message || "Clearance fee receipt submitted successfully! ✅";
-        setMessage(successMsg);
+        successMsg = data.message || successMsg;
       } else {
         const successText = await response.text();
-        const successMsg = successText || "Clearance fee receipt submitted successfully! ✅";
-        setMessage(successMsg);
+        successMsg = successText || successMsg;
       }
 
+      setMessage(successMsg);
       setFormSubmitted(true);
 
       // Reset form
@@ -137,29 +144,30 @@ export default function ClearanceFeeForm() {
       } else if (error instanceof Error) {
         const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
         setMessage(errMsg);
-        if (!error.message.includes("Declaration is already taken")) {
-          // Handle other errors if needed
-        }
       } else {
         const errMsg = "Failed to submit data. An unknown error occurred. ❌";
         setMessage(errMsg);
       }
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white p-6 rounded shadow text-black">
+      <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
-          <div className={`mb-4 p-3 rounded ${
-            message.includes("✅")
-              ? "bg-green-100 text-green-700"
-              : "bg-red-100 text-red-700"
-          }`}>
+          <div
+            className={`mb-4 p-3 rounded ${
+              message.includes("✅")
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {message}
           </div>
         )}
-        
+
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
@@ -168,7 +176,10 @@ export default function ClearanceFeeForm() {
 
             {/* Declaration Number */}
             <div className="mb-4">
-              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+              <label
+                htmlFor="declarationnumber"
+                className="block font-medium mb-1"
+              >
                 Declaration Number
               </label>
               <input
@@ -185,14 +196,19 @@ export default function ClearanceFeeForm() {
 
             {/* Amount Before Tax */}
             <div className="mb-4">
-              <label htmlFor="amountbeforetax" className="block font-medium mb-1">
+              <label
+                htmlFor="amountbeforetax"
+                className="block font-medium mb-1"
+              >
                 Amount Before Tax
               </label>
               <input
                 type="number"
                 id="amountbeforetax"
                 name="amountbeforetax"
-                value={formData.amountbeforetax === 0 ? "" : formData.amountbeforetax}
+                value={
+                  formData.amountbeforetax === 0 ? "" : formData.amountbeforetax
+                }
                 onChange={handleChange}
                 className="w-full border rounded px-3 py-2"
                 placeholder="1000.00"
@@ -234,7 +250,11 @@ export default function ClearanceFeeForm() {
                     type="number"
                     id="withholdingamount"
                     name="withholdingamount"
-                    value={formData.withholdingamount === 0 ? "" : formData.withholdingamount}
+                    value={
+                      formData.withholdingamount === 0
+                        ? ""
+                        : formData.withholdingamount
+                    }
                     onChange={handleChange}
                     className="w-full border rounded px-3 py-2"
                     placeholder="500.00"
@@ -343,7 +363,9 @@ export default function ClearanceFeeForm() {
               <DatePicker
                 id="receiptdate"
                 selected={
-                  formData.receiptdate ? new Date(formData.receiptdate) : null
+                  formData.receiptdate
+                    ? parse(formData.receiptdate, "dd-MM-yyyy", new Date())
+                    : null
                 }
                 onChange={(date: Date | null) => {
                   const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
@@ -360,9 +382,12 @@ export default function ClearanceFeeForm() {
 
             <button
               type="submit"
-              className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
+              disabled={isSubmitting}
+              className={`w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition ${
+                isSubmitting ? "opacity-50 cursor-not-allowed" : ""
+              }`}
             >
-              Submit
+              {isSubmitting ? "Submitting..." : "Submit"}
             </button>
           </form>
         ) : (
@@ -371,13 +396,10 @@ export default function ClearanceFeeForm() {
               ✅ Form Submitted Successfully!
             </h2>
             <button
-              onClick={() => {
-                setFormSubmitted(false);
-                setMessage(null);
-              }}
-              className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700 transition"
+              onClick={() => setFormSubmitted(false)}
+              className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
             >
-              Submit Another
+              Submit Another Clearance
             </button>
           </div>
         )}

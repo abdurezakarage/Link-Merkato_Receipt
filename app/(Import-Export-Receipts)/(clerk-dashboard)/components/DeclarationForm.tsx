@@ -3,20 +3,22 @@
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 
+import PreviewModal from "../declaration/preview/PreviewModal";
+
 // --- Type Definitions ---
 type TaxDto = {
   name: string;
-  value: number; // Stores decimal value (e.g., 0.15 for 15%)
+  value: number | null; // Changed to allow null for empty state
   codename: string;
-  percentage?: number; // Optional field for display purposes
+  percentage?: number | null; // Changed to allow null for empty state
 };
 
 type ItemManagementDto = {
   hscode: string;
   itemdescription: string;
   unitofmeasurement: string;
-  quantity: number;
-  unitCost: number;
+  quantity: number | null; // Changed to allow null for empty state
+  unitCost: number | null; // Changed to allow null for empty state
   taxApplicationdto: TaxDto[];
 };
 
@@ -24,42 +26,60 @@ type FormData = {
   custombranchname: string;
   declarationnumber: string;
   declarationdispensedate: string;
-  fobamountusdt: number;
-  exchangerate: number;
-  externalfreight: number;
-  insuranceCost: number;
-  inlandfreight1: number;
-  djibouticost: number;
-  othercost1: number;
+  fobamountusdt: number | null;
+  exchangerate: number | null;
+  externalfreight: number | null;
+  insuranceCost: number | null;
+  inlandfreight1: number | null;
+  djibouticost: number | null;
+  othercost1: number | null;
   itemManagementdto: ItemManagementDto[];
   taxApplicationdto: TaxDto[];
 };
 
 // --- Tax Options --
 const TAX_OPTIONS = [
-  { name: "DutyTax", value: 0.1, codename: "DutyTax", percentage: 10 },
-  { name: "ExciseTax", value: 0.1, codename: "ExciseTax", percentage: 10 },
-  { name: "Surtax", value: 0.02, codename: "Surtax", percentage: 2 },
+  { name: "DutyTax", value: 0.15, codename: "DutyTax", percentage: 15 },
+  { name: "ExciseTax", value: 0.15, codename: "ExciseTax", percentage: 15 },
+  { name: "Surtax", value: 0.1, codename: "Surtax", percentage: 10 },
   {
     name: "SocialWelfareTax",
-    value: 0.01,
+    value: 0.03,
     codename: "SocialWelfareTax",
-    percentage: 1,
+    percentage: 3,
   },
   { name: "VAT", value: 0.15, codename: "VAT", percentage: 15 },
   {
     name: "WITHHOLDINGTAX",
-    value: 0.02,
+    value: 0.03,
     codename: "WITHHOLDINGTAX",
-    percentage: 2,
+    percentage: 3,
   },
-  { name: "ScanningFee", value: 100.0, codename: "ScanningFee" },
+  {
+    name: "ScanningFee",
+    value: 0.0007,
+    codename: "ScanningFee",
+    percentage: 0.07,
+  },
   {
     name: "ScanningFeeVAT",
     value: 0.15,
     codename: "ScanningFeeVAT",
     percentage: 15,
   },
+];
+
+// Standard unit of measurement options
+const UNIT_OPTIONS = [
+  "PCS",
+  "KG",
+  "L",
+  "M",
+  "BOX",
+  "PAIR",
+  "SET",
+  "CARTON",
+  "OTHER",
 ];
 
 // --- Helper Components ---
@@ -93,7 +113,7 @@ function InputField({
         type={type}
         name={name}
         id={name}
-        value={value}
+        value={value === null ? "" : value}
         onChange={onChange}
         className="border border-gray-300 rounded px-3 py-2 text-sm w-full"
         required={required}
@@ -102,6 +122,30 @@ function InputField({
         step={step}
       />
     </div>
+  );
+}
+
+function UnitOfMeasurementDropdown({
+  value,
+  onChange,
+}: {
+  value: string;
+  onChange: (e: React.ChangeEvent<HTMLSelectElement>) => void;
+}) {
+  return (
+    <select
+      value={value}
+      onChange={onChange}
+      className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
+      required
+    >
+      <option value="">Select Unit</option>
+      {UNIT_OPTIONS.map((unit) => (
+        <option key={unit} value={unit}>
+          {unit}
+        </option>
+      ))}
+    </select>
   );
 }
 
@@ -156,11 +200,19 @@ function ItemRow({
     e: React.ChangeEvent<HTMLInputElement>
   ) => {
     const inputValue = e.target.value;
-    const percentageValue = inputValue === "" ? 0 : parseFloat(inputValue);
-    const decimalValue = percentageValue / 100;
+    const percentageValue = inputValue === "" ? null : parseFloat(inputValue);
+    const decimalValue =
+      percentageValue === null ? null : percentageValue / 100;
 
     handleTaxChange(itemIndex, taxIndex, "value", decimalValue);
     handleTaxChange(itemIndex, taxIndex, "percentage", percentageValue);
+  };
+
+  const handleUnitChange = (
+    e: React.ChangeEvent<HTMLSelectElement>,
+    itemIndex: number
+  ) => {
+    handleItemChange(itemIndex, "unitofmeasurement", e.target.value);
   };
 
   return (
@@ -187,22 +239,33 @@ function ItemRow({
           />
         </td>
         <td className="px-2 py-1 border border-gray-200">
-          <input
-            type="text"
+          <UnitOfMeasurementDropdown
             value={item.unitofmeasurement}
-            onChange={(e) =>
-              handleItemChange(index, "unitofmeasurement", e.target.value)
-            }
-            className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
-            required
+            onChange={(e) => handleUnitChange(e, index)}
           />
+          {item.unitofmeasurement === "OTHER" && (
+            <input
+              type="text"
+              value={item.unitofmeasurement}
+              onChange={(e) =>
+                handleItemChange(index, "unitofmeasurement", e.target.value)
+              }
+              className="w-full border border-gray-300 rounded px-2 py-1 text-xs mt-1"
+              placeholder="Specify unit"
+              required
+            />
+          )}
         </td>
         <td className="px-2 py-1 border border-gray-200">
           <input
             type="number"
-            value={item.quantity}
+            value={item.quantity === null ? "" : item.quantity}
             onChange={(e) =>
-              handleItemChange(index, "quantity", Number(e.target.value))
+              handleItemChange(
+                index,
+                "quantity",
+                e.target.value === "" ? null : Number(e.target.value)
+              )
             }
             className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
             required
@@ -213,12 +276,12 @@ function ItemRow({
         <td className="px-2 py-1 border border-gray-200">
           <input
             type="number"
-            value={item.unitCost}
+            value={item.unitCost === null ? "" : item.unitCost}
             onChange={(e) =>
               handleItemChange(
                 index,
                 "unitCost",
-                parseFloat(e.target.value) || 0
+                e.target.value === "" ? null : parseFloat(e.target.value)
               )
             }
             className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
@@ -265,7 +328,7 @@ function ItemRow({
             <div className="flex items-center">
               <input
                 type="number"
-                value={tax.percentage ?? ""}
+                value={tax.percentage === null ? "" : tax.percentage}
                 onChange={(e) => handleTaxPercentageChange(index, taxIndex, e)}
                 className="w-full border border-gray-300 rounded px-2 py-1 text-xs"
                 required
@@ -319,24 +382,35 @@ export default function DeclarationForm() {
     custombranchname: "",
     declarationnumber: "",
     declarationdispensedate: "",
-    fobamountusdt: 0,
-    exchangerate: 0,
-    externalfreight: 0,
-    insuranceCost: 0,
-    inlandfreight1: 0,
-    djibouticost: 0,
-    othercost1: 0,
+    fobamountusdt: null,
+    exchangerate: null,
+    externalfreight: null,
+    insuranceCost: null,
+    inlandfreight1: null,
+    djibouticost: null,
+    othercost1: null,
     itemManagementdto: [],
     taxApplicationdto: [],
   });
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [showPreview, setShowPreview] = useState(false);
 
   const handleTinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const value = e.target.value;
-    if (/^\d{0,15}$/.test(value)) {
+    if (/^\d{0,10}$/.test(value)) {
       setTinNumber(value);
+    }
+  };
+
+  const handlePreview = () => {
+    try {
+      validateForm(); // Validate before showing preview
+      setShowPreview(true);
+      setError("");
+    } catch (err: any) {
+      setError(err.message);
     }
   };
 
@@ -348,11 +422,17 @@ export default function DeclarationForm() {
         name.includes("amount") ||
         name.includes("Cost") ||
         name.includes("rate")
-          ? parseFloat(value) || 0
+          ? value === ""
+            ? null
+            : parseFloat(value)
           : value,
     });
   };
 
+  const handleEditSave = (editedData: FormData) => {
+    setFormData(editedData);
+    setShowPreview(false); // Optionally close the modal after saving
+  };
   const handleItemChange = (
     index: number,
     field: keyof Omit<ItemManagementDto, "taxes">,
@@ -363,9 +443,13 @@ export default function DeclarationForm() {
       ...newItems[index],
       [field]:
         field === "quantity"
-          ? Math.max(1, Number(value))
+          ? value === ""
+            ? null
+            : Math.max(1, Number(value))
           : field === "unitCost"
-          ? parseFloat(value) || 0
+          ? value === ""
+            ? null
+            : parseFloat(value)
           : value,
     };
     setFormData({ ...formData, itemManagementdto: newItems });
@@ -380,7 +464,8 @@ export default function DeclarationForm() {
     const newItems = [...formData.itemManagementdto];
     newItems[itemIndex].taxApplicationdto[taxIndex] = {
       ...newItems[itemIndex].taxApplicationdto[taxIndex],
-      [field]: field === "value" ? parseFloat(value) || 0 : value,
+      [field]:
+        field === "value" ? (value === "" ? null : parseFloat(value)) : value,
     };
     setFormData({ ...formData, itemManagementdto: newItems });
   };
@@ -394,14 +479,14 @@ export default function DeclarationForm() {
           hscode: "",
           itemdescription: "",
           unitofmeasurement: "",
-          quantity: 1,
-          unitCost: 0,
+          quantity: null,
+          unitCost: null,
           taxApplicationdto: [
             {
               name: "",
-              value: 0,
+              value: null,
               codename: "",
-              percentage: 0,
+              percentage: null,
             },
           ],
         },
@@ -413,9 +498,9 @@ export default function DeclarationForm() {
     const newItems = [...formData.itemManagementdto];
     newItems[itemIndex].taxApplicationdto.push({
       name: "",
-      value: 0,
+      value: null,
       codename: "",
-      percentage: 0,
+      percentage: null,
     });
     setFormData({ ...formData, itemManagementdto: newItems });
   };
@@ -441,8 +526,8 @@ export default function DeclarationForm() {
     if (!tinNumber) {
       throw new Error("TIN number is required");
     }
-    if (!/^\d{9,15}$/.test(tinNumber)) {
-      throw new Error("TIN number must be 9-15 digits");
+    if (!/^\d{10}$/.test(tinNumber)) {
+      throw new Error("TIN number must be exactly 10 digits");
     }
 
     if (!formData.custombranchname) {
@@ -454,8 +539,14 @@ export default function DeclarationForm() {
     if (!formData.declarationdispensedate) {
       throw new Error("Declaration date is required");
     }
+    if (formData.fobamountusdt === null) {
+      throw new Error("FOB amount is required");
+    }
     if (formData.fobamountusdt < 0) {
       throw new Error("FOB amount cannot be negative");
+    }
+    if (formData.exchangerate === null) {
+      throw new Error("Exchange rate is required");
     }
     if (formData.exchangerate < 0) {
       throw new Error("Exchange rate cannot be negative");
@@ -471,19 +562,35 @@ export default function DeclarationForm() {
       if (!item.itemdescription) {
         throw new Error(`Description is required for item ${index + 1}`);
       }
+      if (item.quantity === null) {
+        throw new Error(`Quantity is required for item ${index + 1}`);
+      }
       if (item.quantity <= 0) {
         throw new Error(
           `Quantity must be greater than 0 for item ${index + 1}`
         );
       }
+      if (item.unitCost === null) {
+        throw new Error(`Unit cost is required for item ${index + 1}`);
+      }
       if (item.unitCost < 0) {
         throw new Error(`Unit cost cannot be negative for item ${index + 1}`);
+      }
+      if (!item.unitofmeasurement) {
+        throw new Error(
+          `Unit of measurement is required for item ${index + 1}`
+        );
       }
 
       item.taxApplicationdto.forEach((tax, taxIndex) => {
         if (!tax.name) {
           throw new Error(
             `Tax type is required for tax ${taxIndex + 1} in item ${index + 1}`
+          );
+        }
+        if (tax.value === null) {
+          throw new Error(
+            `Tax value is required for tax ${taxIndex + 1} in item ${index + 1}`
           );
         }
         if (tax.value < 0) {
@@ -507,23 +614,13 @@ export default function DeclarationForm() {
 
       const token = localStorage.getItem("token");
       const userId = localStorage.getItem("userId");
-      const rolesString = localStorage.getItem("roles");
-      let roles: string[] = [];
+      const roles = JSON.parse(localStorage.getItem("roles") || "[]");
 
       if (!token || !userId) {
         throw new Error("Session expired. Please log in again.");
       }
 
-      try {
-        if (rolesString) {
-          roles = JSON.parse(rolesString);
-        }
-      } catch (error) {
-        console.error("Error parsing roles:", error);
-        throw new Error("Error reading user roles. Please log in again.");
-      }
-
-      if (!roles || !Array.isArray(roles) || !roles.includes("CLERK")) {
+      if (!roles.includes("CLERK")) {
         throw new Error("You don't have permission to submit declarations.");
       }
 
@@ -531,16 +628,34 @@ export default function DeclarationForm() {
       formData.itemManagementdto.forEach((item) => {
         item.taxApplicationdto.forEach((tax) => {
           if (tax.codename && !allUniqueTaxes.has(tax.codename)) {
-            allUniqueTaxes.set(tax.codename, tax);
+            allUniqueTaxes.set(tax.codename, {
+              ...tax,
+              value: tax.value || 0, // Ensure we don't send null to backend
+              percentage: tax.percentage || 0,
+            });
           }
         });
       });
 
       const submissionData = {
         ...formData,
+        // Convert null values to 0 for backend
+        fobamountusdt: formData.fobamountusdt || 0,
+        exchangerate: formData.exchangerate || 0,
+        externalfreight: formData.externalfreight || 0,
+        insuranceCost: formData.insuranceCost || 0,
+        inlandfreight1: formData.inlandfreight1 || 0,
+        djibouticost: formData.djibouticost || 0,
+        othercost1: formData.othercost1 || 0,
         itemManagementdto: formData.itemManagementdto.map((item) => ({
           ...item,
-          taxApplicationdto: item.taxApplicationdto,
+          quantity: item.quantity || 0,
+          unitCost: item.unitCost || 0,
+          taxApplicationdto: item.taxApplicationdto.map((tax) => ({
+            ...tax,
+            value: tax.value || 0,
+            percentage: tax.percentage || 0,
+          })),
         })),
         taxApplicationdto: Array.from(allUniqueTaxes.values()),
       };
@@ -584,18 +699,18 @@ export default function DeclarationForm() {
 
       alert(successMessage);
 
-      // Reset form
+      // Reset form with null values instead of 0
       setFormData({
         custombranchname: "",
         declarationnumber: "",
         declarationdispensedate: "",
-        fobamountusdt: 0,
-        exchangerate: 0,
-        externalfreight: 0,
-        insuranceCost: 0,
-        inlandfreight1: 0,
-        djibouticost: 0,
-        othercost1: 0,
+        fobamountusdt: null,
+        exchangerate: null,
+        externalfreight: null,
+        insuranceCost: null,
+        inlandfreight1: null,
+        djibouticost: null,
+        othercost1: null,
         itemManagementdto: [],
         taxApplicationdto: [],
       });
@@ -604,15 +719,15 @@ export default function DeclarationForm() {
       console.error("Submission Error:", err);
       setError(err.message || "Failed to submit declaration");
 
-      // if (
-      //   err.message.includes("expired") ||
-      //   err.message.includes("permission")
-      // ) {
-      //   localStorage.removeItem("token");
-      //   localStorage.removeItem("userId");
-      //   localStorage.removeItem("roles");
-      //   router.push("/declaration");
-      // }
+      if (
+        err.message.includes("expired") ||
+        err.message.includes("permission")
+      ) {
+        localStorage.removeItem("token");
+        localStorage.removeItem("userId");
+        localStorage.removeItem("roles");
+        router.push("/auth/login");
+      }
     } finally {
       setLoading(false);
     }
@@ -634,15 +749,13 @@ export default function DeclarationForm() {
           </div>
         )}
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-black">
-          <InputField 
-            label="TIN Number"
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
+          <InputField
+            label="TIN Number (10 digits)"
             name="tinNumber"
             value={tinNumber}
             onChange={handleTinChange}
-         
-            // pattern="\d{9,15}"
-            // title="TIN must be 9-15 digits"
+            placeholder="Enter 10 digit TIN"
           />
           <InputField
             label="Branch Name"
@@ -670,7 +783,7 @@ export default function DeclarationForm() {
             value={formData.fobamountusdt}
             onChange={handleChange}
             min="0"
-            step="0.01"
+            step="any"
           />
           <InputField
             label="Exchange Rate"
@@ -679,7 +792,7 @@ export default function DeclarationForm() {
             value={formData.exchangerate}
             onChange={handleChange}
             min="0"
-            step="0.0001"
+            step="any"
           />
           <InputField
             label="External Freight"
@@ -688,7 +801,7 @@ export default function DeclarationForm() {
             value={formData.externalfreight}
             onChange={handleChange}
             min="0"
-            step="0.01"
+            step="any"
           />
           <InputField
             label="Insurance Cost"
@@ -697,7 +810,7 @@ export default function DeclarationForm() {
             value={formData.insuranceCost}
             onChange={handleChange}
             min="0"
-            step="0.01"
+            step="any"
           />
           <InputField
             label="Inland Freight"
@@ -706,7 +819,7 @@ export default function DeclarationForm() {
             value={formData.inlandfreight1}
             onChange={handleChange}
             min="0"
-            step="0.01"
+            step="any"
           />
           <InputField
             label="Djibouti Cost"
@@ -715,7 +828,7 @@ export default function DeclarationForm() {
             value={formData.djibouticost}
             onChange={handleChange}
             min="0"
-            step="0.01"
+            step="any"
           />
           <InputField
             label="Other Cost"
@@ -724,7 +837,7 @@ export default function DeclarationForm() {
             value={formData.othercost1}
             onChange={handleChange}
             min="0"
-            step="0.01"
+            step="any"
             required={false}
           />
         </div>
@@ -737,7 +850,7 @@ export default function DeclarationForm() {
                 <tr>
                   {[
                     "HS Code",
-                    "Description",
+                    "Item",
                     "Unit measurement",
                     "Quantity",
                     "Unit Cost",
@@ -778,16 +891,36 @@ export default function DeclarationForm() {
           </button>
         </div>
 
-        <button
-          type="submit"
-          disabled={loading}
-          className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded text-sm ${
-            loading ? "opacity-70 cursor-not-allowed" : ""
-          }`}
-        >
-          {loading ? "Submitting..." : "Submit Declaration"}
-        </button>
+        <div className="flex space-x-4">
+          <button
+            type="button"
+            onClick={handlePreview}
+            className="w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded text-sm"
+          >
+            Preview Declaration
+          </button>
+          <button
+            type="submit"
+            disabled={loading}
+            className={`w-full bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 rounded text-sm ${
+              loading ? "opacity-70 cursor-not-allowed" : ""
+            }`}
+          >
+            {loading ? "Submitting..." : "Submit Declaration"}
+          </button>
+        </div>
       </form>
+
+      {showPreview && (
+        <PreviewModal
+          tinNumber={tinNumber}
+          formData={formData}
+          onClose={() => setShowPreview(false)}
+          onEdit={handleEditSave} // Pass the new handler function here
+        />
+      )}
     </div>
   );
 }
+
+export type { TaxDto, ItemManagementDto, FormData };

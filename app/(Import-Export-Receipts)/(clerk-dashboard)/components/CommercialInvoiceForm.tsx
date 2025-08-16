@@ -38,7 +38,7 @@ export default function CommercialInvoiceForm() {
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;
-    
+
     if (name === "declarationnumber") {
       setDeclarationNumber(value);
       if (isDuplicate) {
@@ -46,8 +46,9 @@ export default function CommercialInvoiceForm() {
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
       }
     } else {
-      const processedValue = type === "number" ? (value === "" ? 0 : parseFloat(value)) : value;
-      setFormData(prev => ({
+      const processedValue =
+        type === "number" ? (value === "" ? 0 : parseFloat(value)) : value;
+      setFormData((prev) => ({
         ...prev,
         [name]: processedValue,
       }));
@@ -78,7 +79,7 @@ export default function CommercialInvoiceForm() {
     e.preventDefault();
     setMessage(null);
     setIsDuplicate(false);
-    
+
     if (!validateForm()) return;
 
     const token = localStorage.getItem("token");
@@ -112,17 +113,24 @@ export default function CommercialInvoiceForm() {
       }
 
       if (!response.ok) {
-        if (response.status === 409 || data.message?.toLowerCase().includes("already exists")) {
-          setMessage("This declaration number already exists. Please use a different one. ❌");
+        if (
+          response.status === 409 ||
+          data.message?.toLowerCase().includes("already exists")
+        ) {
+          setMessage(
+            "This declaration number already exists. Please use a different one. ❌"
+          );
           setIsDuplicate(true);
           const input = document.getElementById("declarationnumber");
           input?.classList.add("border-red-500", "ring-2", "ring-red-200");
           return;
         }
-        throw new Error(data.message || `HTTP error! status: ${response.status}`);
+        throw new Error(
+          data.message || `HTTP error! status: ${response.status}`
+        );
       }
 
-      setMessage(data.message || "Commercial invoice submitted successfully! ✅");
+      // setMessage(data.message || "Commercial invoice submitted successfully! ✅");
       setFormSubmitted(true);
       setFormData({
         commertialDate: "",
@@ -130,9 +138,11 @@ export default function CommercialInvoiceForm() {
         amountcommercialinvoce: 0,
       });
       setDeclarationNumber("");
-
     } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "Failed to submit data. Please try again. ❌";
+      const errorMessage =
+        error instanceof Error
+          ? error.message
+          : "Failed to submit data. Please try again. ❌";
       setMessage(errorMessage);
       console.error("Submission error:", error);
     } finally {
@@ -142,11 +152,15 @@ export default function CommercialInvoiceForm() {
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white p-6 rounded shadow text-black">
+      <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
-          <div className={`mb-4 p-3 rounded ${
-            message.includes("✅") ? "bg-green-100 text-green-700" : "bg-red-100 text-red-700"
-          }`}>
+          <div
+            className={`mb-4 p-3 rounded ${
+              message.includes("✅")
+                ? "bg-green-100 text-green-700"
+                : "bg-red-100 text-red-700"
+            }`}
+          >
             {message}
           </div>
         )}
@@ -158,7 +172,10 @@ export default function CommercialInvoiceForm() {
             </h2>
 
             <div className="mb-4">
-              <label htmlFor="declarationnumber" className="block font-medium mb-1">
+              <label
+                htmlFor="declarationnumber"
+                className="block font-medium mb-1"
+              >
                 Declaration Number
               </label>
               <input
@@ -168,7 +185,9 @@ export default function CommercialInvoiceForm() {
                 value={declarationnumber}
                 onChange={handleChange}
                 className={`w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500 ${
-                  isDuplicate ? "border-red-500 ring-2 ring-red-200" : "border-gray-300"
+                  isDuplicate
+                    ? "border-red-500 ring-2 ring-red-200"
+                    : "border-gray-300"
                 }`}
                 placeholder="D123456"
                 required
@@ -176,7 +195,10 @@ export default function CommercialInvoiceForm() {
             </div>
 
             <div className="mb-4">
-              <label htmlFor="commertialDate" className="block font-medium mb-1">
+              <label
+                htmlFor="commertialDate"
+                className="block font-medium mb-1"
+              >
                 Commercial Date
               </label>
               <input
@@ -206,7 +228,10 @@ export default function CommercialInvoiceForm() {
             </div>
 
             <div className="mb-6">
-              <label htmlFor="amountcommercialinvoce" className="block font-medium mb-1">
+              <label
+                htmlFor="amountcommercialinvoce"
+                className="block font-medium mb-1"
+              >
                 Commercial Invoice Amount
               </label>
               <input

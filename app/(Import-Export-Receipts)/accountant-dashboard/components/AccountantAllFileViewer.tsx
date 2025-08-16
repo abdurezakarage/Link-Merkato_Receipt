@@ -1,14 +1,40 @@
 "use client";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import axios from "axios";
-import { ChevronDown, ChevronUp, Download, Eye, File } from "lucide-react";
+import {
+  ChevronDown,
+  ChevronUp,
+  Download,
+  Eye,
+  File,
+  Search,
+} from "lucide-react";
 
-// Define TypeScript interfaces for each file type
-interface WarehouseFile {
+interface DeclarationNumber {
+  declarionNumberPerCampany: string;
+}
+
+interface BaseFile {
   userId: string;
   tinNumber: string;
   firstName: string;
   lastname: string;
+  companyName?: string;
+  companyname?: string;
+  declartionNumber?: DeclarationNumber[];
+  imageBaseMainReceipt?: string;
+  imageBaseWithholidingReceipt?: string;
+  imagebaseCustomfile?: string;
+  imagebaseBankPermitfile?: string;
+  imageCummercialInvoicefile?: string;
+  maintype?: string;
+  withHoldihType?: string;
+  bankfiletype?: string;
+  cutomfileType?: string;
+  commerciailInvoicefiltype?: string;
+}
+
+interface WarehouseFile extends BaseFile {
   maintype: string;
   withHoldihType: string;
   companyName: string;
@@ -16,11 +42,7 @@ interface WarehouseFile {
   imageBaseWithholidingReceipt: string;
 }
 
-interface CustomFile {
-  userId: string;
-  tinNumebr: string;
-  firstname: string;
-  lastname: string;
+interface CustomFile extends BaseFile {
   companyname: string;
   imagebaseCustomfile: string;
   imagebaseBankPermitfile: string;
@@ -30,11 +52,7 @@ interface CustomFile {
   commerciailInvoicefiltype: string;
 }
 
-interface TransportFile {
-  userId: string;
-  tinNumber: string;
-  firstName: string;
-  lastname: string;
+interface TransportFile extends BaseFile {
   maintype: string;
   withHoldihType: string;
   companyName: string;
@@ -42,11 +60,7 @@ interface TransportFile {
   imageBaseWithholidingReceipt: string;
 }
 
-interface ClearanceFile {
-  userId: string;
-  tinNumber: string;
-  firstName: string;
-  lastname: string;
+interface ClearanceFile extends BaseFile {
   maintype: string;
   withHoldihType: string;
   companyName: string;
@@ -57,10 +71,10 @@ interface ClearanceFile {
 type FileType = "warehouse" | "custom" | "transport" | "clearance";
 
 interface GroupedFiles {
-  warehouse: Array<WarehouseFile & { type: "warehouse" }>;
-  custom: Array<CustomFile & { type: "custom" }>;
-  transport: Array<TransportFile & { type: "transport" }>;
-  clearance: Array<ClearanceFile & { type: "clearance" }>;
+  warehouse: (WarehouseFile & { type: "warehouse" })[];
+  custom: (CustomFile & { type: "custom" })[];
+  transport: (TransportFile & { type: "transport" })[];
+  clearance: (ClearanceFile & { type: "clearance" })[];
 }
 
 const BASE_URL = "https://api.import.linkmerkato.com.et";
@@ -70,15 +84,19 @@ export default function AllFilesFetcher() {
   const [customFiles, setCustomFiles] = useState<CustomFile[]>([]);
   const [transportFiles, setTransportFiles] = useState<TransportFile[]>([]);
   const [clearanceFiles, setClearanceFiles] = useState<ClearanceFile[]>([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [expandedCompanies, setExpandedCompanies] = useState<
     Record<string, boolean>
   >({});
+  const [expandedFiles, setExpandedFiles] = useState<Record<string, boolean>>(
+    {}
+  );
   const [previewImage, setPreviewImage] = useState<{
     src: string;
     alt: string;
   } | null>(null);
+  const [searchTerm, setSearchTerm] = useState("");
 
   const getToken = () => {
     if (typeof window !== "undefined") {
@@ -100,65 +118,68 @@ export default function AllFilesFetcher() {
 
     try {
       const headers = { Authorization: `Bearer ${token}` };
+      const [warehouseRes, customRes, transportRes, clearanceRes] =
+        await Promise.all([
+          axios.get<WarehouseFile[]>(
+            `${BASE_URL}/api/v1/accountant/wareHousefile`,
+            { headers }
+          ),
+          axios.get<CustomFile[]>(`${BASE_URL}/api/v1/accountant/customfill`, {
+            headers,
+          }),
+          axios.get<TransportFile[]>(
+            `${BASE_URL}/api/v1/accountant/TransportFile`,
+            { headers }
+          ),
+          axios.get<ClearanceFile[]>(
+            `${BASE_URL}/api/v1/accountant/ClearanceFile`,
+            { headers }
+          ),
+        ]);
 
-      const [
-        warehouseResponse,
-        customResponse,
-        transportResponse,
-        clearanceResponse,
-      ] = await Promise.all([
-        axios.get<WarehouseFile[]>(
-          `${BASE_URL}/api/v1/accountant/wareHousefile`,
-          { headers }
-        ),
-        axios.get<CustomFile[]>(`${BASE_URL}/api/v1/accountant/customfill`, {
-          headers,
-        }),
-        axios.get<TransportFile[]>(
-          `${BASE_URL}/api/v1/accountant/TransportFile`,
-          { headers }
-        ),
-        axios.get<ClearanceFile[]>(
-          `${BASE_URL}/api/v1/accountant/ClearanceFile`,
-          { headers }
-        ),
-      ]);
+      setWarehouseFiles(warehouseRes.data);
+      setCustomFiles(customRes.data);
+      setTransportFiles(transportRes.data);
+      setClearanceFiles(clearanceRes.data);
 
-      setWarehouseFiles(warehouseResponse.data);
-      setCustomFiles(customResponse.data);
-      setTransportFiles(transportResponse.data);
-      setClearanceFiles(clearanceResponse.data);
-
-      // console
-      console.log("warehouseResponse", warehouseResponse.data);
-      // Initialize all companies as expanded
+      // Initialize expanded states
       const allCompanies = [
-        ...warehouseResponse.data.map((f) => f.companyName),
-        ...customResponse.data.map((f) => f.companyname),
-        ...transportResponse.data.map((f) => f.companyName),
-        ...clearanceResponse.data.map((f) => f.companyName),
-      ];
-      const uniqueCompanies = [...new Set(allCompanies.filter(Boolean))];
-      const initialCompanyState = uniqueCompanies.reduce((acc, company) => {
-        acc[company] = true;
-        return acc;
-      }, {} as Record<string, boolean>);
-      setExpandedCompanies(initialCompanyState);
+        ...warehouseRes.data.map((f) => f.companyName),
+        ...customRes.data.map((f) => f.companyname),
+        ...transportRes.data.map((f) => f.companyName),
+        ...clearanceRes.data.map((f) => f.companyName),
+      ].filter(Boolean);
+
+      const uniqueCompanies = [...new Set(allCompanies)];
+      setExpandedCompanies(
+        uniqueCompanies.reduce(
+          (acc, company) => ({ ...acc, [company as string]: false }),
+          {}
+        )
+      );
     } catch (err: any) {
-      const errorMessage =
-        err.response?.data?.message ||
-        "Failed to fetch files. Please check your connection and try again.";
-      setError(errorMessage);
+      setError(err.response?.data?.message || "Failed to fetch files");
       console.error("Fetch error:", err);
     } finally {
       setLoading(false);
     }
   };
 
+  useEffect(() => {
+    fetchAllFiles();
+  }, []);
+
   const toggleCompany = (companyName: string) => {
     setExpandedCompanies((prev) => ({
       ...prev,
       [companyName]: !prev[companyName],
+    }));
+  };
+
+  const toggleFile = (fileId: string) => {
+    setExpandedFiles((prev) => ({
+      ...prev,
+      [fileId]: !prev[fileId],
     }));
   };
 
@@ -206,86 +227,140 @@ export default function AllFilesFetcher() {
     );
   };
 
-  const renderFileDetails = (file: any, type: string) => {
+  const renderFileDetails = (file: BaseFile, type: FileType) => {
+    const fileId = `${type}-${file.userId}-${file.tinNumber}`;
+    const isExpanded = expandedFiles[fileId] || false;
+
     return (
-      <div className="mb-4 p-3 border border-gray-200 rounded-lg bg-white shadow-xs">
-        <h3 className="font-semibold text-gray-800 mb-1">
-          {file.firstName || file.firstname} {file.lastname}
-        </h3>
-        <p className="text-xs text-gray-600">
-          TIN: {file.tinNumber || file.tinNumebr}
-        </p>
-
-        {type === "warehouse" && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-            <div>
-              <p className="text-xs font-medium">
-                Main Receipt ({file.maintype})
-              </p>
-              {renderImagePreview(file.imageBaseMainReceipt, "Main-Receipt")}
-            </div>
-            <div>
-              <p className="text-xs font-medium">
-                Withholding Receipt ({file.withHoldihType})
-              </p>
-              {renderImagePreview(
-                file.imageBaseWithholidingReceipt,
-                "Withholding-Receipt"
-              )}
-            </div>
+      <div
+        key={fileId}
+        className="mb-4 border border-gray-200 rounded-lg bg-white shadow-xs"
+      >
+        <div
+          className="flex justify-between items-center p-3 cursor-pointer hover:bg-gray-50"
+          onClick={() => toggleFile(fileId)}
+        >
+          <div>
+            <h3 className="font-semibold text-gray-800">
+              {file.firstName || (file as any).firstname} {file.lastname}
+            </h3>
+            <p className="text-xs text-gray-600">
+              TIN: {file.tinNumber || (file as any).tinNumebr}
+            </p>
           </div>
-        )}
-
-        {type === "custom" && (
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 mt-2">
-            <div>
-              <p className="text-xs font-medium">
-                Custom File ({file.cutomfileType})
-              </p>
-              {renderImagePreview(file.imagebaseCustomfile, "Custom-File")}
-            </div>
-            <div>
-              <p className="text-xs font-medium">
-                Bank Permit ({file.bankfiletype})
-              </p>
-              {renderImagePreview(file.imagebaseBankPermitfile, "Bank-Permit")}
-            </div>
-            <div>
-              <p className="text-xs font-medium">
-                Commercial Invoice ({file.commerciailInvoicefiltype})
-              </p>
-              {renderImagePreview(
-                file.imageCummercialInvoicefile,
-                "Commercial-Invoice"
-              )}
-            </div>
+          <div className="flex items-center">
+            {file.declartionNumber && (
+              <div className="mr-4">
+                {file.declartionNumber.map((decl, i) => (
+                  <span
+                    key={i}
+                    className="bg-gray-100 px-2 py-1 rounded text-xs mr-1"
+                  >
+                    {decl.declarionNumberPerCampany}
+                  </span>
+                ))}
+              </div>
+            )}
+            <ChevronDown
+              size={18}
+              className={`transition-transform ${
+                isExpanded ? "rotate-180" : ""
+              }`}
+            />
           </div>
-        )}
+        </div>
 
-        {(type === "transport" || type === "clearance") && (
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mt-2">
-            <div>
-              <p className="text-xs font-medium">
-                Main Receipt ({file.maintype})
-              </p>
-              {renderImagePreview(file.imageBaseMainReceipt, "Main-Receipt")}
-            </div>
-            <div>
-              <p className="text-xs font-medium">
-                Withholding Receipt ({file.withHoldihType})
-              </p>
-              {renderImagePreview(
-                file.imageBaseWithholidingReceipt,
-                "Withholding-Receipt"
-              )}
-            </div>
+        {isExpanded && (
+          <div className="p-3 border-t">
+            {type === "warehouse" && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs font-medium">
+                    Main Receipt ({(file as WarehouseFile).maintype})
+                  </p>
+                  {renderImagePreview(
+                    (file as WarehouseFile).imageBaseMainReceipt,
+                    "Main-Receipt"
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-medium">
+                    Withholding Receipt (
+                    {(file as WarehouseFile).withHoldihType})
+                  </p>
+                  {renderImagePreview(
+                    (file as WarehouseFile).imageBaseWithholidingReceipt,
+                    "Withholding-Receipt"
+                  )}
+                </div>
+              </div>
+            )}
+
+            {type === "custom" && (
+              <div className="grid grid-cols-1 md:grid-cols-3 gap-3">
+                <div>
+                  <p className="text-xs font-medium">
+                    Custom File ({(file as CustomFile).cutomfileType})
+                  </p>
+                  {renderImagePreview(
+                    (file as CustomFile).imagebaseCustomfile,
+                    "Custom-File"
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-medium">
+                    Bank Permit ({(file as CustomFile).bankfiletype})
+                  </p>
+                  {renderImagePreview(
+                    (file as CustomFile).imagebaseBankPermitfile,
+                    "Bank-Permit"
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-medium">
+                    Commercial Invoice (
+                    {(file as CustomFile).commerciailInvoicefiltype})
+                  </p>
+                  {renderImagePreview(
+                    (file as CustomFile).imageCummercialInvoicefile,
+                    "Commercial-Invoice"
+                  )}
+                </div>
+              </div>
+            )}
+
+            {(type === "transport" || type === "clearance") && (
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+                <div>
+                  <p className="text-xs font-medium">
+                    Main Receipt (
+                    {(file as TransportFile | ClearanceFile).maintype})
+                  </p>
+                  {renderImagePreview(
+                    (file as TransportFile | ClearanceFile)
+                      .imageBaseMainReceipt,
+                    "Main-Receipt"
+                  )}
+                </div>
+                <div>
+                  <p className="text-xs font-medium">
+                    Withholding Receipt (
+                    {(file as TransportFile | ClearanceFile).withHoldihType})
+                  </p>
+                  {renderImagePreview(
+                    (file as TransportFile | ClearanceFile)
+                      .imageBaseWithholidingReceipt,
+                    "Withholding-Receipt"
+                  )}
+                </div>
+              </div>
+            )}
           </div>
         )}
       </div>
     );
   };
 
-  // Group files by company name with proper TypeScript safety
   const groupFilesByCompany = () => {
     const allFiles = [
       ...warehouseFiles.map((f) => ({ ...f, type: "warehouse" as const })),
@@ -301,7 +376,6 @@ export default function AllFilesFetcher() {
     return allFiles.reduce((acc: Record<string, GroupedFiles>, file) => {
       const companyName = file.companyName || "Unknown Company";
 
-      // Initialize company if not exists
       if (!acc[companyName]) {
         acc[companyName] = {
           warehouse: [],
@@ -311,7 +385,6 @@ export default function AllFilesFetcher() {
         };
       }
 
-      // Type-safe push to the appropriate array
       switch (file.type) {
         case "warehouse":
           acc[companyName].warehouse.push(file);
@@ -331,7 +404,60 @@ export default function AllFilesFetcher() {
     }, {});
   };
 
+  const filterFilesByDeclaration = (
+    groupedFiles: ReturnType<typeof groupFilesByCompany>
+  ) => {
+    if (!searchTerm.trim()) return groupedFiles;
+
+    const filtered: Record<string, GroupedFiles> = {};
+
+    for (const [companyName, files] of Object.entries(groupedFiles)) {
+      const filteredFiles: GroupedFiles = {
+        warehouse: files.warehouse.filter((file) =>
+          file.declartionNumber?.some((decl) =>
+            decl.declarionNumberPerCampany
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+          )
+        ),
+        custom: files.custom.filter((file) =>
+          file.declartionNumber?.some((decl) =>
+            decl.declarionNumberPerCampany
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+          )
+        ),
+        transport: files.transport.filter((file) =>
+          file.declartionNumber?.some((decl) =>
+            decl.declarionNumberPerCampany
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+          )
+        ),
+        clearance: files.clearance.filter((file) =>
+          file.declartionNumber?.some((decl) =>
+            decl.declarionNumberPerCampany
+              .toLowerCase()
+              .includes(searchTerm.toLowerCase())
+          )
+        ),
+      };
+
+      // Only add company if it has any matching files
+      if (
+        filteredFiles.warehouse.length > 0 ||
+        filteredFiles.custom.length > 0 ||
+        filteredFiles.transport.length > 0 ||
+        filteredFiles.clearance.length > 0
+      ) {
+        filtered[companyName] = filteredFiles;
+      }
+    }
+
+    return filtered;
+  };
   const groupedFiles = groupFilesByCompany();
+  const filteredGroupedFiles = filterFilesByDeclaration(groupedFiles);
 
   if (loading)
     return (
@@ -348,17 +474,17 @@ export default function AllFilesFetcher() {
     );
 
   return (
-    <div className="min-h-screen bg-gray-100 p-2 md:p-2 font-sans">
+    <div className="min-h-screen bg-gray-100 p-4 font-sans">
       {/* Image Preview Modal */}
       {previewImage && (
-        <div className="fixed inset-0 bg-black bg-opacity-75 flex items-center justify-center z-50 p-4">
-          <div className="relative max-w-4xl max-h-full">
+        <div className="fixed inset-0 flex items-center justify-center z-50 p-4 bg-black bg-opacity-75">
+          <div className="relative bg-white rounded-lg max-w-4xl max-h-[90vh] overflow-auto">
             <button
               onClick={closePreview}
-              className="absolute -top-10 right-0 text-white hover:text-gray-300"
+              className="absolute top-2 right-2 p-1 rounded-full hover:bg-gray-100"
             >
               <svg
-                className="w-8 h-8"
+                className="w-6 h-6"
                 fill="none"
                 stroke="currentColor"
                 viewBox="0 0 24 24"
@@ -366,17 +492,17 @@ export default function AllFilesFetcher() {
                 <path
                   strokeLinecap="round"
                   strokeLinejoin="round"
-                  strokeWidth="2"
+                  strokeWidth={2}
                   d="M6 18L18 6M6 6l12 12"
-                ></path>
+                />
               </svg>
             </button>
             <img
               src={previewImage.src}
               alt={previewImage.alt}
-              className="max-w-full max-h-screen object-contain"
+              className="w-full h-auto max-h-[80vh] object-contain"
             />
-            <div className="mt-2 text-center text-white">
+            <div className="p-4 text-center text-sm text-gray-600">
               {previewImage.alt}
             </div>
           </div>
@@ -388,45 +514,38 @@ export default function AllFilesFetcher() {
           Receipt Management Dashboard
         </h1>
 
-        <div className="flex justify-center mb-8">
-          <button
-            onClick={fetchAllFiles}
-            disabled={loading}
-            className={`px-6 py-2 md:px-8 md:py-3 rounded-full text-white font-semibold transition-all 
-              ${
-                loading
-                  ? "bg-gray-500 cursor-not-allowed"
-                  : "bg-blue-600 hover:bg-blue-700 focus:ring-4 focus:ring-blue-300"
-              }`}
-          >
-            {loading ? (
-              <span className="flex items-center">
-                <svg
-                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
-                  xmlns="http://www.w3.org/2000/svg"
-                  fill="none"
-                  viewBox="0 0 24 24"
-                >
-                  <circle
-                    className="opacity-25"
-                    cx="12"
-                    cy="12"
-                    r="10"
-                    stroke="currentColor"
-                    strokeWidth="4"
-                  ></circle>
-                  <path
-                    className="opacity-75"
-                    fill="currentColor"
-                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
-                  ></path>
-                </svg>
-                Fetching Files...
-              </span>
-            ) : (
-              "Fetch All Files"
-            )}
-          </button>
+        {/* Search Bar */}
+        <div className="relative max-w-md mx-auto mb-6">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search className="h-5 w-5 text-gray-400" />
+          </div>
+          <input
+            type="text"
+            className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-md leading-5 bg-white placeholder-gray-500 focus:outline-none focus:ring-blue-500 focus:border-blue-500 sm:text-sm"
+            placeholder="Search by declaration number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+          />
+          {searchTerm && (
+            <button
+              onClick={() => setSearchTerm("")}
+              className="absolute inset-y-0 right-0 pr-3 flex items-center"
+            >
+              <svg
+                className="h-4 w-4 text-gray-400"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M6 18L18 6M6 6l12 12"
+                />
+              </svg>
+            </button>
+          )}
         </div>
 
         {error && (
@@ -437,177 +556,119 @@ export default function AllFilesFetcher() {
         )}
 
         <div className="space-y-4">
-          {Object.entries(groupedFiles).map(([companyName, files]) => (
-            <div
-              key={companyName}
-              className="border border-gray-200 rounded-lg overflow-hidden"
-            >
+          {Object.entries(filteredGroupedFiles).map(([companyName, files]) => {
+            const totalFiles =
+              files.warehouse.length +
+              files.custom.length +
+              files.transport.length +
+              files.clearance.length;
+
+            if (totalFiles === 0) return null;
+
+            return (
               <div
-                className="flex justify-between items-center p-4 bg-gray-100 hover:bg-gray-200 cursor-pointer"
-                onClick={() => toggleCompany(companyName)}
+                key={companyName}
+                className="border border-gray-200 rounded-lg overflow-hidden"
               >
-                <div className="flex items-center space-x-3">
-                  <div className="bg-blue-600 text-white px-3 py-1 rounded-md">
-                    <span className="font-medium">{companyName}</span>
+                <div
+                  className="flex justify-between items-center p-4 bg-gray-100 hover:bg-gray-200 cursor-pointer"
+                  onClick={() => toggleCompany(companyName)}
+                >
+                  <div className="flex items-center space-x-3">
+                    <div className="bg-blue-600 text-white px-3 py-1 rounded-md">
+                      <span className="font-medium">{companyName}</span>
+                    </div>
                   </div>
-                  <div className="flex space-x-4">
-                    <span className="text-sm text-gray-600">
-                      Warehouse: {files.warehouse.length}
-                    </span>
-                    <span className="text-sm text-gray-600">
-                      Custom: {files.custom.length}
-                    </span>
-                    <span className="text-sm text-gray-600">
-                      Transport: {files.transport.length}
-                    </span>
-                    <span className="text-sm text-gray-600">
-                      Clearance: {files.clearance.length}
-                    </span>
+                  <ChevronDown
+                    size={20}
+                    className={`transition-transform ${
+                      expandedCompanies[companyName] ? "rotate-180" : ""
+                    }`}
+                  />
+                </div>
+
+                {expandedCompanies[companyName] && (
+                  <div className="p-4 space-y-6">
+                    {files.warehouse.length > 0 && (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-blue-600 text-white px-4 py-2">
+                          <h2 className="font-bold flex items-center">
+                            Warehouse Files ({files.warehouse.length})
+                          </h2>
+                        </div>
+                        <div className="p-4 bg-gray-50">
+                          {files.warehouse.map((file, index) => (
+                            <div key={`warehouse-${index}`}>
+                              {renderFileDetails(file, "warehouse")}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {files.custom.length > 0 && (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-green-600 text-white px-4 py-2">
+                          <h2 className="font-bold flex items-center">
+                            Custom Files ({files.custom.length})
+                          </h2>
+                        </div>
+                        <div className="p-4 bg-gray-50">
+                          {files.custom.map((file, index) => (
+                            <div key={`custom-${index}`}>
+                              {renderFileDetails(file, "custom")}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {files.transport.length > 0 && (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-yellow-600 text-white px-4 py-2">
+                          <h2 className="font-bold flex items-center">
+                            Transport Files ({files.transport.length})
+                          </h2>
+                        </div>
+                        <div className="p-4 bg-gray-50">
+                          {files.transport.map((file, index) => (
+                            <div key={`transport-${index}`}>
+                              {renderFileDetails(file, "transport")}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
+
+                    {files.clearance.length > 0 && (
+                      <div className="border border-gray-200 rounded-lg overflow-hidden">
+                        <div className="bg-purple-600 text-white px-4 py-2">
+                          <h2 className="font-bold flex items-center">
+                            Clearance Files ({files.clearance.length})
+                          </h2>
+                        </div>
+                        <div className="p-4 bg-gray-50">
+                          {files.clearance.map((file, index) => (
+                            <div key={`clearance-${index}`}>
+                              {renderFileDetails(file, "clearance")}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    )}
                   </div>
-                </div>
-                <div className="text-gray-500">
-                  {expandedCompanies[companyName] ? (
-                    <ChevronUp size={20} />
-                  ) : (
-                    <ChevronDown size={20} />
-                  )}
-                </div>
+                )}
               </div>
+            );
+          })}
 
-              {expandedCompanies[companyName] && (
-                <div className="p-4 space-y-6">
-                  {/* Warehouse Files */}
-                  {files.warehouse.length > 0 && (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-blue-600 text-white px-4 py-2">
-                        <h2 className="font-bold flex items-center">
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M20 7l-8-4-8 4m16 0l-8 4m8-4v10l-8 4m0-10L4 7m8 4v10M4 7v10l8 4"
-                            ></path>
-                          </svg>
-                          Warehouse Files ({files.warehouse.length})
-                        </h2>
-                      </div>
-                      <div className="p-4 bg-gray-50 max-h-[400px] overflow-y-auto">
-                        {files.warehouse.map((file, index) => (
-                          <div key={`warehouse-${index}`}>
-                            {renderFileDetails(file, "warehouse")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Custom Files */}
-                  {files.custom.length > 0 && (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-green-600 text-white px-4 py-2">
-                        <h2 className="font-bold flex items-center">
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M9 5H7a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"
-                            ></path>
-                          </svg>
-                          Custom Files ({files.custom.length})
-                        </h2>
-                      </div>
-                      <div className="p-4 bg-gray-50 max-h-[400px] overflow-y-auto">
-                        {files.custom.map((file, index) => (
-                          <div key={`custom-${index}`}>
-                            {renderFileDetails(file, "custom")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Transport Files */}
-                  {files.transport.length > 0 && (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-yellow-600 text-white px-4 py-2">
-                        <h2 className="font-bold flex items-center">
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path d="M9 17a2 2 0 11-4 0 2 2 0 014 0zM19 17a2 2 0 11-4 0 2 2 0 014 0z"></path>
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M13 16V6a1 1 0 00-1-1H4a1 1 0 00-1 1v10a1 1 0 001 1h1m8-1a1 1 0 01-1 1H9m4-1V8a1 1 0 011-1h2.586a1 1 0 01.707.293l3.414 3.414a1 1 0 01.293.707V16a1 1 0 01-1 1h-1m-6-1a1 1 0 001 1h1M5 17a2 2 0 104 0m-4 0a2 2 0 114 0m6 0a2 2 0 104 0m-4 0a2 2 0 114 0"
-                            ></path>
-                          </svg>
-                          Transport Files ({files.transport.length})
-                        </h2>
-                      </div>
-                      <div className="p-4 bg-gray-50 max-h-[400px] overflow-y-auto">
-                        {files.transport.map((file, index) => (
-                          <div key={`transport-${index}`}>
-                            {renderFileDetails(file, "transport")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* Clearance Files */}
-                  {files.clearance.length > 0 && (
-                    <div className="border border-gray-200 rounded-lg overflow-hidden">
-                      <div className="bg-purple-600 text-white px-4 py-2">
-                        <h2 className="font-bold flex items-center">
-                          <svg
-                            className="w-5 h-5 mr-2"
-                            fill="none"
-                            stroke="currentColor"
-                            viewBox="0 0 24 24"
-                            xmlns="http://www.w3.org/2000/svg"
-                          >
-                            <path
-                              strokeLinecap="round"
-                              strokeLinejoin="round"
-                              strokeWidth="2"
-                              d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z"
-                            ></path>
-                          </svg>
-                          Clearance Files ({files.clearance.length})
-                        </h2>
-                      </div>
-                      <div className="p-4 bg-gray-50 max-h-[400px] overflow-y-auto">
-                        {files.clearance.map((file, index) => (
-                          <div key={`clearance-${index}`}>
-                            {renderFileDetails(file, "clearance")}
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
+          {Object.keys(filteredGroupedFiles).length === 0 && (
+            <div className="p-6 text-center text-gray-500">
+              {searchTerm
+                ? `No files found matching declaration number "${searchTerm}"`
+                : "No files found"}
             </div>
-          ))}
+          )}
         </div>
       </div>
     </div>

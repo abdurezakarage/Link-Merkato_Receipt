@@ -25,9 +25,15 @@ const navItems = [
     icon: <FaCheckCircle />,
   },
   { href: "/bank-service", label: "Bank Service", icon: <FaUniversity /> },
+
   {
     href: "/commercial-invoice",
     label: "Commercial Invoice",
+    icon: <FaFileInvoice />,
+  },
+  {
+    href: "/inland2",
+    label: "inland2 ",
     icon: <FaFileInvoice />,
   },
 ];

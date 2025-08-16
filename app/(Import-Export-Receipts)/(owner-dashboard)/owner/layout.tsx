@@ -26,7 +26,7 @@ export default function OwnerDashboardLayout({
     },
     {
       href: "/owner/clearance",
-      label: "Clearance",
+      label: "Custom Clearance",
       icon: <FiCheckCircle className="w-5 h-5" />,
     },
     {
