@@ -110,7 +110,7 @@ export default function Inland2() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
           <div
@@ -151,7 +151,7 @@ export default function Inland2() {
             </div>
 
             {/* Inland Freight */}
-            <div className="mb-4">
+            <div className="mb-4 text-black">
               <label
                 htmlFor="inlandfreight2"
                 className="block font-medium mb-1"

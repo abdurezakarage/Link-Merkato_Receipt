@@ -913,7 +913,7 @@ export default function DeclarationForm() {
           <h3 className="text-md font-bold mb-4 text-gray-800">
             Step 1: General Declaration Information
           </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-black">
             <InputField
               label="TIN Number (10 digits)"
               name="tinNumber"

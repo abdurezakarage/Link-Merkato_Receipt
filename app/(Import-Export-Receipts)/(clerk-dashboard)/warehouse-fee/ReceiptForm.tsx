@@ -158,7 +158,7 @@ export default function WarehouseFeeForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
           <div
