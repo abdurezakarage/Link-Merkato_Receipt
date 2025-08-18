@@ -898,7 +898,7 @@ export default function DeclarationForm() {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
         localStorage.removeItem("roles");
-        router.push("/companies");
+        router.push("/auth/login");
       }
     } finally {
       setLoading(false);
