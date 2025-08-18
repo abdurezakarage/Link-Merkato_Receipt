@@ -1,4 +1,6 @@
 "use client";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+
 import { useState, useEffect } from "react";
 import axios from "axios";
 import {
@@ -77,8 +79,6 @@ interface GroupedFiles {
   clearance: (ClearanceFile & { type: "clearance" })[];
 }
 
-const BASE_URL = "https://api.import.linkmerkato.com.et";
-
 export default function AllFilesFetcher() {
   const [warehouseFiles, setWarehouseFiles] = useState<WarehouseFile[]>([]);
   const [customFiles, setCustomFiles] = useState<CustomFile[]>([]);
@@ -121,18 +121,21 @@ export default function AllFilesFetcher() {
       const [warehouseRes, customRes, transportRes, clearanceRes] =
         await Promise.all([
           axios.get<WarehouseFile[]>(
-            `${BASE_URL}/api/v1/accountant/wareHousefile`,
+            `${BASE_API_URL}/api/v1/accountant/wareHousefile`,
             { headers }
           ),
-          axios.get<CustomFile[]>(`${BASE_URL}/api/v1/accountant/customfill`, {
-            headers,
-          }),
+          axios.get<CustomFile[]>(
+            `${BASE_API_URL}/api/v1/accountant/customfill`,
+            {
+              headers,
+            }
+          ),
           axios.get<TransportFile[]>(
-            `${BASE_URL}/api/v1/accountant/TransportFile`,
+            `${BASE_API_URL}/api/v1/accountant/TransportFile`,
             { headers }
           ),
           axios.get<ClearanceFile[]>(
-            `${BASE_URL}/api/v1/accountant/ClearanceFile`,
+            `${BASE_API_URL}/api/v1/accountant/ClearanceFile`,
             { headers }
           ),
         ]);

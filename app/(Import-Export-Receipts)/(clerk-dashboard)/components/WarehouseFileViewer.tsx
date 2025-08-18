@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Download, X, Eye, ChevronDown, File, ArrowLeft } from "lucide-react";
 import Image from "next/image";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // ---------------- Interfaces ----------------
 interface RawWarehouseFile {
@@ -31,8 +32,6 @@ interface DocumentFile {
   label: string;
   base64Data: string;
 }
-
-const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 // ---------------- Helper Functions ----------------
 const createDataUrl = (
@@ -188,7 +187,7 @@ export default function WarehouseFileViewer() {
         }
 
         const res = await axios.get<RawWarehouseFile[]>(
-          `${BASE_URL}/api/v1/clerk/wareHousefileAll`,
+          `${BASE_API_URL}/api/v1/clerk/wareHousefileAll`,
           { headers: { Authorization: `Bearer ${token}` } }
         );
 

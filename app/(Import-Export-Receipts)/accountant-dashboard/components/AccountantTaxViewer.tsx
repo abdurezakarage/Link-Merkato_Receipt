@@ -1,8 +1,8 @@
 "use client";
-
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ChevronDown, ChevronUp, Printer, Search } from "lucide-react";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface TaxAmountPerItem {
   dpvAmountPerDeclaration: number | null;
@@ -77,7 +77,7 @@ export default function AllTaxViewer() {
       try {
         const token = localStorage.getItem("token");
         const res = await axios.get<TaxData[]>(
-          "https://api.import.linkmerkato.com.et/api/v1/accountant/alltax",
+          `${BASE_API_URL}/api/v1/accountant/alltax`,
           {
             headers: {
               Authorization: `Bearer ${token}`,

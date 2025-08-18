@@ -5,6 +5,7 @@ import axios from "axios";
 import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface RawClearanceFile {
   userId: string;
@@ -31,8 +32,6 @@ interface DocumentFile {
   label: string;
   base64Data: string;
 }
-
-const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 function createDataUrl(
   base64String: string | null | undefined,
@@ -80,12 +79,12 @@ function FilePreview({
         onClick={() => (isImage || isPdf) && onPreviewClick(url, label)}
       >
         {isImage && (
-          <Image 
-            src={url} 
-            alt={label} 
-            width={500} 
+          <Image
+            src={url}
+            alt={label}
+            width={500}
             height={300}
-            className="w-full h-full object-contain" 
+            className="w-full h-full object-contain"
           />
         )}
         {isPdf && (
@@ -161,7 +160,7 @@ export default function ClearanceFileViewer() {
         }
 
         const res = await axios.get<RawClearanceFile[]>(
-          `${BASE_URL}/api/v1/clerk/ClearanceFileAll`,
+          `${BASE_API_URL}/api/v1/clerk/ClearanceFileAll`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }

@@ -18,7 +18,7 @@ export default function DeclarationList() {
 
       try {
         const res = await fetch(
-          `https://api.import.linkmerkato.com.et/api/v1/clerk/declarationInfo/${userId}`,
+          `api.import.linkmerkato.com.et/api/v1/clerk/declarationInfo/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${localStorage.getItem("token")}`,
@@ -43,21 +43,31 @@ export default function DeclarationList() {
     fetchDeclarations();
   }, []);
 
-  if (loading) return <p className="text-center mt-10">Loading declarations...</p>;
+  if (loading)
+    return <p className="text-center mt-10">Loading declarations...</p>;
   if (error) return <p className="text-center text-red-600 mt-10">{error}</p>;
 
-  if (!declarations.length) return <p className="text-center mt-10">No declarations found.</p>;
+  if (!declarations.length)
+    return <p className="text-center mt-10">No declarations found.</p>;
 
   return (
     <div className="max-w-7xl mx-auto p-6 mt-10">
-      <h2 className="text-2xl font-semibold text-center mb-6">All Submitted Declarations</h2>
+      <h2 className="text-2xl font-semibold text-center mb-6">
+        All Submitted Declarations
+      </h2>
       {declarations.map((decl, i) => (
-        <div key={i} className="mb-8 p-4 border border-gray-300 rounded-lg shadow-sm bg-white">
+        <div
+          key={i}
+          className="mb-8 p-4 border border-gray-300 rounded-lg shadow-sm bg-white"
+        >
           <h3 className="text-lg font-bold mb-2">Declaration #{i + 1}</h3>
           <div className="grid grid-cols-1 md:grid-cols-2 gap-4 text-sm mb-4">
             <Detail label="Custom Branch Name" value={decl.custombranchname} />
             <Detail label="Declaration Number" value={decl.declarationnumber} />
-            <Detail label="Declaration Dispense Date" value={decl.declarationdispensedate} />
+            <Detail
+              label="Declaration Dispense Date"
+              value={decl.declarationdispensedate}
+            />
             <Detail label="FOB Amount" value={decl.fobamount} />
             <Detail label="Exchange Rate" value={decl.exchangerate} />
             <Detail label="External Freight" value={decl.externalfreight} />
@@ -85,7 +95,9 @@ export default function DeclarationList() {
                 {decl.items.map((item: any, idx: number) => (
                   <tr key={idx} className="border-t">
                     <td className="border px-2 py-1">{item.itemDescription}</td>
-                    <td className="border px-2 py-1">{item.unitOfMeasurement}</td>
+                    <td className="border px-2 py-1">
+                      {item.unitOfMeasurement}
+                    </td>
                     <td className="border px-2 py-1">{item.units}</td>
                     <td className="border px-2 py-1">{item.quantity}</td>
                     <td className="border px-2 py-1">{item.unitCost}</td>

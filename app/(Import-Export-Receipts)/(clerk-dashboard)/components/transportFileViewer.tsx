@@ -2,8 +2,16 @@
 
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { Eye, Download, ChevronDown, ArrowLeft, File, Search } from "lucide-react";
+import {
+  Eye,
+  Download,
+  ChevronDown,
+  ArrowLeft,
+  File,
+  Search,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface TransportFile {
   userId: string;
@@ -33,8 +41,6 @@ interface DocumentFile {
   base64Data: string;
   declarationnumber: string;
 }
-
-const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 function FilePreview({
   label,
@@ -156,9 +162,9 @@ export default function TransportFileViewer() {
         return;
       }
 
-      let url = `${BASE_URL}/api/v1/clerk/TransportFileAll`;
+      let url = `${BASE_API_URL}/api/v1/clerk/TransportFileAll`;
       if (declarationnumber) {
-        url = `${BASE_URL}/api/v1/clerk/TransportFileByDeclaration/${declarationnumber}`;
+        url = `${BASE_API_URL}/api/v1/clerk/TransportFileByDeclaration/${declarationnumber}`;
       }
 
       const res = await axios.get<TransportFile[]>(url, {
@@ -203,7 +209,10 @@ export default function TransportFileViewer() {
         if (item.imageBaseWithholidingReceipt) {
           grouped[userId].documents.push({
             label: `${item.withHoldihType} Withholding Receipt`,
-            base64Data: createDataUrl(item.imageBaseWithholidingReceipt, "receipt"),
+            base64Data: createDataUrl(
+              item.imageBaseWithholidingReceipt,
+              "receipt"
+            ),
             declarationnumber: item.declarationnumber,
           });
         }
@@ -277,7 +286,7 @@ export default function TransportFileViewer() {
       <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
         Transport Files
       </h2>
-      
+
       {/* Search Bar */}
       <div className="mb-8 max-w-2xl mx-auto">
         <div className="flex gap-2">

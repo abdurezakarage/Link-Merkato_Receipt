@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
 import Image from "next/image";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface RawBankPermitFile {
   userId: string;
@@ -23,7 +24,7 @@ interface UserDocument {
   bankPermitUrl: string;
 }
 
-const BASE_URL = "https://api.import.linkmerkato.com.et";
+// const BASE_URL = "https://customreceiptmanagement.onrender.com";
 
 function createDataUrl(base64String: string | null | undefined): string {
   if (!base64String) return "";
@@ -91,7 +92,9 @@ function BankPermitCard({
               <>
                 <div
                   className="h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
-                  onClick={() => onPreviewClick(user.bankPermitUrl, user.companyname)}
+                  onClick={() =>
+                    onPreviewClick(user.bankPermitUrl, user.companyname)
+                  }
                 >
                   {isPdf ? (
                     <div className="text-center p-4">
@@ -116,7 +119,9 @@ function BankPermitCard({
 
                 <div className="flex gap-3 mt-4">
                   <button
-                    onClick={() => onPreviewClick(user.bankPermitUrl, user.companyname)}
+                    onClick={() =>
+                      onPreviewClick(user.bankPermitUrl, user.companyname)
+                    }
                     className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 px-4 rounded-md flex items-center justify-center gap-2 text-sm font-medium"
                   >
                     <Eye size={16} />
@@ -163,7 +168,7 @@ export default function BankPermitViewer() {
         }
 
         const res = await axios.get<RawBankPermitFile[]>(
-          `${BASE_URL}/api/v1/clerk/customfileAll`,
+          `${BASE_API_URL}/api/v1/clerk/customfileAll`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -171,7 +176,7 @@ export default function BankPermitViewer() {
 
         // Create a map to group by tinNumber
         const groupedByTin = new Map<string, UserDocument>();
-        
+
         res.data.forEach((item) => {
           // Use tinNumber as the key
           if (!groupedByTin.has(item.tinNumebr)) {

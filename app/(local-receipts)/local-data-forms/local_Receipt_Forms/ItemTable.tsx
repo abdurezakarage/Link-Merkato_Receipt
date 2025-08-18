@@ -239,13 +239,28 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
               {(isRevenueOrExpense || isOther) && (
                 <div className="space-y-2">
                   <label className="text-sm font-medium text-gray-700">Measurement *</label>
-                  <input
+                  <select
                     className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
                     name="unitOfMeasurement"
                     value={item.unitOfMeasurement || ''}
                     onChange={e => handleItemChange(idx, e)}
                     required
-                  />
+                  >
+                    <option value="">Select Unit</option>
+                    <option value="pcs">Pieces (pcs)</option>
+                    <option value="kg">Kilogram (kg)</option>
+                    <option value="g">Gram (g)</option>
+                    <option value="l">Liter (l)</option>
+                    <option value="ml">Milliliter (ml)</option>
+                    <option value="m">Meter (m)</option>
+                    <option value="cm">Centimeter (cm)</option>
+                    <option value="box">Box</option>
+                    <option value="pack">Pack</option>
+                    <option value="set">Set</option>
+                    <option value="dozen">Dozen</option>
+                    <option value="pair">Pair</option>
+                    <option value="other">Other</option>
+                  </select>
                 </div>
               )}
 

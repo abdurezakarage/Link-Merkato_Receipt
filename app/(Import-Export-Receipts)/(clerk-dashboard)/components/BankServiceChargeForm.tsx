@@ -1,5 +1,6 @@
 "use client";
 import { useState, FormEvent, ChangeEvent } from "react";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface BankPermitPayload {
   bankdate: string;
@@ -76,7 +77,7 @@ export default function BankServiceFeeForm() {
 
     try {
       const response = await fetch(
-        `https://api.import.linkmerkato.com.et/api/v1/clerk/bankInfo/${declarationnumber}`,
+        `${BASE_API_URL}/api/v1/clerk/bankInfo/${declarationnumber}`,
         {
           method: "POST",
           headers: {

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { FaChevronDown } from "react-icons/fa";
 import Image from "next/image";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface DocumentFile {
   label: string;
@@ -29,8 +30,6 @@ interface ApiDocumentItem {
   imagebaseBankPermitfile?: string;
   imageCummercialInvoicefile?: string;
 }
-
-const BASE_URL = "https://api.import.linkmerkato.com.et";
 
 const createDataUrl = (
   base64String: string | undefined | null,
@@ -180,7 +179,7 @@ export default function CustomFileViewer() {
         }
 
         const response = await axios.get<ApiDocumentItem[]>(
-          `${BASE_URL}/api/v1/clerk/customfileAll`,
+          `${BASE_API_URL}/api/v1/clerk/customfileAll`,
           {
             headers: { Authorization: `Bearer ${token}` },
           }
@@ -234,16 +233,18 @@ export default function CustomFileViewer() {
         setUserDocuments(Object.values(grouped));
       } catch (err: unknown) {
         console.error("Error fetching files:", err);
-        let errorMessage = "An unexpected error occurred while fetching documents.";
-        
+        let errorMessage =
+          "An unexpected error occurred while fetching documents.";
+
         if (axios.isAxiosError(err)) {
-          errorMessage = err.response?.data?.message || 
-                        err.message || 
-                        `HTTP error! status: ${err.response?.status}`;
+          errorMessage =
+            err.response?.data?.message ||
+            err.message ||
+            `HTTP error! status: ${err.response?.status}`;
         } else if (err instanceof Error) {
           errorMessage = err.message;
         }
-        
+
         setError(errorMessage);
       } finally {
         setLoading(false);

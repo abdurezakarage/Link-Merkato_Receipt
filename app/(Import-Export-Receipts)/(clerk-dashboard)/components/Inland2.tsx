@@ -1,5 +1,6 @@
 "use client";
 import { useState, FormEvent, ChangeEvent } from "react";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface TransportFeePayload {
   inlandfreight2: number | "";
@@ -49,7 +50,7 @@ export default function Inland2() {
     }
 
     try {
-      const apiUrl = `https://api.import.linkmerkato.com.et/api/v1/clerk/inland2/${declarationnumber}`;
+      const apiUrl = `${BASE_API_URL}/api/v1/clerk/inland2/${declarationnumber}`;
 
       // Convert empty strings to 0 before sending
       const payload = {
@@ -126,7 +127,7 @@ export default function Inland2() {
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
             <h2 className="text-2xl font-semibold mb-4 text-gray-800">
-              Transport Fee
+              Inland Fee
             </h2>
 
             {/* Declaration Number */}

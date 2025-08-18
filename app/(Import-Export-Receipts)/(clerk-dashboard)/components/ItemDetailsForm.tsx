@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 type Item = {
   id: string;
@@ -64,7 +65,9 @@ export default function ItemDetailsForm() {
     }
   }, [selectedItemId, items]);
 
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
+  const handleChange = (
+    e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
+  ) => {
     const { name, value } = e.target;
     setFormData((prev) => ({
       ...prev,
@@ -72,8 +75,10 @@ export default function ItemDetailsForm() {
     }));
 
     if (name === "quantity" || name === "unitCost") {
-      const qty = name === "quantity" ? Number(value) : Number(formData.quantity);
-      const cost = name === "unitCost" ? Number(value) : Number(formData.unitCost);
+      const qty =
+        name === "quantity" ? Number(value) : Number(formData.quantity);
+      const cost =
+        name === "unitCost" ? Number(value) : Number(formData.unitCost);
       setFormData((prev) => ({
         ...prev,
         dpvAmount: (qty * cost).toFixed(2),
@@ -96,7 +101,9 @@ export default function ItemDetailsForm() {
 
       <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
         <div>
-          <label className="block text-sm font-medium mb-1">Item Description</label>
+          <label className="block text-sm font-medium mb-1">
+            Item Description
+          </label>
           <select
             name="description"
             value={selectedItemId}
@@ -113,12 +120,39 @@ export default function ItemDetailsForm() {
           </select>
         </div>
 
-        <InputField label="GL Account" name="glAccount" value={formData.glAccount} disabled />
-        <InputField label="Unit of Measurement" name="uom" value={formData.uom} disabled />
+        <InputField
+          label="GL Account"
+          name="glAccount"
+          value={formData.glAccount}
+          disabled
+        />
+        <InputField
+          label="Unit of Measurement"
+          name="uom"
+          value={formData.uom}
+          disabled
+        />
         <InputField label="Units" name="unit" value={formData.unit} disabled />
-        <InputField label="Quantity" name="quantity" value={formData.quantity} type="number" onChange={handleChange} />
-        <InputField label="Unit Cost" name="unitCost" value={formData.unitCost} type="number" onChange={handleChange} />
-        <InputField label="DPV Amount" name="dpvAmount" value={formData.dpvAmount} disabled />
+        <InputField
+          label="Quantity"
+          name="quantity"
+          value={formData.quantity}
+          type="number"
+          onChange={handleChange}
+        />
+        <InputField
+          label="Unit Cost"
+          name="unitCost"
+          value={formData.unitCost}
+          type="number"
+          onChange={handleChange}
+        />
+        <InputField
+          label="DPV Amount"
+          name="dpvAmount"
+          value={formData.dpvAmount}
+          disabled
+        />
       </div>
 
       <button

@@ -6,6 +6,7 @@ import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
 import Image from "next/image";
 
 // Removed useRouter as it's not used in this specific component for navigation.
+const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 interface CommercialInvoiceFile {
   userId: string;
@@ -24,8 +25,6 @@ interface UserDocument {
   companyname: string;
   commercialInvoiceUrl: string;
 }
-
-const BASE_URL = "https://api.import.linkmerkato.com.et"; // Base URL for the API
 
 /**
  * Converts a base64 string to a data URL, ensuring it has the correct prefix.
@@ -198,7 +197,7 @@ export default function CommercialInvoiceViewer() {
 
         // Fetch data from the API
         const response = await axios.get<CommercialInvoiceFile[]>(
-          `${BASE_URL}/api/v1/clerk/customfileAll`,
+          `${BASE_API_URL}/api/v1/clerk/customfileAll`,
           {
             headers: { Authorization: `Bearer ${token}` }, // Add authorization header
           }
@@ -278,7 +277,7 @@ export default function CommercialInvoiceViewer() {
           <div className="bg-white rounded-lg shadow-lg overflow-hidden border border-gray-200">
             <div className="bg-gray-50 px-6 py-4 border-b">
               <h2 className="text-xl font-bold text-gray-800">
-              {`${previewFile.companyName}'s Commercial Invoice`}
+                {`${previewFile.companyName}'s Commercial Invoice`}
               </h2>
             </div>
             <div className="h-[calc(100vh-200px)] flex items-center justify-center">
@@ -293,7 +292,6 @@ export default function CommercialInvoiceViewer() {
                   sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 />
               ) : (
-
                 <Image
                   src={previewFile.url}
                   alt="Commercial Invoice"
@@ -308,28 +306,31 @@ export default function CommercialInvoiceViewer() {
   }
 
   // Main view: display list of commercial invoice cards
- return (
-  <div className="p-4 bg-gray-50 min-h-screen flex justify-center items-start">
-    <div className="w-full max-w-4xl">
-      <h1 className="text-2xl font-bold text-gray-800 mb-8 text-center">
-        Commercial Invoices
-      </h1>
-      {userDocuments.length === 0 ? (
-        <div key="no-invoices" className="bg-white rounded-lg shadow p-8 text-center border border-gray-200">
-          <p className="text-gray-600">No commercial invoices available.</p>
-        </div>
-      ) : (
-        <div className="grid grid-cols-1 gap-6">
-          {userDocuments.map((user) => (
-            <CommercialInvoiceCard
-              key={`${user.userId}-${user.tinNumebr}`}
-              user={user}
-              onPreviewClick={handleOpenPreview}
-            />
-          ))}
-        </div>
-      )}
+  return (
+    <div className="p-4 bg-gray-50 min-h-screen flex justify-center items-start">
+      <div className="w-full max-w-4xl">
+        <h1 className="text-2xl font-bold text-gray-800 mb-8 text-center">
+          Commercial Invoices
+        </h1>
+        {userDocuments.length === 0 ? (
+          <div
+            key="no-invoices"
+            className="bg-white rounded-lg shadow p-8 text-center border border-gray-200"
+          >
+            <p className="text-gray-600">No commercial invoices available.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 gap-6">
+            {userDocuments.map((user) => (
+              <CommercialInvoiceCard
+                key={`${user.userId}-${user.tinNumebr}`}
+                user={user}
+                onPreviewClick={handleOpenPreview}
+              />
+            ))}
+          </div>
+        )}
+      </div>
     </div>
-  </div>
-);
+  );
 }
