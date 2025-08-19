@@ -74,7 +74,7 @@ const parseJwt = (token: string): any => {
         const userId = decodedToken.user_id;
         const company_name = decodedToken.company_name;
         const email = decodedToken.email;
-        const phone_number = decodedToken.phone_number;
+        const phone_number = decodedToken.PhoneNumber;
         const wereda = decodedToken.wereda;
         const kebele = decodedToken.kebele;
         const region = decodedToken.region;
