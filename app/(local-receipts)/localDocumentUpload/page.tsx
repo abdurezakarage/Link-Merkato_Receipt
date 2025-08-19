@@ -39,6 +39,46 @@ export default function LocalDocumentUpload() {
     const [checkingReceiptNumber, setCheckingReceiptNumber] = useState(false);
     const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
 
+    // Debounced receipt number validator
+    const checkReceiptNumber = useCallback(async (num: string) => {
+      if (!num || !token || !isTokenValid()) return;
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+      setCheckingReceiptNumber(true);
+      timeoutRef.current = setTimeout(async () => {
+        try {
+          const response = await axios.get(`${DJANGO_BASE_URL}/check-receipt-exists/?receipt_number=${encodeURIComponent(num)}`, {
+            headers: { "Authorization": `Bearer ${token}` }
+          });
+          setReceiptNumberExists(response.data.exists);
+        } catch (err) {
+          console.error('Error checking receipt number:', err);
+          setReceiptNumberExists(null);
+        } finally {
+          setCheckingReceiptNumber(false);
+        }
+      }, 500);
+    }, [token, isTokenValid]);
+
+    // Trigger validation when receipt number changes
+    useEffect(() => {
+      if (receiptNumber) {
+        checkReceiptNumber(receiptNumber);
+      } else {
+        setReceiptNumberExists(null);
+      }
+    }, [receiptNumber, checkReceiptNumber]);
+
+    // Cleanup debounce on unmount
+    useEffect(() => {
+      return () => {
+        if (timeoutRef.current) {
+          clearTimeout(timeoutRef.current);
+        }
+      };
+    }, []);
+
 //extract tin_number from companydata
   // Parse JWT token to get company information
   const parseJwt = (token: string): any => {
@@ -92,6 +132,13 @@ export default function LocalDocumentUpload() {
         // Validate required fields
         if (!receiptNumber.trim()) {
           setError("Receipt number is required.");
+          setSubmitting(false);
+          return;
+        }
+
+        // Prevent submit if duplicate receipt number
+        if (receiptNumberExists === true) {
+          setError('This receipt number already submitted. ');
           setSubmitting(false);
           return;
         }
@@ -241,6 +288,15 @@ export default function LocalDocumentUpload() {
                         className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
+                      {checkingReceiptNumber && (
+                        <p className="text-sm text-blue-600 mt-1">Checking receipt number...</p>
+                      )}
+                      {receiptNumber && receiptNumberExists === true && !checkingReceiptNumber && (
+                        <p className="text-sm text-red-600 mt-1">This receipt number already submitted.</p>
+                      )}
+                      {receiptNumber && receiptNumberExists === false && !checkingReceiptNumber && (
+                        <p className="text-sm text-green-600 mt-1">Receipt number is available.</p>
+                      )}
                     </div>
                     <FileUpload
                       label="Upload Receipt *"
@@ -332,7 +388,7 @@ export default function LocalDocumentUpload() {
                 <div className="mt-8">
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || checkingReceiptNumber || receiptNumberExists === true}
                     className="px-6 py-3 bg-blue-600 text-white rounded-md hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed"
                   >
                     {submitting ? 'Submitting...' : 'Submit Documents'}
