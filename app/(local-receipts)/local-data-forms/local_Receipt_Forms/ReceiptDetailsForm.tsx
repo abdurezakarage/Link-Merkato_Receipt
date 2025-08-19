@@ -8,9 +8,20 @@ interface ReceiptDetailsFormProps {
   receiptNames: string[];
   receiptCategories: string[];
   receiptTypes: string[];
+  receiptNumberExists: boolean | null;
+  checkingReceiptNumber: boolean;
 }
 
-const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({ form, setForm, receiptKinds, receiptNames, receiptCategories, receiptTypes }) => {
+const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({ 
+  form, 
+  setForm, 
+  receiptKinds, 
+  receiptNames, 
+  receiptCategories, 
+  receiptTypes,
+  receiptNumberExists,
+  checkingReceiptNumber
+}) => {
   
   // Function to get prefix based on receipt kind
   const getReceiptNumberPrefix = (receiptKind: string) => {
@@ -120,14 +131,46 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({ form, setForm, 
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Receipt Number*</label>
-          <input 
-            className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black" 
-            name="receiptNumber" 
-            value={form.receiptNumber} 
-            onChange={handleReceiptNumberChange}
-            placeholder={form.receiptKind ? `Enter number after ${getReceiptNumberPrefix(form.receiptKind)}` : "Enter receipt number"}
-            required 
-          />
+          <div className="relative">
+            <input 
+              className={`input input-bordered px-3 py-2 rounded-lg border focus:outline-none focus:ring-2 w-full ${
+                checkingReceiptNumber ? 'border-yellow-300 bg-yellow-50' :
+                receiptNumberExists === true ? 'border-red-300 bg-red-50 focus:ring-red-400' :
+                receiptNumberExists === false ? 'border-green-300 bg-green-50 focus:ring-green-400' :
+                'border-gray-300 focus:ring-blue-400'
+              } text-black`}
+              name="receiptNumber" 
+              value={form.receiptNumber} 
+              onChange={handleReceiptNumberChange}
+              placeholder={form.receiptKind ? `Enter number after ${getReceiptNumberPrefix(form.receiptKind)}` : "Enter receipt number"}
+              required 
+            />
+            {checkingReceiptNumber && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2">
+                <div className="animate-spin rounded-full h-5 w-5 border-b-2 border-yellow-600"></div>
+              </div>
+            )}
+            {!checkingReceiptNumber && receiptNumberExists === true && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-red-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" />
+                </svg>
+              </div>
+            )}
+            {!checkingReceiptNumber && receiptNumberExists === false && form.receiptNumber && (
+              <div className="absolute right-3 top-1/2 -translate-y-1/2 text-green-600">
+                <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+              </div>
+            )}
+          </div>
+          {!checkingReceiptNumber && receiptNumberExists === true && (
+            <p className="mt-1 text-sm text-red-600">This receipt number is already submitted</p>
+          )}
+          {/* {!checkingReceiptNumber && receiptNumberExists === false && form.receiptNumber && (
+            <p className="mt-1 text-sm text-green-600">Receipt number is available</p>
+          )} */}
         </div>
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Calendar Type*</label>

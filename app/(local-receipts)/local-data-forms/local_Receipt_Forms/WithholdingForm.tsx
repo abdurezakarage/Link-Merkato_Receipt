@@ -109,7 +109,7 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
           placeholder="Auto-calculated (3% of sub-total)"
         />
       </div>
-      <div className="flex flex-col">
+      {/* <div className="flex flex-col">
         <FileUpload
           label="Attach Withholding Document"
           accept="image/*,.pdf"
@@ -118,7 +118,7 @@ const WithholdingFormComponent: React.FC<WithholdingFormComponentProps> = React.
           maxSize={10}
           required={false}
         />
-      </div>
+      </div> */}
     </div>
   </div>
 ));

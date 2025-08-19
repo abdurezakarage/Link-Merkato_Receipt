@@ -323,11 +323,11 @@ const UserDashboard: React.FC = () => {
                       onClick: () => router.push('/localDocument')
     },
     {
-      title: 'New Receipt',
-      description: 'Create a new receipt entry',
+      title: 'Upload Document',
+      description: 'Upload a new document',
       icon: '➕',
       color: 'bg-blue-500',
-                      onClick: () => router.push('/localReceipt')
+                      onClick: () => router.push('/localDocumentUpload')
     },
     {
       title: 'View Reports',

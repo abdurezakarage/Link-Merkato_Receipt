@@ -9,6 +9,11 @@ export const login_api = `${BASE_URL}/auth/login`;
 export const forget_password_Base_url = "https://api.import.linkmerkato.com.et/api/v1"
 
 
+// im[ort export api
+export const BASE_API_URL= "https://api.import.linkmerkato.com.et";
+
+
+
 export const request_otp_api = `${forget_password_Base_url}/auth/request-otp`;
 export const verify_otp_api = `${forget_password_Base_url}/auth/verify-otp`;
 export const forgot_password_api = `${forget_password_Base_url}/auth/changepassword`;

@@ -10,3 +10,4 @@ export const DJANGO_BASE_URL = "https://api.local.linkmerkato.com.et/api";
 
 // login api for user and admin
 export const LinkBASE_URL = "https://api.linkmerkato.com.et/api/v1";
+

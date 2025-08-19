@@ -35,6 +35,9 @@ export default function LocalDocumentUpload() {
     const [receiptNumber, setReceiptNumber] = useState("");
     const [hasWithholding, setHasWithholding] = useState<"yes" | "no">("no");
     const [withholdingReceiptNumber, setWithholdingReceiptNumber] = useState("");
+    const [receiptNumberExists, setReceiptNumberExists] = useState<boolean | null>(null);
+    const [checkingReceiptNumber, setCheckingReceiptNumber] = useState(false);
+    const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
 
 //extract tin_number from companydata
   // Parse JWT token to get company information
@@ -106,14 +109,17 @@ export default function LocalDocumentUpload() {
             return;
           }
         }
+        const roles = localStorage.getItem("roles");
+        if (!roles) {
+          setError("User role not found. Please log in again.");
+          setSubmitting(false);
+          return;
+        }
 
         // Handle file uploads if present
         if (MainReceipt || attachment || (hasWithholding === "yes" && withholding)) {
           try { 
             const fileFormData = new FormData();
-            
-            // Add receipt metadata
-           // fileFormData.append("has_withholding", hasWithholding);
             
             if (MainReceipt) {
               fileFormData.append("main_receipt_data.receipt_number", receiptNumber);
@@ -141,8 +147,9 @@ export default function LocalDocumentUpload() {
                 "Content-Type": "multipart/form-data"
               },
             });
-            router.push('/auth/owner-dashboard');
+            
             console.log('Files uploaded successfully:', uploadResponse.data);
+            setSuccess("Documents uploaded successfully!");
           } catch (uploadError) {
             console.error('File upload error:', uploadError);
             setError("failed to upload documents. Please try again.");
@@ -159,6 +166,42 @@ export default function LocalDocumentUpload() {
         console.error('Error submitting form:', error);
         setError("Failed to submit form. Please try again.");
       } finally {
+        // Handle navigation after successful submission
+        if (!error) {
+          try {
+            const rolesStr = localStorage.getItem("roles");
+            if (!rolesStr) {
+              setError("User role not found. Please log in again.");
+              return;
+            }
+            
+            // Parse the roles array from localStorage
+            let userRoles;
+            try {
+              userRoles = JSON.parse(rolesStr);
+            } catch (parseError) {
+              console.error('Error parsing roles:', parseError);
+              setError("Invalid role format. Please log in again.");
+              return;
+            }
+
+            // Check if roles is an array and contains the expected role
+            if (Array.isArray(userRoles)) {
+              if (userRoles.includes("USER")) {
+                router.push('/auth/owner-dashboard');
+              } else if (userRoles.includes("CLERK")) {
+                router.push('/userinfo');
+              } else {
+                setError("Invalid user role. Please log in again.");
+              }
+            } else {
+              setError("Invalid role format. Please log in again.");
+            }
+          } catch (navError) {
+            console.error('Navigation error:', navError);
+            setError("Failed to navigate. Please try again.");
+          }
+        }
         setSubmitting(false);
       }
     }

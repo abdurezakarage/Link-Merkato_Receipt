@@ -7,6 +7,7 @@ import { FormReportResponse, ReceiptData } from '../local-data-forms/types';
 import { useAuth } from '../../Context/AuthContext';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
+import { useRouter } from 'next/navigation';
 
 interface MonthOption {
   value: string;
@@ -51,6 +52,7 @@ interface MonthlyCategoryBreakdown {
 type DownloadFormat = 'csv' | 'pdf';
 
 const ReportPage: React.FC = () => {
+  const router = useRouter();
   const [receipts, setReceipts] = useState<ReceiptData[]>([]);
   const [filteredReceipts, setFilteredReceipts] = useState<ReceiptData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -69,16 +71,16 @@ const ReportPage: React.FC = () => {
   });
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('csv');
   const [downloading, setDownloading] = useState(false);
-
-  // Cloudinary base for public documents
-  const CLOUDINARY_BASE_URL = 'https://api.local.linkmerkato.com.et/';
+  
+  // document base for public documents
+  const document_BASE_URL = 'https://api.local.linkmerkato.com.et/';
 
   const resolveDocumentUrl = (documentPathOrUrl: string): string => {
     if (!documentPathOrUrl) return '';
     const isAbsolute = /^https?:\/\//i.test(documentPathOrUrl);
     if (isAbsolute) return documentPathOrUrl;
     const sanitized = documentPathOrUrl.replace(/^\/+/, '');
-    return `${CLOUDINARY_BASE_URL}${sanitized}`;
+    return `${document_BASE_URL}${sanitized}`;
   };
 
   const { token } = useAuth();
@@ -99,7 +101,7 @@ const ReportPage: React.FC = () => {
   ];
 
   const currentYear = new Date().getFullYear();
-  const yearOptions = Array.from({ length: 6 }, (_, i) => currentYear - i);
+  const yearOptions = Array.from({ length: 3 }, (_, i) => currentYear - i);
 
   const receiptCategories = [
     { value: 'Revenue', label: 'Revenue', color: 'green' },
@@ -829,6 +831,32 @@ const ReportPage: React.FC = () => {
               <div className="ml-4">
                 <p className="text-sm font-medium text-gray-500">Total Withholding</p>
                 <p className="text-2xl font-semibold text-purple-600">{formatCurrency(summaryStats.totalWithholding)}</p>
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="flex items-center">
+              <div className="w-8 h-8 bg-purple-100 rounded-md flex items-center justify-center">
+              <svg
+                     className="w-8 h-8 text-green-600"
+                     fill="none"
+                     stroke="currentColor"
+                     viewBox="0 0 24 24"
+                   >
+                     <path
+                       strokeLinecap="round"
+                       strokeLinejoin="round"
+                       strokeWidth={2}
+                       d="M9 7h6m0 10v-3m-3 3h.01M9 17h.01M9 14h.01M12 14h.01M15 11h.01M12 11h.01M9 11h.01M7 21h10a2 2 0 002-2V5a2 2 0 00-2-2H7a2 2 0 00-2 2v14a2 2 0 002 2z"
+                     />
+                   </svg>
+              </div>
+              <div className="ml-4">
+                <p className="text-sm font-medium text-gray-500">VAT Report</p>
+               <button className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+               onClick={() => router.push('/monthly-Vat-Summary')}>
+                View
+               </button>
               </div>
             </div>
           </div>

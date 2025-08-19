@@ -63,7 +63,7 @@ export default function RegisterPage() {
       const data = await response.text();
       if (!response.ok) throw new Error(data || "Registration failed");
 
-      router.push("auth/login");
+      router.push("/auth/login");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -72,7 +72,7 @@ export default function RegisterPage() {
   };
 
   return (
-    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4">
+    <div className="min-h-screen flex items-center justify-center bg-gradient-to-br from-blue-50 to-gray-100 p-4 text-black">
       <div className="w-full max-w-4xl">
         <div className="bg-white p-8 rounded-2xl shadow-lg space-y-6 border border-gray-100">
           <div className="text-center">
@@ -86,7 +86,7 @@ export default function RegisterPage() {
 
           <form
             onSubmit={handleSubmit}
-            className="grid grid-cols-1 md:grid-cols-2 gap-6"
+            className="grid grid-cols-1 md:grid-cols-2 gap-6 text-black"
           >
             {error && (
               <div className="p-3 bg-red-50 text-red-600 rounded-lg text-sm font-medium text-center col-span-full border border-red-100">

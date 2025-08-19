@@ -4,6 +4,7 @@
 import React, { useState, useEffect, useCallback, useMemo, Suspense } from "react";
 import axios from "axios";
 import { useSearchParams } from "next/navigation";
+
 import type { Item, SellerInfo, BuyerInfo, FormState, WithholdingForm, ReceiptKind, ReceiptKindsResponse } from "../local-data-forms/types";
 import SellerForm from "../local-data-forms/Company/SellerForm";
 import BuyerForm from "../local-data-forms/Company/BuyerForm";
@@ -18,8 +19,10 @@ import Sidebar from "../local-data-forms/local_Receipt_Forms/Sidebar";
 import FormSection from "../local-data-forms/local_Receipt_Forms/FormSection";
 import ModeSelector from "../local-data-forms/local_Receipt_Forms/ModeSelector";
 import DocumentViewer from "../localDocument/DocumentViewer";
+import PreviewModal from "../local-data-forms/local_Receipt_Forms/PreviewModal";
 import { DJANGO_BASE_URL } from "../api/api";
 import { Rowdies } from "next/font/google";
+import { useRouter } from "next/navigation";
 
 // Static data arrays
 const BANK_NAMES = [
@@ -97,7 +100,10 @@ function LocalReceiptContent() {
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
   const [noReceiptMode, setNoReceiptMode] = useState(false);
-  const [withholdingRequired, setWithholdingRequired] = useState<string>(''); 
+  const [withholdingRequired, setWithholdingRequired] = useState<string>('');
+  const [receiptNumberExists, setReceiptNumberExists] = useState<boolean | null>(null);
+  const [checkingReceiptNumber, setCheckingReceiptNumber] = useState(false);
+  const [isPreviewModalOpen, setIsPreviewModalOpen] = useState(false);
   const [withholdingForm, setWithholdingForm] = useState<WithholdingForm>({
     receiptNumber: '',
     receiptDate: '',
@@ -145,6 +151,7 @@ function LocalReceiptContent() {
     payment: false,
     withholding: false
   });
+  const router = useRouter();
 
   // Handle section change for both receipt and no-receipt modes
   const handleSectionChange = (section: string) => {
@@ -178,9 +185,21 @@ function LocalReceiptContent() {
     const attachmentUrl = searchParams.get('attachmentUrl');
     const withholdingReceiptUrl = searchParams.get('withholdingReceiptUrl');
     const hasWithholding = searchParams.get('hasWithholding') === 'true';
+    const view = searchParams.get('view');
 
+    console.log('URL Parameters:', {
+      documentId,
+      receiptNumber,
+      mainReceiptUrl,
+      attachmentUrl,
+      withholdingReceiptUrl,
+      hasWithholding,
+      view
+    });
+    
     // Only enable document view mode if we have a documentId and receiptNumber
     if (documentId && receiptNumber) {
+      console.log('Enabling document view mode');
       setDocumentViewMode(true);
       setDocumentData({
         documentId,
@@ -348,10 +367,57 @@ function LocalReceiptContent() {
 
 
 
+  // Reference to store timeout
+  const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
+
+  // Function to check receipt number
+  const checkReceiptNumber = useCallback(async (receiptNumber: string) => {
+    if (!receiptNumber || !token || !isTokenValid()) return;
+    
+    // Clear any existing timeout
+    if (timeoutRef.current) {
+      clearTimeout(timeoutRef.current);
+    }
+
+    // Set checking state immediately
+    setCheckingReceiptNumber(true);
+    
+    // Create new timeout
+    timeoutRef.current = setTimeout(async () => {
+      try {
+        const response = await axios.get(`${DJANGO_BASE_URL}/check-receipt-exists/?receipt_number=${encodeURIComponent(receiptNumber)}`, {
+          headers: {
+            "Authorization": `Bearer ${token}`
+          }
+        });
+        setReceiptNumberExists(response.data.exists);
+      } catch (err) {
+        console.error('Error checking receipt number:', err);
+        setReceiptNumberExists(null);
+      } finally {
+        setCheckingReceiptNumber(false);
+      }
+    }, 500);
+  }, [token, isTokenValid]);
+
+  // Trigger check when receipt number changes in the form
+  useEffect(() => {
+    if (form.receiptNumber) {
+      checkReceiptNumber(form.receiptNumber);
+    } else {
+      setReceiptNumberExists(null);
+    }
+  }, [form.receiptNumber, checkReceiptNumber]);
+
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
     const { name, value } = e.target;
     setForm((prev) => ({ ...prev, [name]: value }));
+    
+    // Check receipt number when it changes
+    if (name === 'receiptNumber' && value) {
+      checkReceiptNumber(value);
+    }
   };
 
   // Handle item changes
@@ -573,6 +639,15 @@ function LocalReceiptContent() {
     updateFormProgress();
   }, [updateFormProgress]);
 
+  // Cleanup timeout on unmount
+  useEffect(() => {
+    return () => {
+      if (timeoutRef.current) {
+        clearTimeout(timeoutRef.current);
+      }
+    };
+  }, []);
+
 
 
   // Handle responsive sidebar behavior
@@ -666,6 +741,13 @@ function LocalReceiptContent() {
       if (!withholdingForm.transactionType) missingFields.push('Withholding Transaction Type');
     }
     
+    // Prevent submit if duplicate receipt number
+    if (receiptNumberExists === true) {
+      setError('This receipt number already submitted. ');
+      setSubmitting(false);
+      return;
+    }
+
     if (missingFields.length > 0) {
       setError(`Please fill in all required fields: ${missingFields.join(', ')}`);
       setSubmitting(false);
@@ -788,7 +870,7 @@ function LocalReceiptContent() {
         },
       });
 
-      
+      router.push('/userinfo');
       // Handle file uploads if present
       if (MainReceipt || attachment || withholdingForm.document) {
         try { 
@@ -816,12 +898,12 @@ function LocalReceiptContent() {
           for (let [key, value] of fileFormData.entries()) {
           }
           
-          const uploadResponse = await axios.post(`${DJANGO_BASE_URL}/upload-receipt-documents`, fileFormData, {
-            headers: { 
-              "Authorization": `Bearer ${token}`,
-              "Content-Type": "multipart/form-data"
-            },
-          });
+          // const uploadResponse = await axios.post(`${DJANGO_BASE_URL}/upload-receipt-documents`, fileFormData, {
+          //   headers: { 
+          //     "Authorization": `Bearer ${token}`,
+          //     "Content-Type": "multipart/form-data"
+          //   },
+          // });
         } catch (uploadError) {
           console.error('File upload error:', uploadError);
           setError("failed to upload documents. Please try again.");
@@ -911,11 +993,11 @@ function LocalReceiptContent() {
               setNoReceiptMode={setNoReceiptMode}
             />
             
-            {/* Main Content Area - Split when in document view mode */}
-            <div className={`flex flex-1 transition-all duration-300 ${!sidebarOpen ? 'lg:ml-0' : ''}`}>
+                          {/* Main Content Area - Split when in document view mode */}
+            <div className={`flex flex-1 h-screen transition-all duration-300 ${!sidebarOpen ? 'lg:ml-0' : ''}`}>
               {/* Document Viewer - Only shown when in document view mode */}
               {documentViewMode && documentData && (
-                <div className="w-1/2 border-r border-gray-200 bg-white">
+                <div className="w-1/2 h-full border-r border-gray-200 bg-white overflow-hidden">
                   <DocumentViewer
                     mainReceiptUrl={documentData.mainReceiptUrl}
                     attachmentUrl={documentData.attachmentUrl}
@@ -928,7 +1010,7 @@ function LocalReceiptContent() {
               )}
               
               {/* Form Content */}
-              <div className={`${documentViewMode ? 'w-1/2' : 'w-full'} p-4 lg:p-6 lg:relative lg:overflow-y-auto bg-gray-50`}>
+              <div className={`${documentViewMode ? 'w-1/2' : 'w-full'} h-full overflow-y-auto p-4 lg:p-6 bg-gray-50`}>
                 {/* Document View Toggle - Show exit button when in document view mode */}
                 {documentViewMode && (
                   <div className="mb-4 p-3 bg-blue-50 border border-blue-200 rounded-lg">
@@ -1016,6 +1098,8 @@ function LocalReceiptContent() {
                           receiptNames={receiptNames}
                           receiptCategories={receiptCategories}
                           receiptTypes={receiptTypes}
+                          receiptNumberExists={receiptNumberExists}
+                          checkingReceiptNumber={checkingReceiptNumber}
                         />
                         
                         {/* Navigation Buttons */}
@@ -1233,7 +1317,7 @@ function LocalReceiptContent() {
                         </div>
 
                         {/* File Upload Section */}
-                        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        {/* <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                           <FileUpload
                             label="Upload Receipt"
                             accept="image/*,.pdf"
@@ -1250,7 +1334,7 @@ function LocalReceiptContent() {
                             maxSize={10}
                             required={false}
                           />
-                        </div>
+                        </div> */}
                         
                         {/* Navigation Buttons */}
                         <div className="flex justify-between mt-8">
@@ -1316,14 +1400,22 @@ function LocalReceiptContent() {
                                 >
                                   ← Back
                                 </button>
-                                <button 
-                                  type="submit" 
-                                  className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60 text-black" 
-                                  disabled={submitting}
-                                  // onClick={() => console.log('Submit button clicked!')}
-                                >
-                                  {submitting ? "Submitting..." : "Submit Receipt"}
-                                </button>
+                                <div className="flex gap-4">
+                                  <button 
+                                    type="button"
+                                    onClick={() => setIsPreviewModalOpen(true)}
+                                    className="px-8 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                                  >
+                                    Preview
+                                  </button>
+                                  <button 
+                                    type="submit" 
+                                    className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60 text-black" 
+                                    disabled={submitting}
+                                  >
+                                    {submitting ? "Submitting..." : "Submit Receipt"}
+                                  </button>
+                                </div>
                               </div>
                             )}
                           </>
@@ -1345,14 +1437,22 @@ function LocalReceiptContent() {
                             >
                               ← Back
                             </button>
-                            <button 
-                              type="submit" 
-                              className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60 text-black" 
-                              disabled={submitting}
-                              // onClick={() => console.log('Submit button clicked!')}
-                            >
-                              {submitting ? "Submitting..." : "Submit Receipt"}
-                            </button>
+                            <div className="flex gap-4">
+                              <button 
+                                type="button"
+                                onClick={() => setIsPreviewModalOpen(true)}
+                                className="px-8 py-3 bg-gray-600 text-white rounded-lg font-medium hover:bg-gray-700 transition-colors"
+                              >
+                                Preview
+                              </button>
+                              <button 
+                                type="submit" 
+                                className="btn btn-success px-8 py-3 rounded-lg text-lg font-bold shadow transition hover:scale-105 disabled:opacity-60 text-black" 
+                                disabled={submitting}
+                              >
+                                {submitting ? "Submitting..." : "Submit Receipt"}
+                              </button>
+                            </div>
                           </div>
                         )}
                       </FormSection>
@@ -1361,6 +1461,19 @@ function LocalReceiptContent() {
                       {/* Error and Success Messages */}
                       {error && <div className="text-red-600 bg-red-100 rounded px-3 py-2 text-center mb-2 font-semibold">{error}</div>}
                       {success && <div className="text-green-700 bg-green-100 rounded px-3 py-2 text-center mb-2 font-semibold">{success}</div>}
+
+                      {/* Preview Modal */}
+                      <PreviewModal
+                        isOpen={isPreviewModalOpen}
+                        onClose={() => setIsPreviewModalOpen(false)}
+                        form={form}
+                        withholdingForm={withholdingRequired === 'yes' ? withholdingForm : null}
+                        withholdingRequired={withholdingRequired}
+                        subTotal={subTotal}
+                        tax={tax}
+                        mainReceipt={MainReceipt}
+                        attachment={attachment}
+                      />
                     </>
                   )}
                 </div>

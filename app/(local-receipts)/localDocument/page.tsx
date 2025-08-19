@@ -9,41 +9,46 @@ import ProtectedRoute from '../../Context/ProtectedRoute';
 import { DJANGO_BASE_URL } from '../api/api';
 import { SPRING_BASE_URL } from '@/app/(local-receipts)/api/api';
 
-export interface DocumentRecord {
+// API response types aligned with backend
+export interface ApiDocumentResult {
   id: number;
-  document_type: 'main' | 'withholding' | 'attachment';
   receipt_number: string;
+  withholding_receipt_number: string | null;
   company_tin: string;
   uploaded_at: string;
-  file_url: string;
   status: string;
-  has_attachment: boolean;
-  main_document_id: number;
-  withholding_document_id: number | null;
+  main_file_url: string | null;
+  main_filename?: string | null;
+  main_content_type?: string | null;
+  main_attachment_url: string | null;
+  main_attachment_filename?: string | null;
+  main_attachment_content_type?: string | null;
+  has_main_attachment: boolean;
+  withholding_file_url: string | null;
+  withholding_filename?: string | null;
+  withholding_content_type?: string | null;
 }
 
 export interface DocumentsApiResponse {
   count: number;
   next: string | null;
   previous: string | null;
-  results: DocumentRecord[];
-  summary: {
-    total_documents: number;
-    main_receipts: number;
-    withholding_receipts: number;
-    statuses: {
-      uploaded: number;
-      processed: number;
-      rejected: number;
-    };
-  };
+  results: ApiDocumentResult[];
+}
+
+// Minimal document file for UI consumption
+export interface SimpleDocumentFile {
+  id: number;
+  file_url: string;
+  status: string;
+  document_type: 'main' | 'withholding' | 'attachment';
 }
 
 export interface GroupedDocument {
   receipt_number: string;
-  main_document?: DocumentRecord;
-  withholding_document?: DocumentRecord;
-  attachment_document?: DocumentRecord;
+  main_document?: SimpleDocumentFile;
+  withholding_document?: SimpleDocumentFile;
+  attachment_document?: SimpleDocumentFile;
   has_withholding: boolean;
   uploaded_at: string;
 }
@@ -55,67 +60,60 @@ export const fetchLocalDocuments = async (token: string, tinNumber: string): Pro
         "Authorization": `Bearer ${token}`
       }
     });
-    
-    // Debug logging for API response
-    console.log('API Response Debug:', {
-      totalDocuments: response.data.results.length,
-      sampleDocuments: response.data.results.slice(0, 3).map(doc => ({
-        id: doc.id,
-        document_type: doc.document_type,
-        receipt_number: doc.receipt_number,
-        file_url: doc.file_url,
-        file_url_type: typeof doc.file_url,
-        file_url_length: doc.file_url?.length || 0
-      }))
-    });
-    
-    // Group documents by receipt_number
-    return groupDocumentsByReceipt(response.data.results);
+
+
+    // Map API documents into grouped documents
+    return mapApiResultsToGrouped(response.data);
   } catch (error) {
     console.error('Error fetching local documents:', error);
     throw error;
   }
 };
 
-// Helper function to group documents by receipt number
-const groupDocumentsByReceipt = (documents: DocumentRecord[]): GroupedDocument[] => {
-  const grouped = documents.reduce((acc, doc) => {
-    const key = doc.receipt_number;
-    
-    if (!acc[key]) {
-      acc[key] = {
-        receipt_number: doc.receipt_number,
-        has_withholding: false,
-        uploaded_at: doc.uploaded_at
-      };
+// Map backend results into UI-friendly grouped documents
+const mapApiResultsToGrouped = (response: DocumentsApiResponse): GroupedDocument[] => {
+  const results = response?.results || [];
+
+  const grouped = results.map((doc) => {
+    const mainDoc: SimpleDocumentFile | undefined = doc.main_file_url ? {
+      id: doc.id,
+      file_url: doc.main_file_url,
+      status: doc.status,
+      document_type: 'main'
+    } : undefined;
+
+    const attachmentDoc: SimpleDocumentFile | undefined = doc.main_attachment_url ? {
+      id: doc.id,
+      file_url: doc.main_attachment_url,
+      status: doc.status,
+      document_type: 'attachment'
+    } : undefined;
+
+    const withholdingDoc: SimpleDocumentFile | undefined = doc.withholding_file_url ? {
+      id: doc.id,
+      file_url: doc.withholding_file_url,
+      status: doc.status,
+      document_type: 'withholding'
+    } : undefined;
+
+    const groupedDoc: GroupedDocument = {
+      receipt_number: doc.receipt_number,
+      has_withholding: !!doc.withholding_file_url,
+      uploaded_at: doc.uploaded_at,
+      main_document: mainDoc,
+      attachment_document: attachmentDoc,
+      withholding_document: withholdingDoc
+    };
+
+    if (!groupedDoc.main_document) {
+      console.warn('Skipping document without main receipt:', groupedDoc);
     }
-    
-    // Update uploaded_at to the most recent
-    if (new Date(doc.uploaded_at) > new Date(acc[key].uploaded_at)) {
-      acc[key].uploaded_at = doc.uploaded_at;
-    }
-    
-    // Assign documents by type
-    switch (doc.document_type) {
-      case 'main':
-        acc[key].main_document = doc;
-        break;
-      case 'withholding':
-        acc[key].withholding_document = doc;
-        acc[key].has_withholding = true;
-        break;
-      case 'attachment':
-        acc[key].attachment_document = doc;
-        break;
-    }
-    
-    return acc;
-  }, {} as Record<string, GroupedDocument>);
-  
-  // Convert to array and sort by uploaded_at (most recent first)
-  return Object.values(grouped).sort((a, b) => 
-    new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()
-  );
+
+    return groupedDoc;
+  }).filter(d => !!d.main_document);
+
+  // Sort by upload date desc
+  return grouped.sort((a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime());
 };
 
 export const getDocumentUrl = (documentPath: string): string => {
@@ -213,15 +211,32 @@ export default function LocalDocumentPage() {
 
   // Handle document selection and navigation
   const handleDocumentSelect = (document: GroupedDocument) => {
+    // Debug log the document data
+    console.log('Selected Document:', document);
+
+    // Make sure we have a main document
+    if (!document.main_document?.file_url) {
+      console.error('No main document found');
+      return;
+    }
+
+    const mainUrl = getDocumentUrl(document.main_document.file_url);
+    const attachUrl = document.attachment_document?.file_url ? getDocumentUrl(document.attachment_document.file_url) : '';
+    const whUrl = document.withholding_document?.file_url ? getDocumentUrl(document.withholding_document.file_url) : '';
+
     // Navigate to localReceipt page with document data
     const params = new URLSearchParams({
-      documentId: document.main_document?.id.toString() || '',
-      receiptNumber: document.receipt_number || '',
-      mainReceiptUrl: document.main_document?.file_url || '',
-      attachmentUrl: document.attachment_document?.file_url || '',
-      withholdingReceiptUrl: document.withholding_document?.file_url || '',
+      documentId: String(document.main_document.id),
+      receiptNumber: document.receipt_number,
+      mainReceiptUrl: mainUrl,
+      attachmentUrl: attachUrl,
+      withholdingReceiptUrl: whUrl,
       hasWithholding: document.has_withholding.toString(),
+      view: 'split',
     });
+    
+    // Debug log the URL parameters
+    console.log('Navigation Parameters:', Object.fromEntries(params.entries()));
     
     router.push(`/localReceipt?${params.toString()}`);
   };
@@ -328,36 +343,71 @@ export default function LocalDocumentPage() {
                       </div>
 
                       {/* Available Documents */}
-                      <div className="space-y-1 mb-4">
-                        {document.main_document && (
-                          <div className="flex items-center text-xs text-green-600">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
+                      <div className="space-y-2 mb-4">
+                        {/* Main Receipt Section */}
+                        <div className="flex items-center justify-between">
+                          <div className="flex items-center text-sm text-gray-700">
+                            <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
                             </svg>
-                            Main Receipt ({document.main_document.status})
+                            <span>Main Receipt</span>
                           </div>
-                        )}
-                        {document.attachment_document && (
-                          <div className="flex items-center text-xs text-green-600">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Attachment ({document.attachment_document.status})
-                          </div>
-                        )}
+                          {document.main_document && (
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              document.main_document.status === 'processed' ? 'bg-green-100 text-green-800' :
+                              document.main_document.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {document.main_document.status}
+                            </span>
+                          )}
+                        </div>
+
+                        {/* Withholding Receipt Section - Show in same card */}
                         {document.withholding_document && (
-                          <div className="flex items-center text-xs text-green-600">
-                            <svg className="w-3 h-3 mr-1" fill="currentColor" viewBox="0 0 20 20">
-                              <path fillRule="evenodd" d="M16.707 5.293a1 1 0 010 1.414l-8 8a1 1 0 01-1.414 0l-4-4a1 1 0 011.414-1.414L8 12.586l7.293-7.293a1 1 0 011.414 0z" clipRule="evenodd" />
-                            </svg>
-                            Withholding Receipt ({document.withholding_document.status})
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center text-sm text-gray-700">
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                              </svg>
+                              <span>Withholding Receipt</span>
+                            </div>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              document.withholding_document.status === 'processed' ? 'bg-green-100 text-green-800' :
+                              document.withholding_document.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {document.withholding_document.status}
+                            </span>
+                          </div>
+                        )}
+
+                        {/* Attachment Section */}
+                        {document.attachment_document && (
+                          <div className="flex items-center justify-between">
+                            <div className="flex items-center text-sm text-gray-700">
+                              <svg className="w-4 h-4 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M15.172 7l-6.586 6.586a2 2 0 102.828 2.828l6.414-6.586a4 4 0 00-5.656-5.656l-6.415 6.585a6 6 0 108.486 8.486L20.5 13" />
+                              </svg>
+                              <span>Attachment</span>
+                            </div>
+                            <span className={`px-2 py-1 text-xs rounded-full ${
+                              document.attachment_document.status === 'processed' ? 'bg-green-100 text-green-800' :
+                              document.attachment_document.status === 'rejected' ? 'bg-red-100 text-red-800' :
+                              'bg-blue-100 text-blue-800'
+                            }`}>
+                              {document.attachment_document.status}
+                            </span>
                           </div>
                         )}
                       </div>
 
-                      {/* Action Prompt */}
-                      <div className="text-xs text-blue-600 font-medium group-hover:text-blue-700 transition-colors">
-                        Click to fill receipt form →
+                      {/* View Documents Prompt */}
+                      <div className="text-xs text-blue-600 font-medium group-hover:text-blue-700 transition-colors flex items-center">
+                        <span>View Documents</span>
+                        <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                          <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M14 5l7 7m0 0l-7 7m7-7H3" />
+                        </svg>
                       </div>
                     </div>
                   ))}
