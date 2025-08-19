@@ -9,13 +9,15 @@ interface BuyerFormProps {
   setBuyer: (buyer: BuyerInfo) => void;
   shouldFetchCompanies?: boolean; // Whether this form should fetch companies
   allowOverride?: boolean; // Allow manual override of buyer info
+  errors?: Partial<Record<'tin'|'name'|'address', string>>;
 }
 
 const BuyerForm: React.FC<BuyerFormProps> = ({ 
   buyer, 
   setBuyer, 
   shouldFetchCompanies = false,
-  allowOverride = true 
+  allowOverride = true,
+  errors = {}
 }) => {
   const { user, token } = useAuth();
   const [companies, setCompanies] = useState<CompanyData[]>([]);
@@ -185,6 +187,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
               required
               autoComplete="off"
             />
+            {errors.tin && (<p className="mt-1 text-xs text-red-600">{errors.tin}</p>)}
             {!shouldFetchCompanies && tinQuery.trim().length >= 1 && (
               <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-auto">
                 {isSearching && (
@@ -219,6 +222,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
             onChange={e => handleInputChange('name', e.target.value)}
             required
           />
+          {errors.name && (<p className="mt-1 text-xs text-red-600">{errors.name}</p>)}
         </div>
         
       
@@ -233,6 +237,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
             value={buyer.address}
             onChange={e => handleInputChange('address', e.target.value)}
           />
+          {errors.address && (<p className="mt-1 text-xs text-red-600">{errors.address}</p>)}
         </div>
       </div>
     </div>

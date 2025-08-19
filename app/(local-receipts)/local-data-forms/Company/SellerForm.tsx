@@ -9,13 +9,15 @@ interface SellerFormProps {
   setSeller: (seller: SellerInfo) => void;
   shouldFetchCompanies?: boolean; // Whether this form should fetch companies
   allowOverride?: boolean; // Allow manual override of seller info
+  errors?: Partial<Record<'tin'|'name'|'address', string>>;
 }
 
 const SellerForm: React.FC<SellerFormProps> = ({ 
   seller, 
   setSeller, 
   shouldFetchCompanies = true,
-  allowOverride = true 
+  allowOverride = true,
+  errors = {}
 }) => {
   const { user, token } = useAuth();
   const [companies, setCompanies] = useState<CompanyData[]>([]);
@@ -180,6 +182,7 @@ const SellerForm: React.FC<SellerFormProps> = ({
               required
               autoComplete="off"
             />
+            {errors.tin && (<p className="mt-1 text-xs text-red-600">{errors.tin}</p>)}
             {!shouldFetchCompanies && tinQuery.trim().length >= 1 && (
               <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-auto">
                 {isSearching && (
@@ -214,6 +217,7 @@ const SellerForm: React.FC<SellerFormProps> = ({
             onChange={e => handleInputChange('name', e.target.value)}
             required
           />
+          {errors.name && (<p className="mt-1 text-xs text-red-600">{errors.name}</p>)}
         </div>
      
         
@@ -228,6 +232,7 @@ const SellerForm: React.FC<SellerFormProps> = ({
             onChange={e => handleInputChange('address', e.target.value)}
             required
           />
+          {errors.address && (<p className="mt-1 text-xs text-red-600">{errors.address}</p>)}
         </div>
       </div>
     </div>

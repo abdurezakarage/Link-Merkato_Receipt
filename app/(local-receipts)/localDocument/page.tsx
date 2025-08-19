@@ -61,6 +61,18 @@ export const fetchLocalDocuments = async (token: string, tinNumber: string): Pro
       }
     });
 
+    // Debug logging for API response
+    console.log('API Response Debug:', {
+      count: response.data.count,
+      next: response.data.next,
+      sample: response.data.results.slice(0, 3).map(doc => ({
+        id: doc.id,
+        receipt_number: doc.receipt_number,
+        main_file_url: doc.main_file_url,
+        main_attachment_url: doc.main_attachment_url,
+        withholding_file_url: doc.withholding_file_url,
+      }))
+    });
 
     // Map API documents into grouped documents
     return mapApiResultsToGrouped(response.data);

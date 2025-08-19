@@ -99,6 +99,7 @@ function LocalReceiptContent() {
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
   const [noReceiptMode, setNoReceiptMode] = useState(false);
   const [withholdingRequired, setWithholdingRequired] = useState<string>('');
   const [receiptNumberExists, setReceiptNumberExists] = useState<boolean | null>(null);
@@ -702,6 +703,23 @@ function LocalReceiptContent() {
     const item = dataArray.find(item => item[fieldName] === name);
     return item ? item.id : null;
   };
+  // Flatten nested backend validation errors into dot.notation => message
+  const flattenErrors = (obj: any, prefix = ""): Record<string, string> => {
+    const result: Record<string, string> = {};
+    if (!obj || typeof obj !== 'object') return result;
+    for (const key of Object.keys(obj)) {
+      const value = (obj as any)[key];
+      const newKey = prefix ? `${prefix}.${key}` : key;
+      if (Array.isArray(value)) {
+        result[newKey] = value.filter(Boolean).join(' ');
+      } else if (value && typeof value === 'object') {
+        Object.assign(result, flattenErrors(value, newKey));
+      } else if (value != null) {
+        result[newKey] = String(value);
+      }
+    }
+    return result;
+  };
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
@@ -757,6 +775,7 @@ function LocalReceiptContent() {
     setSubmitting(true);
     setError("");
     setSuccess("");
+    setFieldErrors({});
     
     try {
       // Validate that all required IDs are found
@@ -954,7 +973,15 @@ function LocalReceiptContent() {
         status: (err as any)?.response?.status,
         statusText: (err as any)?.response?.statusText
       });
-      setError("Failed to submit receipt. Please try again.");
+      const respData = (err as any)?.response?.data;
+      if (respData && typeof respData === 'object') {
+        const flat = flattenErrors(respData);
+        setFieldErrors(flat);
+        const firstMessage = Object.values(flat)[0];
+        setError(typeof firstMessage === 'string' && firstMessage.length > 0 ? firstMessage : "Failed to submit receipt. Please try again.");
+      } else {
+        setError("Failed to submit receipt. Please try again.");
+      }
     } finally {
       setSubmitting(false);
     }
@@ -1100,6 +1127,15 @@ function LocalReceiptContent() {
                           receiptTypes={receiptTypes}
                           receiptNumberExists={receiptNumberExists}
                           checkingReceiptNumber={checkingReceiptNumber}
+                          errors={{
+                            receiptCategory: fieldErrors['receipt_category_id'] || fieldErrors['receipt_category'],
+                            receiptType: fieldErrors['receipt_type_id'] || fieldErrors['receipt_type'],
+                            receiptKind: fieldErrors['receipt_kind_id'] || fieldErrors['receipt_kind'],
+                            receiptName: fieldErrors['receipt_name_id'] || fieldErrors['receipt_name'],
+                            receiptNumber: fieldErrors['receipt_number'],
+                            calendarType: fieldErrors['calendar_type'],
+                            receiptDate: fieldErrors['receipt_date'],
+                          }}
                         />
                         
                         {/* Navigation Buttons */}
@@ -1128,12 +1164,22 @@ function LocalReceiptContent() {
                             setSeller={setSeller} 
                             shouldFetchCompanies={form.receiptCategory === 'Revenue' || form.receiptCategory === 'Crv' || form.receiptCategory === 'Other'}
                             allowOverride={true}
+                            errors={{
+                              tin: fieldErrors['issued_by_details.tin_number'],
+                              name: fieldErrors['issued_by_details.name'],
+                              address: fieldErrors['issued_by_details.address']
+                            }}
                           />
                           <BuyerForm 
                             buyer={form.buyer} 
                             setBuyer={setBuyer} 
                             shouldFetchCompanies={form.receiptCategory === 'Buyer' || form.receiptCategory === 'Expense'}
                             allowOverride={true}
+                            errors={{
+                              tin: fieldErrors['issued_to_details.tin_number'],
+                              name: fieldErrors['issued_to_details.name'],
+                              address: fieldErrors['issued_to_details.address']
+                            }}
                           />
                         </div>
                         
@@ -1297,6 +1343,9 @@ function LocalReceiptContent() {
                                 <option key={index} value={method}>{method}</option>
                               ))}
                             </select>
+                            {fieldErrors['payment_method_type'] && (
+                              <p className="mt-1 text-sm text-red-600">{fieldErrors['payment_method_type']}</p>
+                            )}
                           </div>
                           {form.paymentMethod && form.paymentMethod.toLowerCase().includes('bank') && (
                             <div className="flex flex-col">
@@ -1312,6 +1361,9 @@ function LocalReceiptContent() {
                                   <option key={index} value={bankName}>{bankName}</option>
                                 ))}
                               </select>
+                              {fieldErrors['bank_name'] && (
+                                <p className="mt-1 text-sm text-red-600">{fieldErrors['bank_name']}</p>
+                              )}
                             </div>
                           )}
                         </div>
@@ -1460,6 +1512,11 @@ function LocalReceiptContent() {
 
                       {/* Error and Success Messages */}
                       {error && <div className="text-red-600 bg-red-100 rounded px-3 py-2 text-center mb-2 font-semibold">{error}</div>}
+                      {Object.keys(fieldErrors).length > 0 && (
+                        <div className="text-red-700 bg-red-50 rounded px-3 py-2 text-sm mb-2">
+                          Please review the highlighted fields.
+                        </div>
+                      )}
                       {success && <div className="text-green-700 bg-green-100 rounded px-3 py-2 text-center mb-2 font-semibold">{success}</div>}
 
                       {/* Preview Modal */}

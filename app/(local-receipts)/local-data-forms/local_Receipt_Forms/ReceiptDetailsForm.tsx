@@ -10,6 +10,7 @@ interface ReceiptDetailsFormProps {
   receiptTypes: string[];
   receiptNumberExists: boolean | null;
   checkingReceiptNumber: boolean;
+  errors?: Partial<Record<'receiptCategory'|'receiptType'|'receiptKind'|'receiptName'|'receiptNumber'|'calendarType'|'receiptDate', string>>;
 }
 
 const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({ 
@@ -20,7 +21,8 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
   receiptCategories, 
   receiptTypes,
   receiptNumberExists,
-  checkingReceiptNumber
+  checkingReceiptNumber,
+  errors = {}
 }) => {
   
   // Function to get prefix based on receipt kind
@@ -98,6 +100,7 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
               <option key={category || index} value={category}>{category ? category.charAt(0).toUpperCase() + category.slice(1) : ''}</option>
             ))}
           </select>
+          {errors.receiptCategory && (<p className="mt-1 text-sm text-red-600">{errors.receiptCategory}</p>)}
         </div>
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Receipt Type*</label>
@@ -107,6 +110,7 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
               <option key={type || index} value={type}>{type ? type.charAt(0).toUpperCase() + type.slice(1) : ''}</option>
             ))}
           </select>
+          {errors.receiptType && (<p className="mt-1 text-sm text-red-600">{errors.receiptType}</p>)}
         </div>
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Receipt Kind*</label>
@@ -116,6 +120,7 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
               <option key={kind || index} value={kind}>{kind ? kind.charAt(0).toUpperCase() + kind.slice(1) : ''}</option>
             ))}
           </select>
+          {errors.receiptKind && (<p className="mt-1 text-sm text-red-600">{errors.receiptKind}</p>)}
         </div>
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Receipt Name*</label>
@@ -125,6 +130,7 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
               <option key={name || index} value={name}>{name ? name.charAt(0).toUpperCase() + name.slice(1) : ''}</option>
             ))}
           </select>
+          {errors.receiptName && (<p className="mt-1 text-sm text-red-600">{errors.receiptName}</p>)}
         </div>
       </div>
       {/* Row 2: 3 columns */}
@@ -168,6 +174,7 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
           {!checkingReceiptNumber && receiptNumberExists === true && (
             <p className="mt-1 text-sm text-red-600">This receipt number is already submitted</p>
           )}
+          {errors.receiptNumber && (<p className="mt-1 text-sm text-red-600">{errors.receiptNumber}</p>)}
           {/* {!checkingReceiptNumber && receiptNumberExists === false && form.receiptNumber && (
             <p className="mt-1 text-sm text-green-600">Receipt number is available</p>
           )} */}
@@ -179,10 +186,12 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
             <option value="ethiopian">Ethiopian</option>
             <option value="gregorian">Gregorian</option>
           </select>
+          {errors.calendarType && (<p className="mt-1 text-sm text-red-600">{errors.calendarType}</p>)}
         </div>
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Receipt Date*</label>
           <input className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black" type="date" name="receiptDate" value={form.receiptDate} onChange={e => setForm(f => ({ ...f, receiptDate: e.target.value }))} required />
+          {errors.receiptDate && (<p className="mt-1 text-sm text-red-600">{errors.receiptDate}</p>)}
         </div>
       </div>
     </>
