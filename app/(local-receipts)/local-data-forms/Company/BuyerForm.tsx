@@ -193,9 +193,9 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
                 {isSearching && (
                   <div className="px-3 py-2 text-sm text-gray-600">Searching...</div>
                 )}
-                {!isSearching && tinResults.length === 0 && (
+                {/* {!isSearching && tinResults.length === 0 && (
                   <div className="px-3 py-2 text-sm text-gray-500">No matches</div>
-                )}
+                )} */}
                 {!isSearching && tinResults.map((r) => (
                   <button
                     type="button"

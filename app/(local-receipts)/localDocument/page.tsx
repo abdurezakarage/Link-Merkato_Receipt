@@ -166,6 +166,13 @@ export default function LocalDocumentPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
 
+  // Ensure documents are always displayed with most recent uploads first
+  const sortedDocuments = React.useMemo(() => {
+    return [...documents].sort(
+      (a, b) => new Date(b.uploaded_at).getTime() - new Date(a.uploaded_at).getTime()
+    );
+  }, [documents]);
+
   // Token validation function
   const isTokenValid = useCallback(() => {
     if (!token) return false;
@@ -320,7 +327,7 @@ export default function LocalDocumentPage() {
                 </div>
               ) : (
                 <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {documents.map((document) => (
+                  {sortedDocuments.map((document) => (
                     <div
                       key={document.receipt_number}
                       onClick={() => handleDocumentSelect(document)}
