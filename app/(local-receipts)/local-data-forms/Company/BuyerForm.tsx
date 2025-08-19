@@ -1,8 +1,8 @@
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import axios from "axios";
 import type { BuyerInfo, CompanyData } from "../types";
 import { useAuth } from "../../../Context/AuthContext";
-import { SPRING_BASE_URL } from "../../api/api";
+import { DJANGO_BASE_URL } from "../../api/api";
 
 interface BuyerFormProps {
   buyer: BuyerInfo;
@@ -21,6 +21,13 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
   const [companies, setCompanies] = useState<CompanyData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // TIN lookup state (for manual entry mode)
+  const [tinQuery, setTinQuery] = useState("");
+  const [tinResults, setTinResults] = useState<Array<{ tin_number: string; name: string; address: string }>>([]);
+  const [isSearching, setIsSearching] = useState(false);
+  const searchTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const resultsRef = useRef<HTMLDivElement | null>(null);
 
   // Parse JWT token to extract company information
   const parseJwt = (token: string): any => {
@@ -87,6 +94,58 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
     }
   };
 
+  // Debounced TIN prefix search (only when this form is in manual mode)
+  useEffect(() => {
+    if (shouldFetchCompanies) return; // skip lookup when auto-filled from token
+    if (!token) return;
+
+    if (searchTimeoutRef.current) {
+      clearTimeout(searchTimeoutRef.current);
+    }
+
+    // Trigger search for 1+ chars
+    if (tinQuery && tinQuery.trim().length >= 1) {
+      setIsSearching(true);
+      searchTimeoutRef.current = setTimeout(async () => {
+        try {
+          const res = await axios.get(`${DJANGO_BASE_URL}/contacts/lookup/?tin_prefix=${encodeURIComponent(tinQuery.trim())}`, {
+            headers: { Authorization: `Bearer ${token}` },
+          });
+
+          const results = Array.isArray(res.data?.results) ? res.data.results : (Array.isArray(res.data) ? res.data : []);
+          const mapped = results.map((r: any) => ({
+            tin_number: r?.tin_number || r?.tin || "",
+            name: r?.company_name || r?.name || "",
+            address: r?.company_address || r?.address || "",
+          })).filter((r: any) => r.tin_number);
+          setTinResults(mapped);
+        } catch (e) {
+          setTinResults([]);
+        } finally {
+          setIsSearching(false);
+        }
+      }, 400);
+    } else {
+      setTinResults([]);
+      setIsSearching(false);
+    }
+
+    return () => {
+      if (searchTimeoutRef.current) clearTimeout(searchTimeoutRef.current);
+    };
+  }, [tinQuery, shouldFetchCompanies, token]);
+
+  const handleTinChange = (value: string) => {
+    handleInputChange('tin', value);
+    setTinQuery(value);
+  };
+
+  const selectTinResult = (result: { tin_number: string; name: string; address: string }) => {
+    setBuyer({ name: result.name || buyer.name, tin: result.tin_number, address: result.address || buyer.address });
+    setTinQuery(result.tin_number);
+    setTinResults([]);
+  };
+
   return (
     <div className="flex-1 bg-green-50 border border-green-200 rounded-2xl p-6 shadow-sm">
       <div className="flex items-center justify-between mb-4">
@@ -113,6 +172,42 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
       )}
       
       <div className="flex flex-col gap-4">
+      <div>
+          <label className="block text-xs font-semibold text-gray-600 mb-1">
+            TIN
+          </label>
+          <div className="relative" ref={resultsRef}>
+            <input 
+              className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-black"
+              name="buyerTin"
+              value={buyer.tin}
+              onChange={e => handleTinChange(e.target.value)}
+              required
+              autoComplete="off"
+            />
+            {!shouldFetchCompanies && tinQuery.trim().length >= 1 && (
+              <div className="absolute z-20 mt-1 w-full bg-white border border-gray-200 rounded-lg shadow-lg max-h-56 overflow-auto">
+                {isSearching && (
+                  <div className="px-3 py-2 text-sm text-gray-600">Searching...</div>
+                )}
+                {!isSearching && tinResults.length === 0 && (
+                  <div className="px-3 py-2 text-sm text-gray-500">No matches</div>
+                )}
+                {!isSearching && tinResults.map((r) => (
+                  <button
+                    type="button"
+                    key={r.tin_number + r.name}
+                    onClick={() => selectTinResult(r)}
+                    className="w-full text-left px-3 py-2 hover:bg-green-50"
+                  >
+                    <div className="text-sm font-medium text-gray-800">{r.tin_number}</div>
+                    <div className="text-xs text-gray-600">{r.name}{r.address ? ` · ${r.address}` : ''}</div>
+                  </button>
+                ))}
+              </div>
+            )}
+          </div>
+        </div>
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">
             Name
@@ -126,18 +221,7 @@ const BuyerForm: React.FC<BuyerFormProps> = ({
           />
         </div>
         
-        <div>
-          <label className="block text-xs font-semibold text-gray-600 mb-1">
-            TIN
-          </label>
-          <input 
-            className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-green-400 bg-white text-black"
-            name="buyerTin"
-            value={buyer.tin}
-            onChange={e => handleInputChange('tin', e.target.value)}
-            required
-          />
-        </div>
+      
         
         <div>
           <label className="block text-xs font-semibold text-gray-600 mb-1">

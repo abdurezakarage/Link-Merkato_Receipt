@@ -118,6 +118,8 @@ export default function LocalDocumentUpload() {
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
       setSubmitting(true);
+      setError("");
+      setSuccess("");
       
       try {
         const tin_number = localStorage.getItem("tin_number");
@@ -197,9 +199,87 @@ export default function LocalDocumentUpload() {
             
             console.log('Files uploaded successfully:', uploadResponse.data);
             setSuccess("Documents uploaded successfully!");
+            // Briefly show success then navigate based on role
+            try {
+              // Allow the user to see the success message
+              setSubmitting(false);
+              await new Promise((resolve) => setTimeout(resolve, 2000));
+
+              const rolesStr = localStorage.getItem("roles");
+              if (!rolesStr) {
+                setError("User role not found. Please log in again.");
+                return;
+              }
+
+              let userRoles;
+              try {
+                userRoles = JSON.parse(rolesStr);
+              } catch (parseError) {
+                console.error('Error parsing roles:', parseError);
+                setError("Invalid role format. Please log in again.");
+                return;
+              }
+
+              if (Array.isArray(userRoles)) {
+                if (userRoles.includes("USER")) {
+                  router.push('/auth/owner-dashboard');
+                } else if (userRoles.includes("CLERK")) {
+                  router.push('/userinfo');
+                } else {
+                  setError("Invalid user role. Please log in again.");
+                }
+              } else {
+                setError("Invalid role format. Please log in again.");
+              }
+            } catch (navError) {
+              console.error('Navigation error:', navError);
+              setError("Failed to navigate. Please try again.");
+            }
+            return;
           } catch (uploadError) {
             console.error('File upload error:', uploadError);
-            setError("failed to upload documents. Please try again.");
+            // Try to extract a meaningful error message from server response
+            let message = "Failed to upload documents. Please try again.";
+            if (axios.isAxiosError(uploadError)) {
+              const data = uploadError.response?.data as any;
+              if (data) {
+                if (typeof data === 'string') {
+                  message = data;
+                } else if (Array.isArray(data)) {
+                  message = data.join(' ');
+                } else if (typeof data === 'object') {
+                  const preferredKeys = [
+                    'file',
+                    'main_receipt',
+                    'attachment',
+                    'withholding_receipt',
+                    'detail',
+                    'non_field_errors'
+                  ];
+                  for (const key of preferredKeys) {
+                    const value = data[key];
+                    if (!value) continue;
+                    if (typeof value === 'string') {
+                      message = value;
+                      break;
+                    }
+                    if (Array.isArray(value)) {
+                      message = value.join(' ');
+                      break;
+                    }
+                  }
+                  if (message === "Failed to upload documents. Please try again.") {
+                    const firstValue = Object.values(data)[0] as unknown;
+                    if (typeof firstValue === 'string') {
+                      message = firstValue;
+                    } else if (Array.isArray(firstValue)) {
+                      message = (firstValue as unknown[]).join(' ');
+                    }
+                  }
+                }
+              }
+            }
+            setError(message);
             setSubmitting(false);
             return;
           }
@@ -213,42 +293,6 @@ export default function LocalDocumentUpload() {
         console.error('Error submitting form:', error);
         setError("Failed to submit form. Please try again.");
       } finally {
-        // Handle navigation after successful submission
-        if (!error) {
-          try {
-            const rolesStr = localStorage.getItem("roles");
-            if (!rolesStr) {
-              setError("User role not found. Please log in again.");
-              return;
-            }
-            
-            // Parse the roles array from localStorage
-            let userRoles;
-            try {
-              userRoles = JSON.parse(rolesStr);
-            } catch (parseError) {
-              console.error('Error parsing roles:', parseError);
-              setError("Invalid role format. Please log in again.");
-              return;
-            }
-
-            // Check if roles is an array and contains the expected role
-            if (Array.isArray(userRoles)) {
-              if (userRoles.includes("USER")) {
-                router.push('/auth/owner-dashboard');
-              } else if (userRoles.includes("CLERK")) {
-                router.push('/userinfo');
-              } else {
-                setError("Invalid user role. Please log in again.");
-              }
-            } else {
-              setError("Invalid role format. Please log in again.");
-            }
-          } catch (navError) {
-            console.error('Navigation error:', navError);
-            setError("Failed to navigate. Please try again.");
-          }
-        }
         setSubmitting(false);
       }
     }
@@ -294,9 +338,9 @@ export default function LocalDocumentUpload() {
                       {receiptNumber && receiptNumberExists === true && !checkingReceiptNumber && (
                         <p className="text-sm text-red-600 mt-1">This receipt number already submitted.</p>
                       )}
-                      {receiptNumber && receiptNumberExists === false && !checkingReceiptNumber && (
+                      {/* {receiptNumber && receiptNumberExists === false && !checkingReceiptNumber && (
                         <p className="text-sm text-green-600 mt-1">Receipt number is available.</p>
-                      )}
+                      )} */}
                     </div>
                     <FileUpload
                       label="Upload Receipt *"
