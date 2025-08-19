@@ -16,14 +16,11 @@ export default function RegisterPage() {
     firstname: "",
     lastname: "",
     companyname: "",
-    tinnumber: "",
     email: "",
     phone_number: "",
     wereda: "",
     kebele: "",
     region: "",
-    username: "",
-    password: "",
   });
 
   const [error, setError] = useState("");
@@ -46,28 +43,19 @@ const parseJwt = (token: string): any => {
     setFormData(prev => ({
       ...prev,
       firstname: prev.firstname || payload.first_name || payload.firstname || "",
-      lastname: prev.lastname || payload.last_name || payload.lastname || "",
+      lastname: prev.lastname || payload.last_name || payload.lastname || payload.lastName || payload.Lastname || payload.surname || payload.family_name || "",
       companyname: prev.companyname || payload.company_name || payload.company?.company_name || "",
-      tinnumber: prev.tinnumber || payload.tin_number || payload.tinnumber || payload.tin || "",
       email: prev.email || payload.email || "",
       phone_number: prev.phone_number || payload.phone_number || payload.phone || "",
       wereda: prev.wereda || payload.wereda || "",
       kebele: prev.kebele || payload.kebele || "",
       region: prev.region || payload.Region || payload.region || "",
-      username: prev.username || payload.username || "",
     }));
   }, [token]);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
-
-    // Special handling for TIN number
-    if (name === "tinnumber") {
-      // Only allow numbers and limit to 10 digits
-      const numericValue = value.replace(/\D/g, "").slice(0, 10);
-      setFormData({ ...formData, [name]: numericValue });
-    } else {
-      setFormData({ ...formData, [name]: value });
-    }
+    const nextValue = name === "tinnumber" ? value.replace(/\D/g, "").slice(0, 10) : value;
+    setFormData(prev => ({ ...prev, [name]: nextValue }));
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -75,12 +63,6 @@ const parseJwt = (token: string): any => {
     setLoading(true);
     setError("");
 
-    // Validate TIN number is exactly 10 digits
-    if (formData.tinnumber.length !== 10) {
-      setError("TIN number must be exactly 10 digits");
-      setLoading(false);
-      return;
-    }
 
     try {
          // Get the token from localStorage since the state might not be updated yet
@@ -97,7 +79,7 @@ const parseJwt = (token: string): any => {
         const kebele = decodedToken.kebele;
         const region = decodedToken.region;
         const first_name = decodedToken.first_name;
-        const last_name = decodedToken.last_name;
+        const lastname = decodedToken.Lastname;
 
 
       const response = await axios.put(
