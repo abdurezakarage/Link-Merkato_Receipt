@@ -121,6 +121,29 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
     }
   }
 
+  function getErrorMessage(err: any): string {
+    try {
+      const response = err?.response;
+      if (response) {
+        const data = response.data;
+        if (typeof data === 'string') {
+          try {
+            const parsed = JSON.parse(data);
+            return parsed?.error || parsed?.message || parsed?.detail || data;
+          } catch {
+            return data;
+          }
+        }
+        if (typeof data === 'object' && data !== null) {
+          return data.error || data.message || data.detail || err?.message || 'Login failed';
+        }
+      }
+      return err?.message || 'Login failed';
+    } catch {
+      return 'Login failed';
+    }
+  }
+
   const login = async (username: string, password: string): Promise<User> => {
     setIsLoading(true);
     setError(null);
@@ -143,7 +166,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
       } else if (response.data.token && typeof response.data.token === 'string') {
         token = response.data.token;
       } else {
-        throw new Error('Invalid response structure from first API. Please check the console for the full response.');
+        throw new Error('Invalid username or password.');
       }
 
       // Decode JWT to get user_id and is_company_created flag
@@ -241,13 +264,10 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
         //console.log('Login successful with second API');
         return userData
       } catch (secondApiError: any) {
-        // Both APIs failed
-        const firstErrorMessage = firstApiError.response?.data?.message || 'login failed';
-        const secondErrorMessage = secondApiError.response?.data?.message || 'login failed';
-        
-        //const combinedErrorMessage = `Login failed on both APIs. First API: ${firstErrorMessage}. Second API: ${secondErrorMessage}`;
-        setError("Login failed");
-        throw new Error("Login failed");
+        // Both APIs failed - surface backend error message when available
+        const errorMessage = getErrorMessage(secondApiError) || getErrorMessage(firstApiError);
+        setError(errorMessage);
+        throw new Error(errorMessage);
       }
     } finally {
       setIsLoading(false);

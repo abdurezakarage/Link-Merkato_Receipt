@@ -61,6 +61,10 @@ export default function Login() {
     if (errors[e.target.name as keyof FormErrors]) {
       setErrors(prev => ({ ...prev, [e.target.name]: undefined }));
     }
+    // Clear any server error on new input
+    if (errors.serverError) {
+      setErrors(prev => ({ ...prev, serverError: undefined }));
+    }
   };
 
   const validateForm = () => {
@@ -81,6 +85,7 @@ export default function Login() {
     e.preventDefault();
     setValidationError("");
     setIsSubmitting(true);
+    setErrors({});
     
     if (!validateForm()) {
       setIsSubmitting(false);
@@ -136,12 +141,15 @@ export default function Login() {
         router.push("/(local-receipts)/userinfo");
       }
 
-    } catch (err) {
+    } catch (err: any) {
       console.error('Login error:', err);
-      // Set server error if available
-      if (error) {
-        setErrors(prev => ({ ...prev, serverError: error }));
-      }
+      const message =
+        err?.response?.data?.error ||
+        err?.response?.data?.message ||
+        error ||
+        err?.message ||
+        'Login failed';
+      setErrors(prev => ({ ...prev, serverError: message }));
     } finally {
       setIsSubmitting(false);
     }

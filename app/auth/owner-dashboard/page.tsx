@@ -3,8 +3,73 @@
 import React from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import Link from "next/link";
+import { useAuth } from "../../Context/AuthContext";
+import { useRouter } from "next/navigation";
+import { CompanyData } from "../../(local-receipts)/local-data-forms/types";
+import { useState } from "react";
 
 export default function OwnerDashboard() {
+  const { user, token, logout } = useAuth();
+  const router = useRouter();
+
+ // Parse JWT token to get company information
+ const parseJwt = (token: string): any => {
+  try {
+    return JSON.parse(atob(token.split('.')[1]));
+  } catch (e) {
+    return null;
+  }
+};
+
+// Get company data from token
+const getCompanyFromToken = (): CompanyData | null => {
+  if (!token) return null;
+  
+  const payload = parseJwt(token);
+  if (!payload) return null;
+
+  return {
+    tin_number: payload.tin_number || '',
+    company_name: payload.company_name || '',
+    company_email: payload.email || '',
+    company_address: payload.address || '',
+    created_by_username: payload.first_name || ''
+  };
+};
+
+// Get company information from token
+const companyFromToken = getCompanyFromToken();
+
+const [profileData, setProfileData] = useState({
+  username: user?.username || '',
+  firstName: companyFromToken?.created_by_username || '',
+  email: companyFromToken?.company_email || '',
+  companyName: companyFromToken?.company_name || '',
+  tinNumber: companyFromToken?.tin_number || '',
+  address: companyFromToken?.company_address || ''
+});
+// Company Card Component
+const CompanyCard: React.FC<{ company: CompanyData }> = ({ company }) => (
+  <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-4 hover:shadow-md transition-shadow">
+    <div className="flex items-start justify-between">
+      <div className="flex-1">
+        <h3 className="font-semibold text-gray-900 text-lg mb-1">{company.company_name}</h3>
+        <div className="space-y-1 text-sm text-gray-600">
+          <p><span className="font-medium">TIN:</span> {company.tin_number}</p>
+          <p><span className="font-medium">Email:</span> {company.company_email}</p>
+          <p><span className="font-medium">Address:</span> {company.company_address}</p>
+          <p><span className="font-medium">Created by:</span> {company.created_by_username}</p>
+        </div>
+      </div>
+      <div className="ml-4">
+        <div className="w-12 h-12 bg-blue-100 rounded-lg flex items-center justify-center">
+          <span className="text-blue-600 font-semibold text-lg">🏢</span>
+        </div>
+      </div>
+    </div>
+  </div>
+);
+
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 p-6">
       <div className="max-w-7xl mx-auto">
@@ -101,7 +166,42 @@ export default function OwnerDashboard() {
                </div>
              </Link>
            </Card>
-                    
+
+           {/* company information */}
+           <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
+           <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+              <div className="flex items-center justify-between mb-6">
+                <h2 className="text-xl font-semibold text-gray-900">Company Information</h2>
+                <button
+                  onClick={() => router.push('/auth/register')}
+                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
+                >
+                  Update Company
+                </button>
+              </div>
+
+              {companyFromToken ? (
+                <div className="space-y-4">
+                  <CompanyCard company={companyFromToken} />
+                </div>
+              ) : (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-gray-100 rounded-full flex items-center justify-center mx-auto mb-4">
+                    <span className="text-2xl">🏢</span>
+                  </div>
+                  <p className="text-gray-600 mb-4">No company information found in token</p>
+                  <button
+                    onClick={() => router.push('/auth/company_register')}
+                    className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition"
+                  >
+                    Register Your Company
+                  </button>
+                </div>
+              )}
+            </div>
+           </Card>
+
+           {/* vat report    */}   
            <Card className="hover:shadow-lg transition-all duration-300 cursor-pointer group">
              <Link href="/monthly-Vat-Summary" className="block">
                <div className="p-6 text-center">

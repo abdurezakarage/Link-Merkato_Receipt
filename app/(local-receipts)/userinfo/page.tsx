@@ -154,6 +154,8 @@ const UserDashboard: React.FC = () => {
     address: companyFromToken?.company_address || ''
   });
 
+
+  
   // Fetch receipts data
   const fetchReceipts = async () => {
     setLoading(true);
@@ -440,12 +442,6 @@ const UserDashboard: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-                <button
-                  onClick={() => setIsEditing(!isEditing)}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  {isEditing ? 'Cancel' : 'Edit'}
-                </button>
               </div>
 
               <div className="space-y-4">
@@ -507,12 +503,6 @@ const UserDashboard: React.FC = () => {
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Company Information</h2>
-                <button
-                  onClick={() => router.push('/auth/company_register')}
-                  className="text-sm text-blue-600 hover:text-blue-700 font-medium"
-                >
-                  Update Company
-                </button>
               </div>
 
               {companyFromToken ? (
