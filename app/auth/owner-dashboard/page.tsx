@@ -32,7 +32,16 @@ const getCompanyFromToken = (): CompanyData | null => {
     tin_number: payload.tin_number || '',
     company_name: payload.company_name || '',
     company_email: payload.email || '',
-    company_address: payload.address || '',
+    company_address: (
+      payload?.Region ||
+      payload?.region ||
+      payload?.address ||
+      payload?.company?.Region ||
+      payload?.company?.region ||
+      payload?.company?.address ||
+      payload?.company?.company_address ||
+      ''
+    ),
     created_by_username: payload.first_name || ''
   };
 };
@@ -173,7 +182,7 @@ const CompanyCard: React.FC<{ company: CompanyData }> = ({ company }) => (
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Company Information</h2>
                 <button
-                  onClick={() => router.push('/auth/register')}
+                  onClick={() => router.push('/auth/owner-dashboard/companyUpdate')}
                   className="text-sm text-blue-600 hover:text-blue-700 font-medium"
                 >
                   Update Company

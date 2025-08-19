@@ -50,13 +50,7 @@ const RecentReceiptItem: React.FC<{
     <div className="text-right">
       <p className="font-medium text-gray-900">{formattedAmount || amount.toLocaleString()}</p>
       <div className="flex items-center gap-2 mt-1">
-        <span className={`px-2 py-1 text-xs rounded-full ${
-          status === 'completed' ? 'bg-green-100 text-green-700' : 
-          status === 'pending' ? 'bg-yellow-100 text-yellow-700' : 
-          'bg-gray-100 text-gray-700'
-        }`}>
-          {status}
-        </span>
+      
         <span className="text-xs text-gray-500">{type}</span>
       </div>
     </div>
@@ -137,7 +131,16 @@ const UserDashboard: React.FC = () => {
       tin_number: payload.tin_number || '',
       company_name: payload.company_name || '',
       company_email: payload.email || '',
-      company_address: payload.address || '',
+      company_address: (
+        payload?.Region ||
+        payload?.region ||
+        payload?.address ||
+        payload?.company?.Region ||
+        payload?.company?.region ||
+        payload?.company?.address ||
+        payload?.company?.company_address ||
+        ''
+      ),
       created_by_username: payload.first_name || ''
     };
   };
@@ -390,7 +393,7 @@ const UserDashboard: React.FC = () => {
       <div className="max-w-7xl mx-auto px-6 py-8">
         {/* Welcome Section */}
         <div className="mb-8">
-          <h1 className="text-3xl font-bold text-gray-900">Welcome back, {companyFromToken?.created_by_username || user?.username}!</h1>
+          <h1 className="text-3xl font-bold text-gray-900">Local Receipt Dashboard</h1>
         </div>
 
         {/* Error Display */}
@@ -416,19 +419,7 @@ const UserDashboard: React.FC = () => {
         )}
 
         {/* Dashboard Stats */}
-        <div className="flex items-center justify-between mb-6">
-          <h2 className="text-xl font-semibold text-gray-900">Local Receipt Dashboard</h2>
-          <button
-            onClick={fetchReceipts}
-            disabled={loading}
-            className="flex items-center gap-2 px-4 py-2 bg-blue-600 text-white rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-          >
-            <svg className={`w-4 h-4 ${loading ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
-            </svg>
-            {loading ? 'Refreshing...' : 'Refresh Data'}
-          </button>
-        </div>
+      
         
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-8">
           {dashboardStats.map((stat, index) => (
@@ -439,70 +430,13 @@ const UserDashboard: React.FC = () => {
         <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
           {/* Profile Section */}
           <div className="lg:col-span-1 space-y-6">
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
-              <div className="flex items-center justify-between mb-6">
-                <h2 className="text-xl font-semibold text-gray-900">Profile Information</h2>
-              </div>
-
-              <div className="space-y-4">
-                {/* <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Username</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={profileData.username}
-                      onChange={(e) => handleInputChange('username', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{companyFromToken?.created_by_username || user?.username || 'Not available'}</p>
-                  )}
-                </div> */}
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">First Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={profileData.firstName}
-                      onChange={(e) => handleInputChange('firstName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{companyFromToken?.created_by_username || 'Not available'}</p>
-                  )}
-                </div>
-
-                <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Company Name</label>
-                  {isEditing ? (
-                    <input
-                      type="text"
-                      value={profileData.companyName}
-                      onChange={(e) => handleInputChange('companyName', e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    />
-                  ) : (
-                    <p className="text-gray-900">{companyFromToken?.company_name || 'Not available'}</p>
-                  )}
-                </div>
-
-
-                {isEditing && (
-                  <button
-                    onClick={handleProfileUpdate}
-                    className="w-full bg-blue-600 text-white py-2 px-4 rounded-lg hover:bg-blue-700 transition"
-                  >
-                    Update Profile
-                  </button>
-                )}
-              </div>
-            </div>
+          
 
             {/* Companies Section */}
             <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
               <div className="flex items-center justify-between mb-6">
                 <h2 className="text-xl font-semibold text-gray-900">Company Information</h2>
+
               </div>
 
               {companyFromToken ? (
@@ -574,7 +508,7 @@ const UserDashboard: React.FC = () => {
             </div>
 
             {/* Activity Summary */}
-            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6">
+            <div className="bg-white rounded-lg shadow-sm border border-gray-200 p-6 text-black">
               <h2 className="text-xl font-semibold text-gray-900 mb-4">Activity Summary</h2>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                 <div>
