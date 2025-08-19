@@ -179,6 +179,15 @@ const ReceiptDetailsForm: React.FC<ReceiptDetailsFormProps> = ({
             <p className="mt-1 text-sm text-green-600">Receipt number is available</p>
           )} */}
         </div>
+          
+          {/* here add MAchine number input */}
+          {['electronic', 'digital'].includes((form?.receiptKind || '').toLowerCase()) && (
+          <div className="flex flex-col">
+            <label className="mb-1 font-semibold text-black">Machine Number</label>
+            <input className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black" type="text" name="machineNumber" value={form.machineNumber} onChange={e => setForm(f => ({ ...f, machineNumber: e.target.value }))} />
+          </div>
+          )}
+
         <div className="flex flex-col">
           <label className="mb-1 font-semibold text-black">Calendar Type*</label>
           <select className="input input-bordered px-3 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 text-black" name="calendarType" value={form.calendarType} onChange={e => setForm(f => ({ ...f, calendarType: e.target.value }))} required>

@@ -31,6 +31,8 @@ export interface FormState {
   buyer: BuyerInfo;
   receiptKind: string;
   receiptNumber: string;
+  // Present only for Electronic/Digital receipts
+  machineNumber: string;
   receiptDate: string;
   receiptType: string;
   receiptName: string;

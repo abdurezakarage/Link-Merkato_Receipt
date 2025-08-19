@@ -83,6 +83,7 @@ function LocalReceiptContent() {
     buyer: { name: '', tin: '', address: '' },
     receiptKind: '',
     receiptNumber: '',
+    machineNumber: '',
     receiptDate: '',
     receiptType: '',
     receiptName: '',
@@ -863,6 +864,7 @@ function LocalReceiptContent() {
           address: form.buyer.address
         },
         receipt_number: form.receiptNumber,
+        machine_number: form.machineNumber,
         receipt_date: form.receiptDate,
         calendar_type: form.calendarType,
         receipt_category_id: categoryId,
@@ -941,6 +943,7 @@ function LocalReceiptContent() {
         buyer: { name: '', tin: '', address: '' },
         receiptKind: '',
         receiptNumber: '',
+        machineNumber: '',
         receiptDate: '',
         receiptType: '',
         receiptName: '',

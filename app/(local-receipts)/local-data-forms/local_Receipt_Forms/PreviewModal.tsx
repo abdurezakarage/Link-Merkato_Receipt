@@ -66,6 +66,12 @@ const PreviewModal: React.FC<PreviewModalProps> = ({
                 <p className="text-sm text-gray-600">Receipt Number</p>
                 <p className="font-medium">{form.receiptNumber}</p>
               </div>
+              {['electronic', 'digital'].includes((form?.receiptKind || '').toLowerCase()) && form.machineNumber && (
+                <div>
+                  <p className="text-sm text-gray-600">Machine Number</p>
+                  <p className="font-medium">{form.machineNumber}</p>
+                </div>
+              )}
               <div>
                 <p className="text-sm text-gray-600">Receipt Date</p>
                 <p className="font-medium">{form.receiptDate}</p>
