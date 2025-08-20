@@ -13,6 +13,7 @@ interface RawBankPermitFile {
   lastname: string;
   companyname: string;
   imagebaseBankPermitfile: string;
+  fileType?: string; // Add file type information
 }
 
 interface UserDocument {
@@ -22,14 +23,37 @@ interface UserDocument {
   tinNumebr: string;
   companyname: string;
   bankPermitUrl: string;
+  fileType: string; // Track file type for proper handling
 }
 
-// const BASE_URL = "https://customreceiptmanagement.onrender.com";
-
-function createDataUrl(base64String: string | null | undefined): string {
+function createDataUrl(
+  base64String: string | null | undefined,
+  fileType: string = "pdf" // Accept file type parameter
+): string {
   if (!base64String) return "";
   if (base64String.startsWith("data:")) return base64String;
-  return `data:application/pdf;base64,${base64String}`;
+
+  // Determine MIME type based on fileType
+  let mimeType = "application/octet-stream";
+  if (fileType.toLowerCase().includes("pdf")) {
+    mimeType = "application/pdf";
+  } else if (fileType.match(/jpeg|jpg/i)) {
+    mimeType = "image/jpeg";
+  } else if (fileType.match(/png/i)) {
+    mimeType = "image/png";
+  } else if (fileType.match(/gif/i)) {
+    mimeType = "image/gif";
+  } else if (fileType.match(/webp/i)) {
+    mimeType = "image/webp";
+  }
+  // Add more file types as needed
+
+  // Clean the base64 string (remove existing prefixes or whitespace)
+  const cleanedBase64 = base64String
+    .replace(/^data:image\/\w+;base64,/, "")
+    .replace(/\s/g, "");
+
+  return `data:${mimeType};base64,${cleanedBase64}`;
 }
 
 function BankPermitCard({
@@ -37,11 +61,12 @@ function BankPermitCard({
   onPreviewClick,
 }: {
   user: UserDocument;
-  onPreviewClick: (url: string, companyName: string) => void;
+  onPreviewClick: (url: string, companyName: string, fileType: string) => void;
 }) {
   const [isExpanded, setIsExpanded] = useState(false);
   const hasBankPermit = !!user.bankPermitUrl;
-  const isPdf = user.bankPermitUrl?.startsWith("data:application/pdf");
+  const isPdf = user.fileType.toLowerCase().includes("pdf");
+  const isImage = user.fileType.match(/jpeg|jpg|png|gif|webp/i);
 
   const toggleExpand = () => {
     setIsExpanded(!isExpanded);
@@ -51,7 +76,16 @@ function BankPermitCard({
     if (user.bankPermitUrl) {
       const a = document.createElement("a");
       a.href = user.bankPermitUrl;
-      a.download = `Bank_Permit_${user.tinNumebr}.${isPdf ? "pdf" : "png"}`;
+
+      // Determine file extension based on actual file type
+      let extension = "file";
+      if (isPdf) extension = "pdf";
+      else if (user.fileType.match(/jpeg|jpg/i)) extension = "jpg";
+      else if (user.fileType.match(/png/i)) extension = "png";
+      else if (user.fileType.match(/gif/i)) extension = "gif";
+      else if (user.fileType.match(/webp/i)) extension = "webp";
+
+      a.download = `Bank_Permit_${user.tinNumebr}.${extension}`;
       document.body.appendChild(a);
       a.click();
       document.body.removeChild(a);
@@ -70,6 +104,9 @@ function BankPermitCard({
           </h3>
           <p className="text-gray-600 text-sm">
             {user.firstname} {user.lastname} (TIN: {user.tinNumebr})
+          </p>
+          <p className="text-gray-500 text-xs mt-1">
+            File type: {user.fileType || "unknown"}
           </p>
         </div>
         <ChevronDown
@@ -93,7 +130,11 @@ function BankPermitCard({
                 <div
                   className="h-48 border-2 border-dashed border-gray-300 rounded-lg flex items-center justify-center cursor-pointer hover:bg-gray-100 transition-colors"
                   onClick={() =>
-                    onPreviewClick(user.bankPermitUrl, user.companyname)
+                    onPreviewClick(
+                      user.bankPermitUrl,
+                      user.companyname,
+                      user.fileType
+                    )
                   }
                 >
                   {isPdf ? (
@@ -106,21 +147,42 @@ function BankPermitCard({
                         {`${user.companyname}'s Bank Permit`}
                       </p>
                     </div>
+                  ) : isImage ? (
+                    <div className="relative w-full h-full">
+                      <Image
+                        src={user.bankPermitUrl}
+                        alt="Bank Permit"
+                        fill
+                        className="object-contain"
+                        unoptimized={true}
+                        onError={(e) => {
+                          const target = e.target as HTMLImageElement;
+                          target.onerror = null;
+                          target.src = "/image-error-placeholder.png";
+                        }}
+                      />
+                    </div>
                   ) : (
-                    <Image
-                      src={user.bankPermitUrl}
-                      alt="Bank Permit"
-                      width={500}
-                      height={300}
-                      className="max-h-full max-w-full object-contain"
-                    />
+                    <div className="text-center p-4">
+                      <File size={48} className="mx-auto text-gray-500 mb-2" />
+                      <p className="text-gray-600 font-medium">
+                        Unknown file format
+                      </p>
+                      <p className="text-gray-500 text-sm mt-1">
+                        Type: {user.fileType}
+                      </p>
+                    </div>
                   )}
                 </div>
 
                 <div className="flex gap-3 mt-4">
                   <button
                     onClick={() =>
-                      onPreviewClick(user.bankPermitUrl, user.companyname)
+                      onPreviewClick(
+                        user.bankPermitUrl,
+                        user.companyname,
+                        user.fileType
+                      )
                     }
                     className="flex-1 bg-blue-50 text-blue-600 hover:bg-blue-100 py-2 px-4 rounded-md flex items-center justify-center gap-2 text-sm font-medium"
                   >
@@ -155,6 +217,7 @@ export default function BankPermitViewer() {
   const [previewFile, setPreviewFile] = useState<{
     url: string;
     companyName: string;
+    fileType: string;
   } | null>(null);
 
   useEffect(() => {
@@ -180,13 +243,30 @@ export default function BankPermitViewer() {
         res.data.forEach((item) => {
           // Use tinNumber as the key
           if (!groupedByTin.has(item.tinNumebr)) {
+            // Try to detect file type if not provided
+            let fileType = item.fileType || "pdf"; // Default to PDF if not specified
+
+            // Simple detection based on base64 content (fallback)
+            if (!item.fileType && item.imagebaseBankPermitfile) {
+              if (
+                item.imagebaseBankPermitfile.startsWith("/9j/") ||
+                item.imagebaseBankPermitfile.startsWith("iVBORw")
+              ) {
+                fileType = "jpg"; // JPEG or PNG
+              }
+            }
+
             groupedByTin.set(item.tinNumebr, {
               userId: item.userId,
               firstname: item.firstname,
               lastname: item.lastname,
               tinNumebr: item.tinNumebr,
               companyname: item.companyname,
-              bankPermitUrl: createDataUrl(item.imagebaseBankPermitfile),
+              bankPermitUrl: createDataUrl(
+                item.imagebaseBankPermitfile,
+                fileType
+              ),
+              fileType: fileType,
             });
           }
         });
@@ -204,8 +284,12 @@ export default function BankPermitViewer() {
     fetchFiles();
   }, []);
 
-  const handleOpenPreview = (url: string, companyName: string) => {
-    setPreviewFile({ url, companyName });
+  const handleOpenPreview = (
+    url: string,
+    companyName: string,
+    fileType: string
+  ) => {
+    setPreviewFile({ url, companyName, fileType });
   };
 
   const handleClosePreview = () => {
@@ -230,7 +314,8 @@ export default function BankPermitViewer() {
   }
 
   if (previewFile) {
-    const isPdf = previewFile.url.startsWith("data:application/pdf");
+    const isPdf = previewFile.fileType.toLowerCase().includes("pdf");
+    const isImage = previewFile.fileType.match(/jpeg|jpg|png|gif|webp/i);
 
     return (
       <div className="p-4 bg-gray-100 min-h-screen flex justify-center items-start">
@@ -247,6 +332,9 @@ export default function BankPermitViewer() {
               <h2 className="text-xl font-bold text-gray-800">
                 {`${previewFile.companyName}'s Bank Permit`}
               </h2>
+              <p className="text-sm text-gray-600">
+                File type: {previewFile.fileType}
+              </p>
             </div>
             <div className="h-[calc(100vh-200px)] flex items-center justify-center">
               {isPdf ? (
@@ -256,14 +344,24 @@ export default function BankPermitViewer() {
                   title="Bank Permit PDF Viewer"
                   sandbox="allow-scripts allow-same-origin allow-popups allow-forms"
                 />
+              ) : isImage ? (
+                <div className="relative w-full h-full">
+                  <Image
+                    src={previewFile.url}
+                    alt="Bank Permit"
+                    fill
+                    className="object-contain"
+                    unoptimized={true}
+                  />
+                </div>
               ) : (
-                <Image
-                  src={previewFile.url}
-                  alt="Bank Permit"
-                  width={800}
-                  height={600}
-                  className="max-w-full max-h-full object-contain p-4"
-                />
+                <div className="text-center p-8">
+                  <File size={64} className="mx-auto text-gray-400 mb-4" />
+                  <p className="text-gray-600">Unsupported file format</p>
+                  <p className="text-gray-500 text-sm mt-2">
+                    Type: {previewFile.fileType}
+                  </p>
+                </div>
               )}
             </div>
           </div>
@@ -286,7 +384,7 @@ export default function BankPermitViewer() {
           <div className="grid grid-cols-1 gap-6">
             {userDocuments.map((user) => (
               <BankPermitCard
-                key={user.tinNumebr} // Using tinNumber as the key
+                key={user.tinNumebr}
                 user={user}
                 onPreviewClick={handleOpenPreview}
               />

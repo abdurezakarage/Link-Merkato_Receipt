@@ -17,11 +17,11 @@ import {
 
 const navItems = [
   { href: "/declaration", label: "Declaration", icon: <FaFileSignature /> },
-  {
-    href: "/customFileViewer",
-    label: "Custom document",
-    icon: <FaCheckCircle />,
-  },
+  // {
+  //   href: "/customFileViewer",
+  //   label: "Custom document",
+  //   icon: <FaCheckCircle />,
+  // },
   { href: "/warehouse-fee", label: "Warehouse Fee", icon: <FaWarehouse /> },
   { href: "/transport", label: "Transport Fee", icon: <FaCar /> },
   {
@@ -78,7 +78,7 @@ export default function ClerkDashboardLayout({
           ))}
 
           {/* Documents Dropdown */}
-          <button
+          {/* <button
             onClick={() => setShowDocuments(!showDocuments)}
             className={`flex items-center justify-between w-full px-3 py-3 rounded-lg transition-all duration-200 focus:outline-none text-sm ${
               pathname.includes("FileViewer")
@@ -98,9 +98,9 @@ export default function ClerkDashboardLayout({
               }`}
               size={14}
             />
-          </button>
+          </button> */}
 
-          {showDocuments && (
+          {/* {showDocuments && (
             <div className="ml-4 space-y-1 mt-1 border-l-2 border-gray-200 pl-2">
               <Link
                 href="/customFileViewer"
@@ -143,7 +143,7 @@ export default function ClerkDashboardLayout({
                 Clearance
               </Link>
             </div>
-          )}
+          )} */}
         </nav>
       </aside>
 

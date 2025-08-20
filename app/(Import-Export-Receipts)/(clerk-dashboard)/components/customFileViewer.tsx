@@ -9,10 +9,6 @@ import {
   File,
   ArrowLeft,
   Search,
-  ZoomIn,
-  ZoomOut,
-  RotateCw,
-  Building,
 } from "lucide-react";
 import Image from "next/image";
 import { BASE_API_URL } from "../../import-api/ImportApi";
@@ -28,22 +24,21 @@ interface DeclarationNumber {
 }
 
 interface UserData {
-  tinNumebr: string;
-  firstname: string;
-  lastname: string;
-  companyname: string;
-  imagebaseCustomfile: FileData[];
-  imagebaseBankPermitfile: FileData[];
-  imageCummercialInvoicefile: FileData[];
+  userId: string;
+  tinNumber?: string;
+  firstName?: string;
+  lastname?: string;
+  mainReceiptfile?: FileData[];
+  withHoldihReceiptfile?: FileData[];
+  companyName?: string;
   declartionNumber?: DeclarationNumber[];
 }
 
 interface CompanyData {
   companyName: string;
-  tinNumebr: string;
-  imagebaseCustomfile: FileData[];
-  imagebaseBankPermitfile: FileData[];
-  imageCummercialInvoicefile: FileData[];
+  tinNumber?: string;
+  mainReceiptfile?: FileData[];
+  withHoldihReceiptfile?: FileData[];
   declartionNumber?: DeclarationNumber[];
 }
 
@@ -164,147 +159,6 @@ function FilePreview({
   );
 }
 
-// ---------------- Enhanced Preview Modal Component ----------------
-function EnhancedPreviewModal({
-  file,
-  onClose,
-}: {
-  file: { url: string; label: string };
-  onClose: () => void;
-}) {
-  const [zoom, setZoom] = useState(1);
-  const [rotation, setRotation] = useState(0);
-  const isImage = file.url.startsWith("data:image");
-  const isPdf = file.url.startsWith("data:application/pdf");
-
-  const handleZoomIn = () => {
-    setZoom((prev) => Math.min(prev + 0.25, 3));
-  };
-
-  const handleZoomOut = () => {
-    setZoom((prev) => Math.max(prev - 0.25, 0.5));
-  };
-
-  const handleRotate = () => {
-    setRotation((prev) => (prev + 90) % 360);
-  };
-
-  const handleDownload = () => {
-    try {
-      const a = document.createElement("a");
-      a.href = file.url;
-      a.download = `${file.label.replace(/[^a-zA-Z0-9]/g, "_")}.${
-        isPdf ? "pdf" : file.url.split(";")[0].split("/")[1] || "file"
-      }`;
-      document.body.appendChild(a);
-      a.click();
-      document.body.removeChild(a);
-    } catch (error) {
-      console.error("Download failed:", error);
-    }
-  };
-
-  useEffect(() => {
-    const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-      if (e.key === "+" || e.key === "=") handleZoomIn();
-      if (e.key === "-") handleZoomOut();
-      if (e.key === "r") handleRotate();
-    };
-
-    window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
-  }, []);
-
-  return (
-    <div className="fixed inset-0 bg-black bg-opacity-90 z-50 flex flex-col">
-      {/* Header with controls */}
-      <div className="flex items-center justify-between p-4 bg-black bg-opacity-70 text-white">
-        <div className="flex items-center gap-4">
-          <button
-            onClick={onClose}
-            className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-          >
-            <ArrowLeft size={24} />
-          </button>
-          <h2 className="text-xl font-semibold truncate max-w-md">
-            {file.label}
-          </h2>
-        </div>
-
-        <div className="flex items-center gap-3">
-          {isImage && (
-            <>
-              <button
-                onClick={handleZoomOut}
-                className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-                disabled={zoom <= 0.5}
-              >
-                <ZoomOut size={20} />
-              </button>
-              <span className="text-sm">{Math.round(zoom * 100)}%</span>
-              <button
-                onClick={handleZoomIn}
-                className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-                disabled={zoom >= 3}
-              >
-                <ZoomIn size={20} />
-              </button>
-              <button
-                onClick={handleRotate}
-                className="p-2 rounded-full hover:bg-gray-800 transition-colors"
-              >
-                <RotateCw size={20} />
-              </button>
-            </>
-          )}
-          <button
-            onClick={handleDownload}
-            className="ml-4 px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md flex items-center gap-2"
-          >
-            <Download size={18} /> Download
-          </button>
-        </div>
-      </div>
-
-      {/* Content area */}
-      <div className="flex-1 overflow-auto flex items-center justify-center p-4">
-        {isImage ? (
-          <div className="relative w-full h-full flex items-center justify-center">
-            <Image
-              src={file.url}
-              alt={file.label}
-              fill
-              className="object-contain"
-              unoptimized={true}
-              style={{
-                transform: `scale(${zoom}) rotate(${rotation}deg)`,
-                transition: "transform 0.2s ease",
-              }}
-            />
-          </div>
-        ) : isPdf ? (
-          <iframe
-            src={file.url}
-            className="w-full h-full border-none"
-            title={`${file.label} Preview`}
-          />
-        ) : (
-          <div className="text-center text-white">
-            <p className="text-2xl mb-4">Unsupported file format</p>
-            <button
-              onClick={handleDownload}
-              className="px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-md flex items-center gap-2 mx-auto"
-            >
-              <Download size={18} /> Download Anyway
-            </button>
-          </div>
-        )}
-      </div>
-    </div>
-  );
-}
-
 // ---------------- CompanySection Component ----------------
 function CompanySection({
   company,
@@ -328,27 +182,11 @@ function CompanySection({
         .includes(searchTerm.toLowerCase())
     );
 
-    // Check if company name matches
-    const hasMatchingCompanyName = company.companyName
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
-    // Check if TIN number matches
-    const hasMatchingTin = company.tinNumebr
-      ?.toLowerCase()
-      .includes(searchTerm.toLowerCase());
-
-    return hasMatchingDeclaration || hasMatchingCompanyName || hasMatchingTin;
-  }, [company, searchTerm]);
+    return hasMatchingDeclaration;
+  }, [company.declartionNumber, searchTerm]);
 
   // Don't render if there's a search term and no matches
   if (!hasMatchingFiles) return null;
-
-  // Count total files for this company
-  const totalFiles =
-    company.imagebaseCustomfile.length +
-    company.imagebaseBankPermitfile.length +
-    company.imageCummercialInvoicefile.length;
 
   return (
     <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100">
@@ -356,48 +194,41 @@ function CompanySection({
         onClick={() => setExpanded(!expanded)}
         className="w-full flex justify-between items-center text-left"
       >
-        <div className="flex-1 flex items-center gap-3">
-          <Building className="text-gray-400" size={24} />
-          <div>
-            <h3 className="text-xl font-bold text-gray-800">
-              {company.companyName || "Unnamed Company"}
-            </h3>
-            <p className="text-sm text-gray-500 font-medium">
-              TIN: {company.tinNumebr || "N/A"}
-            </p>
-          </div>
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-gray-800">
+            {company.companyName || "Unnamed Company"}
+          </h3>
+          <p className="text-sm text-gray-500 font-medium">
+            TIN: {company.tinNumber || "N/A"}
+          </p>
         </div>
         <div className="flex items-center gap-4">
           {company.declartionNumber && company.declartionNumber.length > 0 && (
-            <div className="text-sm text-gray-600 bg-blue-50 px-3 py-1 rounded-full">
+            <div className="text-sm text-gray-600">
               {company.declartionNumber.length} declaration(s)
             </div>
           )}
-          <div className="text-sm text-gray-600 bg-green-50 px-3 py-1 rounded-full">
-            {totalFiles} file(s)
-          </div>
           <ChevronDown
             className={`text-gray-400 transition-transform duration-300 ${
               expanded ? "rotate-180" : ""
             }`}
-            size={24}
           />
         </div>
       </button>
 
       {expanded && (
-        <div className="mt-6 space-y-6">
+        <div className="mt-6">
           {/* Declaration Numbers */}
           {company.declartionNumber && company.declartionNumber.length > 0 && (
-            <div>
-              <h4 className="text-lg font-semibold mb-3 text-gray-700">
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold mb-3">
                 Declaration Numbers
               </h4>
               <div className="flex flex-wrap gap-2">
                 {company.declartionNumber.map((declaration, index) => (
                   <span
                     key={index}
-                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm font-medium"
+                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
                   >
                     {declaration.declarionNumberPerCampany || "N/A"}
                   </span>
@@ -406,78 +237,55 @@ function CompanySection({
             </div>
           )}
 
-          {/* Custom Files */}
-          {company.imagebaseCustomfile.length > 0 && (
-            <div>
-              <h4 className="text-lg font-semibold mb-3 text-gray-700">
-                Custom Files
-              </h4>
+          {/* Main Receipt Files */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold mb-3">Main Receipt Files</h4>
+            {company.mainReceiptfile?.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {company.imagebaseCustomfile.map((file, index) => {
+                {company.mainReceiptfile.map((file, index) => {
                   const url = createDataUrl(file.file, file.fileType);
                   return url ? (
                     <FilePreview
-                      key={`custom-${index}`}
-                      label={`Custom File ${index + 1}`}
+                      key={`main-${index}`}
+                      label={`Main Receipt ${index + 1}`}
                       url={url}
                       onPreviewClick={onPreviewClick}
                     />
                   ) : null;
                 })}
               </div>
-            </div>
-          )}
+            ) : (
+              <p className="text-gray-600 italic text-center py-4">
+                No main receipt files available
+              </p>
+            )}
+          </div>
 
-          {/* Bank Permit Files */}
-          {company.imagebaseBankPermitfile.length > 0 && (
-            <div>
-              <h4 className="text-lg font-semibold mb-3 text-gray-700">
-                Bank Permit Files
-              </h4>
+          {/* Withholding Receipt Files */}
+          <div>
+            <h4 className="text-lg font-semibold mb-3">
+              Withholding Receipt Files
+            </h4>
+            {company.withHoldihReceiptfile?.length ? (
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {company.imagebaseBankPermitfile.map((file, index) => {
+                {company.withHoldihReceiptfile.map((file, index) => {
                   const url = createDataUrl(file.file, file.fileType);
                   return url ? (
                     <FilePreview
-                      key={`bank-${index}`}
-                      label={`Bank Permit ${index + 1}`}
+                      key={`withholding-${index}`}
+                      label={`Withholding Receipt ${index + 1}`}
                       url={url}
                       onPreviewClick={onPreviewClick}
                     />
                   ) : null;
                 })}
               </div>
-            </div>
-          )}
-
-          {/* Commercial Invoice Files */}
-          {company.imageCummercialInvoicefile.length > 0 && (
-            <div>
-              <h4 className="text-lg font-semibold mb-3 text-gray-700">
-                Commercial Invoice Files
-              </h4>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-                {company.imageCummercialInvoicefile.map((file, index) => {
-                  const url = createDataUrl(file.file, file.fileType);
-                  return url ? (
-                    <FilePreview
-                      key={`invoice-${index}`}
-                      label={`Commercial Invoice ${index + 1}`}
-                      url={url}
-                      onPreviewClick={onPreviewClick}
-                    />
-                  ) : null;
-                })}
-              </div>
-            </div>
-          )}
-
-          {/* Show message if no files in this company */}
-          {totalFiles === 0 && (
-            <p className="text-gray-500 italic text-center py-4">
-              No files available for this company.
-            </p>
-          )}
+            ) : (
+              <p className="text-gray-600 italic text-center py-4">
+                No withholding receipt files available
+              </p>
+            )}
+          </div>
         </div>
       )}
     </div>
@@ -494,7 +302,6 @@ export default function WarehouseFileViewer() {
     label: string;
   } | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
-  const [allExpanded, setAllExpanded] = useState(true);
 
   const handleOpenPreview = (url: string, label: string) => {
     setPreviewFile({ url, label });
@@ -508,23 +315,22 @@ export default function WarehouseFileViewer() {
   const companiesData = useMemo(() => {
     if (!userData) return [];
 
-    // Create company data from user data
-    const company: CompanyData = {
-      companyName: userData.companyname,
-      tinNumebr: userData.tinNumebr,
-      imagebaseCustomfile: userData.imagebaseCustomfile,
-      imagebaseBankPermitfile: userData.imagebaseBankPermitfile,
-      imageCummercialInvoicefile: userData.imageCummercialInvoicefile,
-      declartionNumber: userData.declartionNumber,
-    };
+    // If the user data has company info, use it directly
+    if (userData.companyName) {
+      return [
+        {
+          companyName: userData.companyName,
+          tinNumber: userData.tinNumber,
+          mainReceiptfile: userData.mainReceiptfile,
+          withHoldihReceiptfile: userData.withHoldihReceiptfile,
+          declartionNumber: userData.declartionNumber,
+        },
+      ];
+    }
 
-    return [company];
+    // In case of multiple companies in the future, you can add logic here
+    return [];
   }, [userData]);
-
-  // Toggle all companies expanded/collapsed
-  const toggleAllExpanded = () => {
-    setAllExpanded(!allExpanded);
-  };
 
   useEffect(() => {
     const fetchData = async () => {
@@ -538,7 +344,7 @@ export default function WarehouseFileViewer() {
         if (!userId) throw new Error("No user ID provided");
 
         const res = await axios.get<UserData>(
-          `${BASE_API_URL}/api/v1/clerk/CustomDocument/${userId}`,
+          `${BASE_API_URL}/api/v1/clerk/WarehouseDisplay/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -548,7 +354,6 @@ export default function WarehouseFileViewer() {
         );
 
         setUserData(res.data);
-        console.log("this is", res);
       } catch (err: any) {
         console.error("Error fetching warehouse files:", err);
         if (axios.isAxiosError(err) && err.response) {
@@ -607,6 +412,48 @@ export default function WarehouseFileViewer() {
     );
   }
 
+  if (previewFile) {
+    const isImage = previewFile.url.startsWith("data:image");
+    const isPdf = previewFile.url.startsWith("data:application/pdf");
+
+    return (
+      <div className="p-4 bg-white rounded-lg shadow-lg h-full flex flex-col">
+        <div className="flex items-center gap-4 border-b pb-4 mb-4">
+          <button
+            onClick={handleClosePreview}
+            className="text-gray-600 hover:text-gray-800"
+          >
+            <ArrowLeft size={24} />
+          </button>
+          <h2 className="text-xl font-semibold">{previewFile.label} Preview</h2>
+        </div>
+        <div className="flex-grow overflow-auto">
+          {isImage ? (
+            <div className="relative w-full h-full">
+              <Image
+                src={previewFile.url}
+                alt={previewFile.label}
+                fill
+                className="object-contain"
+                unoptimized={true}
+              />
+            </div>
+          ) : isPdf ? (
+            <iframe
+              src={previewFile.url}
+              className="w-full h-full border-none"
+              title={`${previewFile.label} Preview`}
+            />
+          ) : (
+            <p className="text-red-600 text-center py-10">
+              Unsupported format: {previewFile.label}
+            </p>
+          )}
+        </div>
+      </div>
+    );
+  }
+
   if (!userData) {
     return (
       <p className="text-center text-gray-600 text-lg py-10">
@@ -616,66 +463,36 @@ export default function WarehouseFileViewer() {
   }
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen text-black">
-      <h2 className="text-3xl font-bold mb-8 text-center text-black">
+    <div className="p-4 bg-gray-50 min-h-screen">
+      <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
         User Documents
       </h2>
 
-      {/* Search Bar and Controls */}
-      <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:max-w-md text-black">
+      {/* Search Bar */}
+      <div className="mb-6 max-w-md mx-auto">
+        <div className="relative">
           <Search
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
             size={20}
           />
           <input
             type="text"
-            placeholder="Search by company, TIN, or declaration number..."
+            placeholder="Search by declaration number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-white-900 w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
-
-        <button
-          onClick={toggleAllExpanded}
-          className="px-4 py-2 bg-gray-200 hover:bg-gray-300 rounded-lg text-gray-700 font-medium flex items-center gap-2"
-        >
-          {allExpanded ? (
-            <>
-              <ChevronDown size={18} className="rotate-180" />
-              Collapse
-            </>
-          ) : (
-            <>
-              <ChevronDown size={18} />
-              Expand
-            </>
-          )}
-        </button>
       </div>
 
       {/* User Info */}
       <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100">
-        <h3 className="text-xl font-bold text-gray-800 mb-4">
+        <h3 className="text-xl font-bold text-gray-800 mb-2">
           User Information
         </h3>
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-          <div>
-            <p className="text-gray-600 font-semibold">Name:</p>
-            <p className="text-gray-800">
-              {userData.firstname || "N/A"} {userData.lastname || "N/A"}
-            </p>
-          </div>
-          <div>
-            <p className="text-gray-600 font-semibold">Company:</p>
-            <p className="text-gray-800">{userData.companyname || "N/A"}</p>
-          </div>
-          <div>
-            <p className="text-gray-600 font-semibold">TIN Number:</p>
-            <p className="text-gray-800">{userData.tinNumebr || "N/A"}</p>
-          </div>
-        </div>
+        <p className="text-gray-600">
+          {userData.firstName || "N/A"} {userData.lastname || "N/A"}
+        </p>
       </div>
 
       {/* Companies List */}
@@ -692,11 +509,6 @@ export default function WarehouseFileViewer() {
         <p className="text-center text-gray-600 text-lg py-10">
           No company data available.
         </p>
-      )}
-
-      {/* Enhanced Preview Modal */}
-      {previewFile && (
-        <EnhancedPreviewModal file={previewFile} onClose={handleClosePreview} />
       )}
     </div>
   );

@@ -122,8 +122,8 @@ export default function CustomDocumentsUpload() {
       const selectedFile = e.target.files?.[0];
       if (selectedFile) {
         // Basic client-side validation
-        if (selectedFile.size > 5 * 1024 * 1024) {
-          setStatus(`${label} must be smaller than 5MB`);
+        if (selectedFile.size > 20 * 1024 * 1024) {
+          setStatus(`${label} must be smaller than 20MB`);
           e.target.value = "";
           return;
         }
@@ -175,7 +175,7 @@ export default function CustomDocumentsUpload() {
               )}
             </p>
             <p className="text-xs text-gray-500 mt-1">
-              PDF, JPG, PNG up to 5MB
+              PDF, JPG, PNG up to 20MB
             </p>
           </div>
           <input

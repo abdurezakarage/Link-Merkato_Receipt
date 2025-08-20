@@ -147,7 +147,7 @@ export default function ReceiptUpload() {
                   )}
                 </p>
                 <p className="text-xs text-gray-500 mt-1">
-                  PDF, JPG, PNG up to 5MB
+                  PDF, JPG, PNG up to 20MB
                 </p>
               </div>
               <input
@@ -156,8 +156,8 @@ export default function ReceiptUpload() {
                 onChange={(e) => {
                   const file = e.target.files?.[0];
                   if (file) {
-                    if (file.size > 5 * 1024 * 1024) {
-                      setStatus("File must be smaller than 5MB");
+                    if (file.size > 20 * 1024 * 1024) {
+                      setStatus("File must be smaller than 20MB");
                       e.target.value = "";
                       return;
                     }
