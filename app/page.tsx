@@ -7,6 +7,7 @@ import { FeatureCard } from "../components/FeatureCard";
 import { CTA } from "../components/CTA";
 import { services } from "../components/servicesData";
 import testimonials from "../components/utils/testimonials";
+import { Footer } from "../components/footer";
 
 
 const stats = [
@@ -267,7 +268,7 @@ export default function Home() {
           }
         }}
       />
-
+      <Footer />
     </div>
   );
 }

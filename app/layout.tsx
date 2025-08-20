@@ -25,8 +25,9 @@ export default function RootLayout({
           <SessionGuard>
             {children}
           </SessionGuard>
-          <Footer />
+
         </AuthProvider>
+  
       </body>
     </html>
   );
