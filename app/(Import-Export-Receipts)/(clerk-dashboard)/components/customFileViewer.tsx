@@ -633,7 +633,7 @@ export default function WarehouseFileViewer() {
             placeholder="Search by company, TIN, or declaration number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="bg-white-900 w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
           />
         </div>
 
@@ -644,12 +644,12 @@ export default function WarehouseFileViewer() {
           {allExpanded ? (
             <>
               <ChevronDown size={18} className="rotate-180" />
-              Collapse All
+              Collapse
             </>
           ) : (
             <>
               <ChevronDown size={18} />
-              Expand All
+              Expand
             </>
           )}
         </button>

@@ -23,7 +23,6 @@ const navItems = [
     icon: <FaCheckCircle />,
   },
   { href: "/warehouse-fee", label: "Warehouse Fee", icon: <FaWarehouse /> },
-
   { href: "/transport", label: "Transport Fee", icon: <FaCar /> },
   {
     href: "/custom-transitor",
@@ -31,7 +30,6 @@ const navItems = [
     icon: <FaCheckCircle />,
   },
   { href: "/bank-service", label: "Bank Service", icon: <FaUniversity /> },
-
   {
     href: "/commercial-invoice",
     label: "Commercial Invoice",
@@ -53,14 +51,14 @@ export default function ClerkDashboardLayout({
   const pathname = usePathname();
 
   return (
-    <div className="flex min-h-screen bg-white font-sans">
-      {/* Adjusted Sidebar - pulled left with transform */}
-      <aside className="w-56 h-screen fixed top-0 left-0 -translate-x-[2px] bg-slate-900 shadow-xl text-white p-3 flex flex-col overflow-y-auto border-r border-slate-700">
+    <div className="flex min-h-screen bg-gray-50 font-sans">
+      {/* White Sidebar */}
+      <aside className="w-64 h-screen fixed top-4 left-0 bg-white shadow-lg text-black p-4 flex flex-col overflow-y-auto border-r border-gray-200">
         <div className="flex-shrink-0 mb-6 mt-2 px-2">
-          <h2 className="text-xl font-bold text-white tracking-wide">
+          <h2 className="text-xl font-bold text-gray-900 tracking-wide">
             Clerk Panel
           </h2>
-          <p className="text-xs text-slate-400 mt-1">Document Management</p>
+          <p className="text-lg text-black-500 mt-1">Document Management</p>
         </div>
 
         <nav className="flex-grow flex flex-col space-y-1">
@@ -68,13 +66,13 @@ export default function ClerkDashboardLayout({
             <Link
               key={href}
               href={href}
-              className={`flex items-center px-3 py-2 rounded-lg transition-all duration-200 text-sm ${
+              className={`flex items-center px-3 py-3 rounded-lg transition-all duration-200 text-sm ${
                 pathname === href
-                  ? "bg-slate-700 text-white shadow-md"
-                  : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                  ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                  : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
               }`}
             >
-              <span className="mr-2 text-base">{icon}</span>
+              <span className="mr-3 text-base text-gray-500">{icon}</span>
               <span>{label}</span>
             </Link>
           ))}
@@ -82,14 +80,14 @@ export default function ClerkDashboardLayout({
           {/* Documents Dropdown */}
           <button
             onClick={() => setShowDocuments(!showDocuments)}
-            className={`flex items-center justify-between w-full px-3 py-2 rounded-lg transition-all duration-200 focus:outline-none text-sm ${
+            className={`flex items-center justify-between w-full px-3 py-3 rounded-lg transition-all duration-200 focus:outline-none text-sm ${
               pathname.includes("FileViewer")
-                ? "bg-slate-700 text-white shadow-md"
-                : "text-slate-300 hover:bg-slate-800 hover:text-white"
+                ? "bg-blue-50 text-blue-600 border-l-4 border-blue-600 font-medium"
+                : "text-gray-600 hover:bg-gray-100 hover:text-gray-900"
             }`}
           >
             <span className="flex items-center">
-              <span className="mr-2 text-base">
+              <span className="mr-3 text-base text-gray-500">
                 <FaFileAlt />
               </span>
               <span>Documents</span>
@@ -103,43 +101,43 @@ export default function ClerkDashboardLayout({
           </button>
 
           {showDocuments && (
-            <div className="ml-4 space-y-1 mt-1 border-l-2 border-slate-600 pl-2">
+            <div className="ml-4 space-y-1 mt-1 border-l-2 border-gray-200 pl-2">
               <Link
                 href="/customFileViewer"
-                className={`block px-3 py-1 rounded text-xs transition-colors duration-200 ${
+                className={`block px-3 py-2 rounded text-sm transition-colors duration-200 ${
                   pathname === "/customFileViewer"
-                    ? "bg-slate-700 text-white"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    ? "bg-blue-50 text-blue-600 font-medium"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 Custom
               </Link>
               <Link
                 href="/wareHouseFileViewer"
-                className={`block px-3 py-1 rounded text-xs transition-colors duration-200 ${
+                className={`block px-3 py-2 rounded text-sm transition-colors duration-200 ${
                   pathname === "/wareHouseFileViewer"
-                    ? "bg-slate-700 text-white"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    ? "bg-blue-50 text-blue-600 font-medium"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 Warehouse
               </Link>
               <Link
                 href="/transportFileViewer"
-                className={`block px-3 py-1 rounded text-xs transition-colors duration-200 ${
+                className={`block px-3 py-2 rounded text-sm transition-colors duration-200 ${
                   pathname === "/transportFileViewer"
-                    ? "bg-slate-700 text-white"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    ? "bg-blue-50 text-blue-600 font-medium"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 Transport
               </Link>
               <Link
                 href="/clearanceFileViewer"
-                className={`block px-3 py-1 rounded text-xs transition-colors duration-200 ${
+                className={`block px-3 py-2 rounded text-sm transition-colors duration-200 ${
                   pathname === "/clearanceFileViewer"
-                    ? "bg-slate-700 text-white"
-                    : "text-slate-400 hover:bg-slate-800 hover:text-white"
+                    ? "bg-blue-50 text-blue-600 font-medium"
+                    : "text-gray-500 hover:bg-gray-100 hover:text-gray-900"
                 }`}
               >
                 Clearance
@@ -150,7 +148,7 @@ export default function ClerkDashboardLayout({
       </aside>
 
       {/* Main content with adjusted margin */}
-      <main className="ml-[calc(224px-2px)] flex-1 p-6 bg-white overflow-auto">
+      <main className="ml-64 flex-1 p-6 bg-white overflow-auto">
         {children}
       </main>
     </div>

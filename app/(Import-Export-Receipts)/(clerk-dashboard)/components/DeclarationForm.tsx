@@ -245,7 +245,7 @@ function ItemFormPage({
       <h4 className="font-bold text-lg text-gray-800">
         Item #{index + 1} Details
       </h4>
-      <div className="grid grid-cols-1">
+      <div className="grid grid-cols-1 text-black">
         <InputField
           label="HS Code"
           name="hscode"
@@ -350,11 +350,11 @@ function ItemFormPage({
                 ))}
               </select>
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col text-black">
               <label className="font-medium mb-1 text-xs text-gray-700">
                 Percentage (%) <span className="text-red-500">*</span>
               </label>
-              <div className="flex items-center">
+              <div className="flex items-center text-black">
                 <input
                   type="number"
                   value={tax.percentage === null ? "" : tax.percentage}
@@ -368,7 +368,7 @@ function ItemFormPage({
                 <span className="ml-2 text-sm text-gray-600">%</span>
               </div>
             </div>
-            <div className="flex flex-col">
+            <div className="flex flex-col text-black">
               <label className="font-medium mb-1 text-xs text-gray-700">
                 Codename
               </label>
@@ -900,7 +900,9 @@ export default function DeclarationForm() {
     if (page === 1) {
       return (
         <>
-          <h3 className="text-md font-bold mb-4 text-black-800 text-black">Step 1</h3>
+          <h3 className="text-md font-bold mb-4 text-black-800 text-black">
+            Step 1
+          </h3>
           <div className="grid grid-cols-1 gap-4 text-black">
             {/* <InputField
               label="TIN Number (10 digits)"

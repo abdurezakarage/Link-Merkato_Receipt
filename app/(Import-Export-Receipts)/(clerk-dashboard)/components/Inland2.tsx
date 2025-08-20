@@ -110,8 +110,8 @@ export default function Inland2() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-      <div className="w-full max-w-xl bg-white p-6 rounded shadow">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2">
+      <div className="w-full max-w-xl bg-white p-2 rounded shadow">
         {message && (
           <div
             className={`mb-4 p-3 rounded ${
@@ -126,7 +126,7 @@ export default function Inland2() {
 
         {!formSubmitted ? (
           <form onSubmit={handleSubmit}>
-            <h2 className="text-2xl font-semibold mb-4 text-gray-800">
+            <h2 className="text-center font-semibold mb-4 text-gray-800">
               Inland Fee
             </h2>
 
