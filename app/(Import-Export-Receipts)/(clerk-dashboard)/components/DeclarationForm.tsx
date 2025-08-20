@@ -773,7 +773,7 @@ export default function DeclarationForm() {
       }
 
       const token = localStorage.getItem("token");
-      const tinNumber = localStorage.getItem("tinNumber");
+      const tinNumber = localStorage.getItem("tin_number");
 
       const userId = localStorage.getItem("userId");
       const roles = JSON.parse(localStorage.getItem("roles") || "[]");
