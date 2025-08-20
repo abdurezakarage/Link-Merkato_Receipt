@@ -95,7 +95,7 @@ export default function ItemDetailsForm() {
   return (
     <form
       onSubmit={handleSubmit}
-      className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-8 mt-10 space-y-6"
+      className="max-w-3xl mx-auto bg-white shadow-md rounded-lg p-8 mt-10 space-y-6 text-black"
     >
       <h2 className="text-2xl font-bold text-center">Item Detail Form</h2>
 

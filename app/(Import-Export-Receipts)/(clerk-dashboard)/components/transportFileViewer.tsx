@@ -108,7 +108,7 @@ function FilePreview({
   };
 
   return (
-    <div className="bg-gray-100 p-4 rounded shadow flex flex-col justify-between">
+    <div className="bg-gray-100 p-4 rounded shadow flex flex-col justify-between text-black">
       <div>
         <h3 className="text-md font-semibold mb-2">{label}</h3>
         <div
@@ -189,7 +189,7 @@ function CompanySection({
   if (!hasMatchingFiles) return null;
 
   return (
-    <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100">
+    <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100 text-black">
       <button
         onClick={() => setExpanded(!expanded)}
         className="w-full flex justify-between items-center text-left"
@@ -465,7 +465,7 @@ export default function WarehouseFileViewer() {
   }
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
+    <div className="p-4 bg-gray-50 min-h-screen text-black">
       <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
         User Documents
       </h2>

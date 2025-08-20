@@ -616,14 +616,14 @@ export default function WarehouseFileViewer() {
   }
 
   return (
-    <div className="p-4 bg-gray-50 min-h-screen">
-      <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
+    <div className="p-4 bg-gray-50 min-h-screen text-black">
+      <h2 className="text-3xl font-bold mb-8 text-center text-black">
         User Documents
       </h2>
 
       {/* Search Bar and Controls */}
       <div className="mb-6 flex flex-col sm:flex-row gap-4 items-center justify-between">
-        <div className="relative w-full sm:max-w-md">
+        <div className="relative w-full sm:max-w-md text-black">
           <Search
             className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
             size={20}
@@ -633,7 +633,7 @@ export default function WarehouseFileViewer() {
             placeholder="Search by company, TIN, or declaration number..."
             value={searchTerm}
             onChange={(e) => setSearchTerm(e.target.value)}
-            className="bg-white-900 w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+            className="bg-white-900 w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-black"
           />
         </div>
 

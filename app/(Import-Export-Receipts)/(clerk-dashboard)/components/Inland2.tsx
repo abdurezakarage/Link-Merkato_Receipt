@@ -110,7 +110,7 @@ export default function Inland2() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-2 text-black">
       <div className="w-full max-w-xl bg-white p-2 rounded shadow">
         {message && (
           <div
