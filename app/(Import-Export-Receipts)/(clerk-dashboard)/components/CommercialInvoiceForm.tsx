@@ -1,6 +1,6 @@
 "use client";
 import { useState, FormEvent, ChangeEvent } from "react";
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { BASE_API_URL } from "../../import-api/ImportApi";
 
 interface CommercialInvoicePayload {
   commertialDate: string;
@@ -152,7 +152,7 @@ export default function CommercialInvoiceForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
           <div

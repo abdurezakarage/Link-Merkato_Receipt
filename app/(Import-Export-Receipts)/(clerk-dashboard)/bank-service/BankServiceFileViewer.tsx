@@ -4,7 +4,7 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { Eye, Download, ChevronDown, ArrowLeft, File } from "lucide-react";
 import Image from "next/image";
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { BASE_API_URL } from "@/app/(Import-Export-Receipts)/import-api/ImportApi";
 
 interface RawBankPermitFile {
   userId: string;

@@ -1,42 +1,51 @@
 "use client";
-
-import { useEffect, useState } from "react";
+import { useEffect, useState, useMemo } from "react";
 import axios from "axios";
-import { Download, X, Eye, ChevronDown, File, ArrowLeft } from "lucide-react";
+import {
+  Download,
+  X,
+  Eye,
+  ChevronDown,
+  File,
+  ArrowLeft,
+  Search,
+} from "lucide-react";
 import Image from "next/image";
-
+import { BASE_API_URL } from "../../import-api/ImportApi";
 
 // ---------------- Interfaces ----------------
-interface RawWarehouseFile {
-  userId: string;
-  tinNumber: string;
-  firstName: string;
-  lastname: string;
-  maintype: string;
-  withHoldihType: string;
-  companyName: string;
-  imageBaseMainReceipt: string;
-  imageBaseWithholidingReceipt: string;
+interface FileData {
+  file: string;
+  fileType: string;
 }
 
-interface UserDocument {
-  userId: string;
-  firstName: string;
-  lastname: string;
-  tinNumber: string;
-  companyName: string;
-  documents: DocumentFile[];
+interface DeclarationNumber {
+  declarionNumberPerCampany: string;
 }
 
-interface DocumentFile {
-  label: string;
-  base64Data: string;
+interface UserData {
+  userId: string;
+  tinNumber?: string;
+  firstName?: string;
+  lastname?: string;
+  mainReceiptfile?: FileData[];
+  withHoldihReceiptfile?: FileData[];
+  companyName?: string;
+  declartionNumber?: DeclarationNumber[];
+}
+
+interface CompanyData {
+  companyName: string;
+  tinNumber?: string;
+  mainReceiptfile?: FileData[];
+  withHoldihReceiptfile?: FileData[];
+  declartionNumber?: DeclarationNumber[];
 }
 
 // ---------------- Helper Functions ----------------
 const createDataUrl = (
   base64String: string | null | undefined,
-  label: string
+  fileType: string
 ): string => {
   if (!base64String) return "";
 
@@ -45,10 +54,12 @@ const createDataUrl = (
     return base64String;
   }
 
-  // Determine MIME type based on label
-  let mimeType = "image/jpeg"; // default
-  if (label.toLowerCase().includes("pdf")) {
+  // Determine MIME type based on fileType
+  let mimeType = "application/octet-stream"; // default
+  if (fileType.toLowerCase().includes("pdf")) {
     mimeType = "application/pdf";
+  } else if (fileType.match(/jpeg|jpg|png|gif|webp/i)) {
+    mimeType = `image/${fileType.toLowerCase()}`;
   }
 
   // Clean the base64 string (remove existing prefixes or whitespace)
@@ -62,7 +73,7 @@ const createDataUrl = (
     window.atob(cleanedBase64);
     return `data:${mimeType};base64,${cleanedBase64}`;
   } catch (e) {
-    console.error("Invalid base64 string for:", label);
+    console.error("Invalid base64 string");
     return "";
   }
 };
@@ -85,7 +96,7 @@ function FilePreview({
       const a = document.createElement("a");
       a.href = url;
       a.download = `${label.replace(/[^a-zA-Z0-9]/g, "_")}.${
-        isPdf ? "pdf" : "jpg"
+        isPdf ? "pdf" : url.split(";")[0].split("/")[1] || "file"
       }`;
       document.body.appendChild(a);
       a.click();
@@ -148,16 +159,149 @@ function FilePreview({
   );
 }
 
+// ---------------- CompanySection Component ----------------
+function CompanySection({
+  company,
+  onPreviewClick,
+  searchTerm,
+}: {
+  company: CompanyData;
+  onPreviewClick: (url: string, label: string) => void;
+  searchTerm: string;
+}) {
+  const [expanded, setExpanded] = useState(false);
+
+  // Check if this company has files that match the search term
+  const hasMatchingFiles = useMemo(() => {
+    if (!searchTerm) return true;
+
+    // Check if any declaration number matches
+    const hasMatchingDeclaration = company.declartionNumber?.some((decl) =>
+      decl.declarionNumberPerCampany
+        ?.toLowerCase()
+        .includes(searchTerm.toLowerCase())
+    );
+
+    return hasMatchingDeclaration;
+  }, [company.declartionNumber, searchTerm]);
+
+  // Don't render if there's a search term and no matches
+  if (!hasMatchingFiles) return null;
+
+  return (
+    <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100">
+      <button
+        onClick={() => setExpanded(!expanded)}
+        className="w-full flex justify-between items-center text-left"
+      >
+        <div className="flex-1">
+          <h3 className="text-xl font-bold text-gray-800">
+            {company.companyName || "Unnamed Company"}
+          </h3>
+          <p className="text-sm text-gray-500 font-medium">
+            TIN: {company.tinNumber || "N/A"}
+          </p>
+        </div>
+        <div className="flex items-center gap-4">
+          {company.declartionNumber && company.declartionNumber.length > 0 && (
+            <div className="text-sm text-gray-600">
+              {company.declartionNumber.length} declaration(s)
+            </div>
+          )}
+          <ChevronDown
+            className={`text-gray-400 transition-transform duration-300 ${
+              expanded ? "rotate-180" : ""
+            }`}
+          />
+        </div>
+      </button>
+
+      {expanded && (
+        <div className="mt-6">
+          {/* Declaration Numbers */}
+          {company.declartionNumber && company.declartionNumber.length > 0 && (
+            <div className="mb-6">
+              <h4 className="text-lg font-semibold mb-3">
+                Declaration Numbers
+              </h4>
+              <div className="flex flex-wrap gap-2">
+                {company.declartionNumber.map((declaration, index) => (
+                  <span
+                    key={index}
+                    className="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm"
+                  >
+                    {declaration.declarionNumberPerCampany || "N/A"}
+                  </span>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Main Receipt Files */}
+          <div className="mb-6">
+            <h4 className="text-lg font-semibold mb-3">Main Receipt Files</h4>
+            {company.mainReceiptfile?.length ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {company.mainReceiptfile.map((file, index) => {
+                  const url = createDataUrl(file.file, file.fileType);
+                  return url ? (
+                    <FilePreview
+                      key={`main-${index}`}
+                      label={`Main Receipt ${index + 1}`}
+                      url={url}
+                      onPreviewClick={onPreviewClick}
+                    />
+                  ) : null;
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600 italic text-center py-4">
+                No main receipt files available
+              </p>
+            )}
+          </div>
+
+          {/* Withholding Receipt Files */}
+          <div>
+            <h4 className="text-lg font-semibold mb-3">
+              Withholding Receipt Files
+            </h4>
+            {company.withHoldihReceiptfile?.length ? (
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                {company.withHoldihReceiptfile.map((file, index) => {
+                  const url = createDataUrl(file.file, file.fileType);
+                  return url ? (
+                    <FilePreview
+                      key={`withholding-${index}`}
+                      label={`Withholding Receipt ${index + 1}`}
+                      url={url}
+                      onPreviewClick={onPreviewClick}
+                    />
+                  ) : null;
+                })}
+              </div>
+            ) : (
+              <p className="text-gray-600 italic text-center py-4">
+                No withholding receipt files available
+              </p>
+            )}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ---------------- Main Component ----------------
 export default function WarehouseFileViewer() {
-  const [userDocuments, setUserDocuments] = useState<UserDocument[]>([]);
+  const [userData, setUserData] = useState<UserData | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [previewFile, setPreviewFile] = useState<{
     url: string;
     label: string;
   } | null>(null);
-  const [expandedUsers, setExpandedUsers] = useState<Set<string>>(new Set());
+  const [searchTerm, setSearchTerm] = useState("");
 
   const handleOpenPreview = (url: string, label: string) => {
     setPreviewFile({ url, label });
@@ -167,73 +311,49 @@ export default function WarehouseFileViewer() {
     setPreviewFile(null);
   };
 
-  const toggleExpand = (tinNumber: string) => {
-    setExpandedUsers((prev) => {
-      const newSet = new Set(prev);
-      newSet.has(tinNumber) ? newSet.delete(tinNumber) : newSet.add(tinNumber);
-      return newSet;
-    });
-  };
+  // Group data by company
+  const companiesData = useMemo(() => {
+    if (!userData) return [];
+
+    // If the user data has company info, use it directly
+    if (userData.companyName) {
+      return [
+        {
+          companyName: userData.companyName,
+          tinNumber: userData.tinNumber,
+          mainReceiptfile: userData.mainReceiptfile,
+          withHoldihReceiptfile: userData.withHoldihReceiptfile,
+          declartionNumber: userData.declartionNumber,
+        },
+      ];
+    }
+
+    // In case of multiple companies in the future, you can add logic here
+    return [];
+  }, [userData]);
 
   useEffect(() => {
-    const fetchFiles = async () => {
+    const fetchData = async () => {
       setLoading(true);
       setError(null);
       try {
         const token = localStorage.getItem("token");
-        if (!token) {
-          setError("Authentication token not found.");
-          return;
-        }
+        const userId = localStorage.getItem("userId");
 
-        const res = await axios.get<RawWarehouseFile[]>(
-          `https://api.import.linkmerkato.com.et/api/v1/clerk/wareHousefileAll`,
-          { headers: { Authorization: `Bearer ${token}` } }
+        if (!token) throw new Error("No authentication token found");
+        if (!userId) throw new Error("No user ID provided");
+
+        const res = await axios.get<UserData>(
+          `${BASE_API_URL}/api/v1/clerk/WarehouseDisplay/${userId}`,
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              "Content-Type": "application/json",
+            },
+          }
         );
 
-        const grouped: Record<string, UserDocument> = {};
-
-        res.data.forEach((item) => {
-          const key = item.tinNumber;
-          if (!grouped[key]) {
-            grouped[key] = {
-              userId: item.userId,
-              firstName: item.firstName,
-              lastname: item.lastname,
-              tinNumber: item.tinNumber,
-              companyName: item.companyName,
-              documents: [],
-            };
-          }
-
-          if (item.imageBaseMainReceipt) {
-            const url = createDataUrl(
-              item.imageBaseMainReceipt,
-              `${item.maintype} Receipt`
-            );
-            if (url) {
-              grouped[key].documents.push({
-                label: `${item.maintype} Receipt`,
-                base64Data: url,
-              });
-            }
-          }
-
-          if (item.imageBaseWithholidingReceipt) {
-            const url = createDataUrl(
-              item.imageBaseWithholidingReceipt,
-              `${item.withHoldihType} Withholding Receipt`
-            );
-            if (url) {
-              grouped[key].documents.push({
-                label: `${item.withHoldihType} Withholding Receipt`,
-                base64Data: url,
-              });
-            }
-          }
-        });
-
-        setUserDocuments(Object.values(grouped));
+        setUserData(res.data);
       } catch (err: any) {
         console.error("Error fetching warehouse files:", err);
         if (axios.isAxiosError(err) && err.response) {
@@ -243,14 +363,16 @@ export default function WarehouseFileViewer() {
             }`
           );
         } else {
-          setError("An unexpected error occurred.");
+          setError(
+            err instanceof Error ? err.message : "An unexpected error occurred"
+          );
         }
       } finally {
         setLoading(false);
       }
     };
 
-    fetchFiles();
+    fetchData();
   }, []);
 
   if (loading) {
@@ -332,61 +454,61 @@ export default function WarehouseFileViewer() {
     );
   }
 
+  if (!userData) {
+    return (
+      <p className="text-center text-gray-600 text-lg py-10">
+        No warehouse documents available.
+      </p>
+    );
+  }
+
   return (
     <div className="p-4 bg-gray-50 min-h-screen">
       <h2 className="text-3xl font-bold mb-8 text-center text-gray-800">
-        Warehouse File Viewer
+        User Documents
       </h2>
-      {userDocuments.length === 0 ? (
-        <p className="text-center text-gray-600 text-lg py-10">
-          No warehouse documents available.
+
+      {/* Search Bar */}
+      <div className="mb-6 max-w-md mx-auto">
+        <div className="relative">
+          <Search
+            className="absolute left-3 top-1/2 transform -translate-y-1/2 text-gray-400"
+            size={20}
+          />
+          <input
+            type="text"
+            placeholder="Search by declaration number..."
+            value={searchTerm}
+            onChange={(e) => setSearchTerm(e.target.value)}
+            className="w-full pl-10 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+          />
+        </div>
+      </div>
+
+      {/* User Info */}
+      <div className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100">
+        <h3 className="text-xl font-bold text-gray-800 mb-2">
+          User Information
+        </h3>
+        <p className="text-gray-600">
+          {userData.firstName || "N/A"} {userData.lastname || "N/A"}
         </p>
-      ) : (
-        userDocuments.map((user) => (
-          <div
-            key={user.tinNumber}
-            className="bg-white rounded-lg shadow-lg p-6 mb-6 border border-gray-100"
-          >
-            <button
-              onClick={() => toggleExpand(user.tinNumber)}
-              className="w-full flex justify-between items-center text-left py-4 px-4 rounded-lg hover:bg-gray-50 transition-colors duration-200"
-            >
-              <div>
-                <h3 className="text-xl font-bold text-gray-800">
-                  {user.companyName}
-                </h3>
-                <p className="text-sm text-gray-500 font-medium">
-                  (TIN: {user.tinNumber}) — {user.firstName} {user.lastname}
-                </p>
-              </div>
-              <ChevronDown
-                className={`text-gray-400 transition-transform duration-300 ${
-                  expandedUsers.has(user.tinNumber) ? "rotate-180" : ""
-                }`}
-              />
-            </button>
-            {expandedUsers.has(user.tinNumber) && (
-              <div className="pt-4 border-t mt-4">
-                {user.documents.length > 0 ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6 mt-6">
-                    {user.documents.map((doc) => (
-                      <FilePreview
-                        key={`${user.tinNumber}-${doc.label}`}
-                        label={doc.label}
-                        url={doc.base64Data}
-                        onPreviewClick={handleOpenPreview}
-                      />
-                    ))}
-                  </div>
-                ) : (
-                  <p className="text-gray-600 italic text-center py-4">
-                    No specific files uploaded for this user.
-                  </p>
-                )}
-              </div>
-            )}
-          </div>
+      </div>
+
+      {/* Companies List */}
+      {companiesData.length > 0 ? (
+        companiesData.map((company, index) => (
+          <CompanySection
+            key={index}
+            company={company}
+            onPreviewClick={handleOpenPreview}
+            searchTerm={searchTerm}
+          />
         ))
+      ) : (
+        <p className="text-center text-gray-600 text-lg py-10">
+          No company data available.
+        </p>
       )}
     </div>
   );

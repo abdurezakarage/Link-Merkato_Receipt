@@ -2,12 +2,10 @@
 
 import { useRouter } from "next/navigation";
 import { useState } from "react";
-// Assuming DatePicker and format/parse functions are available from your setup
-// For demonstration, I'm providing dummy implementations if you don't have them
-// If you're using 'react-datepicker' and 'date-fns', ensure they are installed.
-import PreviewModal from "../declaration/preview/PreviewModal"; // Keep your existing modal import
 
-// Dummy DatePicker and date-fns functions if not installed. Replace with actual imports if you have them.
+import PreviewModal from "../declaration/preview/PreviewModal"; // Keep your existing modal import
+import { BASE_API_URL } from "../../import-api/ImportApi";
+
 const DatePicker = (props: any) => (
   <input
     type="date"
@@ -39,8 +37,6 @@ const parse = (dateString: string, fmt: string, baseDate: Date) => {
   }
   return new Date(dateString); // Fallback for other formats
 };
-
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
 
 // --- Type Definitions ---
 type TaxDto = {
@@ -245,11 +241,11 @@ function ItemFormPage({
   };
 
   return (
-    <div className="space-y-6 border p-6 rounded-lg bg-gray-50 shadow-sm">
+    <div className="space-y-6 border p-6 rounded-lg bg-gray-50 shadow-sm text-black">
       <h4 className="font-bold text-lg text-gray-800">
         Item #{index + 1} Details
       </h4>
-      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+      <div className="grid grid-cols-1">
         <InputField
           label="HS Code"
           name="hscode"
@@ -265,7 +261,7 @@ function ItemFormPage({
           }
           // placeholder="e.g., Smartphone"
         />
-        <div className="flex flex-col w-full">
+        <div className="flex flex-col w-full text-black">
           <label className="font-medium mb-1 text-sm text-gray-700">
             Unit of Measurement <span className="text-red-500">*</span>
           </label>
@@ -334,7 +330,7 @@ function ItemFormPage({
         {item.taxApplicationdto.map((tax, taxIndex) => (
           <div
             key={taxIndex}
-            className="grid grid-cols-1 sm:grid-cols-3 gap-3 border-t pt-4 border-gray-200"
+            className="grid grid-cols-1 md:grid-cols-3 gap-3 border-t pt-4 border-gray-200 md:overflow-x-auto"
           >
             <div className="flex flex-col">
               <label className="font-medium mb-1 text-xs text-gray-700">
@@ -600,14 +596,6 @@ export default function DeclarationForm() {
 
   // --- Validation Functions ---
   const validatePage1 = () => {
-    if (!tinNumber) {
-      setError("TIN number is required.");
-      return false;
-    }
-    if (!/^\d{10}$/.test(tinNumber)) {
-      setError("TIN number must be exactly 10 digits.");
-      return false;
-    }
     if (!formData.custombranchname) {
       setError("Branch name is required.");
       return false;
@@ -785,6 +773,8 @@ export default function DeclarationForm() {
       }
 
       const token = localStorage.getItem("token");
+      const tinNumber = localStorage.getItem("tinNumber");
+
       const userId = localStorage.getItem("userId");
       const roles = JSON.parse(localStorage.getItem("roles") || "[]");
 
@@ -898,7 +888,7 @@ export default function DeclarationForm() {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
         localStorage.removeItem("roles");
-        router.push("/auth/login");
+        router.push("/companies");
       }
     } finally {
       setLoading(false);
@@ -910,17 +900,15 @@ export default function DeclarationForm() {
     if (page === 1) {
       return (
         <>
-          <h3 className="text-md font-bold mb-4 text-gray-800">
-            Step 1: General Declaration Information
-          </h3>
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 text-black">
-            <InputField
+          <h3 className="text-md font-bold mb-4 text-black-800 text-black">Step 1</h3>
+          <div className="grid grid-cols-1 gap-4 text-black">
+            {/* <InputField
               label="TIN Number (10 digits)"
               name="tinNumber"
               value={tinNumber}
               onChange={handleTinChange}
               placeholder="Enter 10 digit TIN"
-            />
+            /> */}
             <InputField
               label="Custom Branch Name"
               name="custombranchname"
@@ -1049,7 +1037,7 @@ export default function DeclarationForm() {
             removeItemTax={removeItemTax}
             removeItem={removeItem}
           />
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-8 space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="flex flex-col overflow-x-auto sm:flex-row justify-between items-center mt-8 space-y-4 sm:space-y-0 sm:space-x-1">
             <button
               type="button"
               onClick={handleGoBack}
@@ -1062,14 +1050,14 @@ export default function DeclarationForm() {
               onClick={handleGoNext}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md text-sm transition-colors"
             >
-              Save & Add Another Item
+              Add Item
             </button>
             <button
               type="button"
               onClick={handleGoToSummary}
               className="w-full sm:w-auto bg-green-600 hover:bg-green-700 text-white font-medium py-2 px-6 rounded-md text-sm transition-colors"
             >
-              Go to Summary
+              Summary
             </button>
           </div>
         </>
@@ -1184,7 +1172,7 @@ export default function DeclarationForm() {
           )}
 
           {/* Action buttons on the Summary page */}
-          <div className="flex flex-col sm:flex-row justify-between items-center mt-8 space-y-4 sm:space-y-0 sm:space-x-4">
+          <div className="flex flex-col overflow-x-auto sm:flex-row justify-between items-center mt-8 space-y-4 sm:space-y-0 sm:space-x-1">
             <button
               type="button"
               onClick={handleGoBack}
@@ -1201,14 +1189,14 @@ export default function DeclarationForm() {
               }}
               className="w-full sm:w-auto bg-yellow-500 hover:bg-yellow-600 text-white font-medium py-2 px-6 rounded-md text-sm transition-colors"
             >
-              Add More Items
+              More item
             </button>
             <button
               type="button"
               onClick={handlePreview}
               className="w-full sm:w-auto bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-md text-sm transition-colors"
             >
-              Preview Declaration
+              Preview
             </button>
             <button
               type="submit"
@@ -1217,7 +1205,7 @@ export default function DeclarationForm() {
                 loading ? "opacity-70 cursor-not-allowed" : ""
               }`}
             >
-              {loading ? "Submitting..." : "Submit Declaration"}
+              {loading ? "Submitting..." : "Submit"}
             </button>
           </div>
         </>
@@ -1232,7 +1220,7 @@ export default function DeclarationForm() {
         className="w-full mx-auto bg-white rounded-lg p-4 md:p-6 space-y-6 shadow-xl"
       >
         <h2 className="text-2xl font-extrabold text-gray-900 text-center mb-6">
-          Customs Declaration Form
+          Custom Declaration Form
         </h2>
 
         {error && (

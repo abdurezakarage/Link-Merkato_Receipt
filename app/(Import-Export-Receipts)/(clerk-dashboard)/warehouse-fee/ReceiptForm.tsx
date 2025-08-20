@@ -3,7 +3,7 @@ import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent } from "react";
 import { format, parse } from "date-fns";
-
+import { BASE_API_URL } from "../../import-api/ImportApi";
 
 interface WarehouseFeePayload {
   receiptnumber: string;
@@ -88,7 +88,7 @@ export default function WarehouseFeeForm() {
     }
 
     try {
-      const apiUrl = `https://api.import.linkmerkato.com.et/api/v1/clerk/warehouseInfo/${declarationnumber}`;
+      const apiUrl = `${BASE_API_URL}/api/v1/clerk/warehouseInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -158,7 +158,7 @@ export default function WarehouseFeeForm() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6 text-black">
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
       <div className="w-full max-w-xl bg-white p-6 rounded shadow">
         {message && (
           <div

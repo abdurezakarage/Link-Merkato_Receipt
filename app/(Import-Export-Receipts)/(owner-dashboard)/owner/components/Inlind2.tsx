@@ -55,7 +55,7 @@ export default function ReceiptUpload() {
 
     try {
       const response = await fetch(
-        `${BASE_API_URL}/api/v1/user/warehousefee/${userId}`,
+        `${BASE_API_URL}/api/v1/user/inland2/${userId}`,
         {
           method: "POST",
           headers: {

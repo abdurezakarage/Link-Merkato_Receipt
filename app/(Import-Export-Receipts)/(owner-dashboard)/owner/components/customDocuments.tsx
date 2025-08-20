@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-const BASE_API_URL = process.env.NEXT_PUBLIC_API_BASE_URL;
+import { BASE_API_URL } from "../../../import-api/ImportApi";
 
 export default function CustomDocumentsUpload() {
   const [customUploadFile, setCustomUploadFile] = useState<File | null>(null);

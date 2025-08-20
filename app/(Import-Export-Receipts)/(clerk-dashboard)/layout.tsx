@@ -16,12 +16,18 @@ import {
 } from "react-icons/fa";
 
 const navItems = [
-  { href: "/transport", label: "Transport Fee", icon: <FaCar /> },
   { href: "/declaration", label: "Declaration", icon: <FaFileSignature /> },
-  { href: "/warehouse-fee", label: "Warehouse Fee", icon: <FaWarehouse /> },
   {
-    href: "/custom-clearance",
-    label: "Custom Clearance",
+    href: "/customFileViewer",
+    label: "Custom document",
+    icon: <FaCheckCircle />,
+  },
+  { href: "/warehouse-fee", label: "Warehouse Fee", icon: <FaWarehouse /> },
+
+  { href: "/transport", label: "Transport Fee", icon: <FaCar /> },
+  {
+    href: "/custom-transitor",
+    label: "Custom transitor",
     icon: <FaCheckCircle />,
   },
   { href: "/bank-service", label: "Bank Service", icon: <FaUniversity /> },
