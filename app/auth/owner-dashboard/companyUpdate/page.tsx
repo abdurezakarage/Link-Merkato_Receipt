@@ -2,14 +2,13 @@
 
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import Link from "next/link";
 import { FaSpinner } from "react-icons/fa";
-import { useAuth } from "../../../Context/AuthContext";
 import axios from "axios";
 import { SPRING_BASE_URL } from "../../../(local-receipts)/api/api";
+import { useAuth } from "../../../Context/AuthContext";
 
 export default function RegisterPage() {
-    const { user, token, logout } = useAuth();
+  const { user, token, logout } = useAuth();
   const router = useRouter();
 
   const [formData, setFormData] = useState({
@@ -25,6 +24,7 @@ export default function RegisterPage() {
 
   const [error, setError] = useState("");
   const [loading, setLoading] = useState(false);
+  const [prefillLoading, setPrefillLoading] = useState(true);
 // Parse JWT token function
 const parseJwt = (token: string): any => {
     try {
@@ -34,24 +34,45 @@ const parseJwt = (token: string): any => {
     }
   };
 
-  // Prefill form from decoded token (user can still edit)
+  // Prefill form by fetching user info from backend instead of decoding token
   useEffect(() => {
-    if (!token) return;
-    const payload = parseJwt(token);
-    if (!payload) return;
+    const fetchUser = async () => {
+      setPrefillLoading(true);
+      setError("");
+      const currentToken = localStorage.getItem('token');
+      const decodedToken = parseJwt(currentToken);
+      const userId = decodedToken.user_id;
+      try {
+        const currentToken = typeof window !== 'undefined' ? localStorage.getItem('token') : null;
+        const response = await axios.get(`${SPRING_BASE_URL}/user/getuser/${userId}`, {
+          headers: currentToken ? { Authorization: `Bearer ${currentToken}` } : undefined,
+        });
 
-    setFormData(prev => ({
-      ...prev,
-      firstname: prev.firstname || payload.first_name || payload.firstname || "",
-      lastname: prev.lastname || payload.last_name || payload.lastname || payload.lastName || payload.Lastname || payload.surname || payload.family_name || "",
-      companyname: prev.companyname || payload.company_name || payload.company?.company_name || "",
-      email: prev.email || payload.email || "",
-      phone_number: prev.phone_number || payload.phone_number || payload.phone || "",
-      wereda: prev.wereda || payload.wereda || "",
-      kebele: prev.kebele || payload.kebele || "",
-      region: prev.region || payload.Region || payload.region || "",
-    }));
-  }, [token]);
+        const data = response?.data;
+        const user = (data && (data.user || data)) || {};
+        const company = user.company || user.company_info || {};
+        const address = user.address || company.address || {};
+
+        setFormData(prev => ({
+          ...prev,
+          firstname: user.first_name || user.firstname || user.firstName || "",
+          lastname: user.last_name || user.lastname || user.lastName || user.surname || user.family_name || "",
+          companyname: user.companyname || company.company_name || company.companyname || user.company_name || "",
+          email: user.email || company.email || "",
+          phone_number: user.phone_number || user.phone || user.PhoneNumber || company.phone_number || "",
+          wereda: user.wereda || company.wereda || address.wereda || "",
+          kebele: user.kebele || company.kebele || address.kebele || "",
+          region: user.region || company.region || address.region || "",
+        }));
+      } catch (err: any) {
+        setError(err?.response?.data?.message || err?.message || 'Failed to load user data');
+      } finally {
+        setPrefillLoading(false);
+      }
+    };
+
+    fetchUser();
+  }, []);
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     const nextValue = name === "tinnumber" ? value.replace(/\D/g, "").slice(0, 10) : value;
@@ -69,31 +90,23 @@ const parseJwt = (token: string): any => {
       const currentToken = localStorage.getItem('token');
 
         const decodedToken = parseJwt(currentToken);
-        //console.log('Decoded token:', decodedToken);
-        const roles = decodedToken.roles;
         const userId = decodedToken.user_id;
-        const company_name = decodedToken.company_name;
-        const email = decodedToken.email;
-        const phone_number = decodedToken.PhoneNumber;
-        const wereda = decodedToken.wereda;
-        const kebele = decodedToken.kebele;
-        const region = decodedToken.region;
-        const first_name = decodedToken.first_name;
-        const lastname = decodedToken.Lastname;
-
-
       const response = await axios.put(
         `${SPRING_BASE_URL}/user/updateuser/${userId}`,
         formData,
         {
-          headers: { "Content-Type": "application/json" },
+          headers: currentToken
+            ? { "Content-Type": "application/json", Authorization: `Bearer ${currentToken}` }
+            : { "Content-Type": "application/json" },
         }
       );
 
       const data = await response.data;
       if (response.status !== 200) throw new Error(data || "Update failed");
 
-      router.push("/auth/owner-dashboard");
+      // After successful update, logout and navigate to login page
+      logout();
+      router.push("/auth/login");
     } catch (err: any) {
       setError(err.message);
     } finally {
@@ -140,6 +153,7 @@ const parseJwt = (token: string): any => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="text"
+                disabled={prefillLoading}
               />
             </div>
 
@@ -153,6 +167,7 @@ const parseJwt = (token: string): any => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="text"
+                disabled={prefillLoading}
               />
             </div>
 
@@ -167,6 +182,7 @@ const parseJwt = (token: string): any => {
               
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="text"
+                disabled={prefillLoading}
                 
               />
             </div>
@@ -183,6 +199,7 @@ const parseJwt = (token: string): any => {
                
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="email"
+                disabled={prefillLoading}
               />
             </div>
 
@@ -197,6 +214,7 @@ const parseJwt = (token: string): any => {
               
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="tel"
+                disabled={prefillLoading}
               />
             </div>
 
@@ -216,6 +234,7 @@ const parseJwt = (token: string): any => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="text"
+                disabled={prefillLoading}
               />
             </div>
 
@@ -229,6 +248,7 @@ const parseJwt = (token: string): any => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="text"
+                disabled={prefillLoading}
 
               />
             </div>
@@ -243,19 +263,25 @@ const parseJwt = (token: string): any => {
                 onChange={handleChange}
                 className="w-full px-4 py-2.5 border border-gray-200 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-200 focus:border-blue-500 transition duration-200 placeholder-gray-400"
                 type="text"
+                disabled={prefillLoading}
                
               />
             </div>
             <div className="col-span-full pt-4">
               <button
                 type="submit"
-                disabled={loading}
+                disabled={loading || prefillLoading}
                 className="w-full flex items-center justify-center gap-3 bg-blue-600 hover:bg-blue-700 text-white font-medium py-3.5 rounded-lg focus:outline-none focus:ring-4 focus:ring-blue-100 transition duration-200 shadow-sm hover:shadow-md"
               >
                 {loading ? (
                   <>
                     <FaSpinner className="animate-spin" />
                     <span>Updating Company...</span>
+                  </>
+                ) : prefillLoading ? (
+                  <>
+                    <FaSpinner className="animate-spin" />
+                    <span>Loading User...</span>
                   </>
                 ) : (
                   "Update Company"

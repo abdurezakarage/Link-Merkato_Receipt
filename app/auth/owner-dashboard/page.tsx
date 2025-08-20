@@ -67,7 +67,6 @@ const CompanyCard: React.FC<{ company: CompanyData }> = ({ company }) => (
           <p><span className="font-medium">TIN:</span> {company.tin_number}</p>
           <p><span className="font-medium">Email:</span> {company.company_email}</p>
           <p><span className="font-medium">Address:</span> {company.company_address}</p>
-          <p><span className="font-medium">Created by:</span> {company.created_by_username}</p>
         </div>
       </div>
       <div className="ml-4">
