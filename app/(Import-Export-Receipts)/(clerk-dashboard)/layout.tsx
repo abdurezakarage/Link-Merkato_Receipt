@@ -40,6 +40,11 @@ const navItems = [
     label: "inland2 ",
     icon: <FaFileInvoice />,
   },
+  {
+    href: "/",
+    label: "history ",
+    icon: <FaFileInvoice />,
+  },
 ];
 
 export default function ClerkDashboardLayout({

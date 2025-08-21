@@ -26,12 +26,12 @@ export default function OwnerDashboardLayout({
     },
     {
       href: "/owner/clearance",
-      label: "Custom Clearance",
+      label: "transitor",
       icon: <FiCheckCircle className="w-5 h-5" />,
     },
     {
       href: "/owner/custom-documents",
-      label: "Custom Documents",
+      label: "Custom ",
       icon: <FiFileText className="w-5 h-5" />,
     },
     {
@@ -48,7 +48,7 @@ export default function OwnerDashboardLayout({
 
   return (
     <div className="flex min-h-screen bg-gray-50">
-      <aside className="w-64 h-screen fixed top-0 left-0 bg-gray-800 text-white p-6">
+      <aside className="bg-white w-64 h-screen fixed top-0 left-0 bg-gray-800 text-black p-6">
         <h2 className="text-xl font-bold mb-8">Owner Portal</h2>
         <nav className="space-y-1">
           {navItems.map(({ href, label, icon }) => (
@@ -58,7 +58,7 @@ export default function OwnerDashboardLayout({
               className={`flex items-center px-4 py-3 rounded-lg transition-colors ${
                 pathname === href
                   ? "bg-blue-600 text-white"
-                  : "text-gray-300 hover:bg-gray-700"
+                  : "text-black-300 hover:bg-gray-700"
               }`}
             >
               <span className="mr-3">{icon}</span>

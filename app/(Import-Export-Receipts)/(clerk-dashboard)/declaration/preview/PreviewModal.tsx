@@ -15,14 +15,13 @@ if (typeof window !== "undefined") {
 
 const formatCurrency = (value: number | null) => {
   if (value === null || isNaN(Number(value))) {
-    return ""; // Return empty string instead of "N/A"
+    return "";
   }
-  // Format with all decimal places but remove trailing .00 if whole number
+  // Change the style to "decimal" to remove the currency symbol
   const formatted = new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency: "USD",
+    style: "decimal",
     minimumFractionDigits: 0,
-    maximumFractionDigits: 20, // Allow up to 20 decimal places
+    maximumFractionDigits: 20,
   }).format(value);
 
   return formatted;
@@ -33,7 +32,7 @@ const formatTaxValue = (value: number | string | null) => {
   const numValue = typeof value === "string" ? parseFloat(value) : value;
 
   if (numValue === null || isNaN(numValue)) {
-    return ""; // Return empty string instead of "N/A"
+    return "";
   }
 
   // Format with up to 8 decimal places but remove unnecessary trailing zeros
@@ -457,7 +456,6 @@ export default function PreviewModal({
               General Information
             </h3>
             <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-              <DetailRow label="TIN Number" value={tinNumber} />
               <DetailRow
                 label="Branch Name"
                 value={formData.custombranchname}
@@ -472,7 +470,11 @@ export default function PreviewModal({
               />
               <DetailRow
                 label="FOB Amount (USD)"
-                value={formatCurrency(formData.fobamountusdt)}
+                value={
+                  formData.fobamountusdt !== null
+                    ? `$${formatCurrency(formData.fobamountusdt)}`
+                    : "-"
+                }
               />
               <DetailRow
                 label="Exchange Rate"

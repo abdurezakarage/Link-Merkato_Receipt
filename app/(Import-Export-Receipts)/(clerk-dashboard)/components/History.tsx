@@ -15,8 +15,6 @@ interface TaxAmountPerItem {
   totalTaxPerDeclaration: number | null;
   vat: number | null;
   withholdingTax: number | null;
-  totalTaxPerItem: string;
-  dpvAmountPerItem: string;
 }
 interface companyInfo {
   companyname: string;
@@ -36,10 +34,6 @@ interface ItemInfo {
   warehousePerItem: number | null;
   unitprice: number;
   taxAmountPerItem: TaxAmountPerItem[];
-  inlandFeright2PerItem: number | null;
-  loadingCostPerItem: number | null;
-  grandTotalInETBPerItem: number | null;
-  unitCostInETBPerItem: number | null;
 }
 
 interface TaxData {
@@ -331,12 +325,7 @@ export default function AllTaxViewer() {
                   <th>HS Code</th>
                   <th>Quantity</th>
                   <th>Unit Price</th>
-                  <th>inlandFeright2 Per Item</th>
-                  <th>loading Cost Per Item</th>
-                  <th>unit Cost Per Item</th>
-
-    
-
+                  <th>TIN</th>
                 </tr>
               </thead>
               <tbody>
@@ -348,14 +337,7 @@ export default function AllTaxViewer() {
                     <td>${item.hscode}</td>
                     <td>${item.quantity}</td>
                     <td>${item.unitprice?.toLocaleString()} ETB</td>
-                    <td>${item.inlandFeright2PerItem}</td>
-                    <td>${item.loadingCostPerItem}</td>
-                    <td>${
-                      item.unitCostInETBPerItem
-                    }</td>                              
-
-                               
-
+                    <td>${item.tinnumber}</td>
                   </tr>
                 `
                   )
@@ -547,10 +529,8 @@ export default function AllTaxViewer() {
                       <div className="border-b pb-3">
                         <h3 className="text-sm font-semibold text-gray-800 mb-2">
                           Financial Summary for{" "}
-                          {declaration.companyInfo.tinnumber}{" "}
-                          <p className="text-orraneg">tin Number</p>
+                          {declaration.companyInfo.tinnumber} tin Number
                         </h3>
-
                         <div className="overflow-x-auto">
                           <div className="grid grid-cols-1 md:grid-cols-3 gap-3 min-w-[800px]">
                             {/* Summary Card */}
@@ -751,21 +731,13 @@ export default function AllTaxViewer() {
                                   HS Code
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Qty
+                                  Quantity
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Unit Price
                                 </th>
-
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  inland Feright2/Item
-                                </th>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  loading Cost/Item
-                                </th>
-
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  unit Cost/Item
+                                  TIN
                                 </th>
                               </tr>
                             </thead>
@@ -790,17 +762,7 @@ export default function AllTaxViewer() {
                                     {item.unitprice?.toLocaleString()} ETB
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.inlandFeright2PerItem?.toLocaleString()}{" "}
-                                    ETB
-                                  </td>
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.loadingCostPerItem?.toLocaleString()}{" "}
-                                    ETB
-                                  </td>
-
-                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.unitCostInETBPerItem?.toLocaleString()}
-                                    ETB
+                                    {item.tinnumber}
                                   </td>
                                 </tr>
                               ))}

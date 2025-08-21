@@ -1054,6 +1054,7 @@ export default function DeclarationForm() {
             >
               Add Item
             </button>
+
             <button
               type="button"
               onClick={handleGoToSummary}
