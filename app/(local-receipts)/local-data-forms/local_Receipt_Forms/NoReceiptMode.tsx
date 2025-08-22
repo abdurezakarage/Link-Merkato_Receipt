@@ -58,7 +58,6 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         withholdingFormData.append('sub_total', String(formData.withholding.amountPaid));
         withholdingFormData.append('tax_withholding_amount', String(formData.withholding.withholdingTax));
         withholdingFormData.append('buyer_tin', formData.withholding.supplierTIN);
-        withholdingFormData.append('seller_tin', formData.withholding.supplierTIN);
         
         if (formData.withholding.document) {
           withholdingFormData.append('withholding_document', formData.withholding.document);
@@ -107,7 +106,6 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         withholdingFormData.append('sub_total', String(formData.withholding.amountPaid));
         withholdingFormData.append('tax_withholding_amount', String(formData.withholding.withholdingTax));
         withholdingFormData.append('buyer_tin', formData.withholding.supplierTIN);
-        withholdingFormData.append('seller_tin', formData.withholding.supplierTIN);
         
         if (formData.withholding.document) {
           withholdingFormData.append('withholding_document', formData.withholding.document);
