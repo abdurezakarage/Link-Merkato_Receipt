@@ -21,6 +21,8 @@ import ModeSelector from "../local-data-forms/local_Receipt_Forms/ModeSelector";
 import DocumentViewer from "../localDocument/DocumentViewer";
 import PreviewModal from "../local-data-forms/local_Receipt_Forms/PreviewModal";
 import { DJANGO_BASE_URL } from "../api/api";
+import { useDraftAutosave } from "../draft/draftAutosave";
+import DraftsPanel from "../draft/draftsPanel";
 import { Rowdies } from "next/font/google";
 import { useRouter } from "next/navigation";
 
@@ -154,6 +156,72 @@ function LocalReceiptContent() {
     withholding: false
   });
   const router = useRouter();
+
+  // Helper to find name by id from lookup arrays
+  const findNameById = useCallback((dataArray: any[], id: number | null, fieldName: string = 'name') => {
+    if (id == null) return '';
+    const item = dataArray.find(item => item.id === id);
+    return item ? item[fieldName] : '';
+  }, []);
+
+  // Local resolver to avoid referencing later-declared functions
+  const resolveIdByName = useCallback((dataArray: any[], name: string, fieldName: string = 'name'): number | null => {
+    if (!name) return null;
+    const item = dataArray.find(item => item[fieldName] === name);
+    return item ? item.id : null;
+  }, []);
+
+  // Build backend-shaped draft payload from current form
+  const draftPayload = useMemo(() => {
+    const categoryId = resolveIdByName(receiptCategoriesData, form.receiptCategory);
+    const kindId = resolveIdByName(receiptKindsData, form.receiptKind);
+    const typeId = resolveIdByName(receiptTypesData, form.receiptType);
+    const nameId = resolveIdByName(receiptNamesData, form.receiptName);
+
+    const itemsData = (form.items || []).map(item => ({
+      nature: item.nature || '',
+      quantity: String(item.quantity ?? 0),
+      tax_type: item.taxType || (form.receiptName || '').toUpperCase() || '',
+      item_code: item.itemCode || '',
+      unit_cost: String(item.unitCost ?? 0),
+      gl_account: item.glAccount || '',
+      discount_amount: '0.00',
+      item_description: item.description || '',
+      unit_of_measurement: item.unitOfMeasurement || ''
+    }));
+
+    return {
+      receipt_number: form.receiptNumber,
+      machine_number: form.machineNumber,
+      receipt_date: form.receiptDate,
+      calendar_type: form.calendarType,
+      receipt_category_id: categoryId,
+      receipt_kind_id: kindId,
+      receipt_type_id: typeId,
+      receipt_name_id: nameId,
+      is_withholding_applicable: withholdingRequired === 'yes',
+      payment_method_type: form.paymentMethod,
+      bank_name: form.bankName || '',
+      reason_of_receiving: form.items?.[0]?.reasonOfReceiving || '',
+      issued_by_details: {
+        name: form.seller.name,
+        address: form.seller.address,
+        tin_number: form.seller.tin
+      },
+      issued_to_details: {
+        name: form.buyer.name,
+        address: form.buyer.address,
+        tin_number: form.buyer.tin
+      },
+      items: itemsData
+    };
+  }, [form, withholdingRequired, receiptCategoriesData, receiptKindsData, receiptTypesData, receiptNamesData, resolveIdByName]);
+
+  // Begin autosave drafts every 15s when authenticated using backend shape
+  useDraftAutosave(
+    draftPayload,
+    { token, isTokenValid, enabled: true, intervalMs: 15000 }
+  );
 
   // Handle section change for both receipt and no-receipt modes
   const handleSectionChange = (section: string) => {
@@ -421,6 +489,62 @@ function LocalReceiptContent() {
       checkReceiptNumber(value);
     }
   };
+
+  // Apply selected draft to the form
+  const applyDraft = useCallback((draft: any) => {
+    const data = draft?.data ?? draft; // prefer backend 'data'
+    if (!data || typeof data !== 'object') return;
+
+    // Map IDs -> names from lookups already loaded
+    const mappedForm: Partial<FormState> = {
+      receiptNumber: data.receipt_number || '',
+      machineNumber: data.machine_number || '',
+      receiptDate: data.receipt_date || '',
+      calendarType: data.calendar_type || '',
+      receiptCategory: findNameById(receiptCategoriesData, data.receipt_category_id) || '',
+      receiptKind: findNameById(receiptKindsData, data.receipt_kind_id) || '',
+      receiptType: findNameById(receiptTypesData, data.receipt_type_id) || '',
+      receiptName: findNameById(receiptNamesData, data.receipt_name_id) || '',
+      paymentMethod: data.payment_method_type || '',
+      bankName: data.bank_name || '',
+    } as Partial<FormState>;
+
+    if (data.issued_by_details) {
+      mappedForm.seller = {
+        name: data.issued_by_details.name || '',
+        tin: data.issued_by_details.tin_number || '',
+        address: data.issued_by_details.address || ''
+      };
+    }
+    if (data.issued_to_details) {
+      mappedForm.buyer = {
+        name: data.issued_to_details.name || '',
+        tin: data.issued_to_details.tin_number || '',
+        address: data.issued_to_details.address || ''
+      };
+    }
+
+    if (Array.isArray(data.items)) {
+      mappedForm.items = data.items.map((it: any) => ({
+        glAccount: it.gl_account || '',
+        nature: it.nature || '',
+        hsCode: it.hs_code || '',
+        itemCode: it.item_code || '',
+        description: it.item_description || '',
+        quantity: Number(it.quantity ?? 0),
+        unitCost: Number(it.unit_cost ?? 0),
+        totalCost: Number(it.quantity ?? 0) * Number(it.unit_cost ?? 0),
+        unitOfMeasurement: it.unit_of_measurement || '',
+        category: '',
+        reasonOfReceiving: data.reason_of_receiving || '',
+        taxType: it.tax_type || '',
+        declarationNumber: it.declaration_number || ''
+      }));
+    }
+
+    setForm(prev => ({ ...prev, ...mappedForm }));
+    setWithholdingRequired(data.is_withholding_applicable ? 'yes' : 'no');
+  }, [findNameById, receiptCategoriesData, receiptKindsData, receiptTypesData, receiptNamesData]);
 
   // Handle item changes
   const handleItemChange = (idx: number, e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement>) => {
@@ -1091,6 +1215,13 @@ function LocalReceiptContent() {
                   </svg>
                 </button>
               )}
+              {/* Drafts Panel */}
+              <DraftsPanel<FormState & { withholdingForm?: WithholdingForm; withholdingRequired?: string; noReceiptMode?: boolean }>
+                token={token}
+                onSelectDraft={applyDraft}
+                title="Your Drafts"
+              />
+
               <form onSubmit={(e) => {
                 handleSubmit(e);
               }}>
