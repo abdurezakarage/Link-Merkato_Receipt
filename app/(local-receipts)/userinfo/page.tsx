@@ -335,6 +335,13 @@ const UserDashboard: React.FC = () => {
                       onClick: () => router.push('/localDocumentUpload')
     },
     {
+      title: 'Purchase Voucher',
+      description: 'Create a new purchase voucher and 30% withholding',
+      icon: '💰',
+      color: 'bg-blue-500',
+                      onClick: () => router.push('/purchaseVoucher')
+    },
+    {
       title: 'View Reports',
       description: 'Generate and view reports',
       icon: '📊',

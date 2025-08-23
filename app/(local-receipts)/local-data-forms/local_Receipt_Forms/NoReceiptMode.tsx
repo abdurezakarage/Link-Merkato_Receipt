@@ -1,9 +1,10 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import NoReceiptForms from "./NoReceiptForms";
 import { DJANGO_BASE_URL } from "../../api/api";
+import { useRouter } from "next/navigation";
 
 interface NoReceiptModeProps {
   token: string | null;
@@ -14,6 +15,25 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState("");
+  const [countdown, setCountdown] = useState(0);
+  const router = useRouter();
+
+  // Memoize the navigation function to avoid dependency issues
+  const navigateToUserInfo = useCallback(() => {
+    router.push('/userinfo');
+  }, [router]);
+
+  // Countdown effect for navigation delay
+  useEffect(() => {
+    if (countdown > 0) {
+      const timer = setTimeout(() => {
+        setCountdown(prev => prev - 1);
+      }, 1000);
+      return () => clearTimeout(timer);
+    } else if (countdown === 0 && success) {
+      navigateToUserInfo();
+    }
+  }, [countdown, success, navigateToUserInfo]);
 
   // Handle no receipt form submit function 
   const handleNoReceiptSubmit = async (formData: any) => {
@@ -45,6 +65,7 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         });
 
         setSuccess("Purchase Voucher form submitted successfully!");
+        setCountdown(3);
         return;
       }
 
@@ -71,6 +92,7 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         });
 
         setSuccess("30% Withholding form submitted successfully!");
+        setCountdown(5);
         return;
       }
 
@@ -119,6 +141,7 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         });
 
         setSuccess("Both Purchase Voucher and 30% Withholding forms submitted successfully!");
+        setCountdown(5);
         return;
       }
       
@@ -146,13 +169,23 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
 
   return (
     <>
+    
       <NoReceiptForms 
         submitting={submitting} 
         onSubmit={handleNoReceiptSubmit} 
         activeSection={activeSection}
       />
       {error && <div className="text-red-600 bg-red-100 rounded px-3 py-2 text-center mb-2 font-semibold">{error}</div>}
-      {success && <div className="text-green-700 bg-green-100 rounded px-3 py-2 text-center mb-2 font-semibold">{success}</div>}
+      {success && (
+        <div className="text-green-700 bg-green-100 rounded px-3 py-2 text-center mb-2 font-semibold">
+          {success}
+          {countdown > 0 && (
+            <div className="mt-2 text-sm text-green-600">
+              Redirecting to user info page in {countdown} second{countdown !== 1 ? 's' : ''}...
+            </div>
+          )}
+        </div>
+      )}
     </>
   );
 } 

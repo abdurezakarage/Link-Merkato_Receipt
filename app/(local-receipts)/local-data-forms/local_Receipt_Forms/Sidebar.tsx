@@ -153,13 +153,13 @@ const Sidebar: React.FC<SidebarProps> = ({
         </div>
 
         {/* Mode Selector */}
-        <div className="mb-6 flex-shrink-0">
+        {/* <div className="mb-6 flex-shrink-0">
           <ModeSelector 
             noReceiptMode={noReceiptMode} 
             setNoReceiptMode={setNoReceiptMode} 
             variant="toggle" 
           />
-        </div>
+        </div> */}
 
         {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto min-h-0">
