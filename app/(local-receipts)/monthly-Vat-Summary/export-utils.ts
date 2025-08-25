@@ -11,27 +11,99 @@ export const downloadPDF = (
   sectionTotals: SectionTotals,
   manualAdjustments: ManualAdjustments,
   adjustedVatDue: number,
-  vatDue: number
+  vatDue: number,
+  taxpayerInfo?: {
+    name?: string;
+    tin?: string;
+    region?: string;
+    woreda?: string;
+    kebele?: string;
+    phone?: string;
+  }
 ) => {
   const doc = new jsPDF();
   const pageWidth = doc.internal.pageSize.getWidth();
   
   // Header Information
   doc.setFontSize(16);
-  doc.text('VAT Form Structure', pageWidth / 2, 20, { align: 'center' });
+  doc.text('VALUE ADDED TAX DECLARATION', pageWidth / 2, 20, { align: 'center' });
   
   // Period Information
   doc.setFontSize(12);
   doc.text(`Period: ${formatDateRange(dateRange)}`, pageWidth / 2, 35, { align: 'center' });
-  doc.text(`Report Generated: ${new Date().toLocaleDateString('en-US', { 
-    year: 'numeric', 
-    month: 'long', 
-    day: 'numeric',
-    hour: '2-digit',
-    minute: '2-digit'
-  })}`, 20, 50);
+  // doc.text(`Report Generated: ${new Date().toLocaleDateString('en-US', { 
+  //   year: 'numeric', 
+  //   month: 'long', 
+  //   day: 'numeric',
+  //   hour: '2-digit',
+  //   minute: '2-digit'
+  // })}`, 20, 50);
   
-  let currentY = 70;
+  let currentY = 50;
+
+  // Section 1 - Taxpayer Information (if provided)
+  if (taxpayerInfo) {
+    doc.setFont('helvetica', 'bold');
+    doc.text('Section 1 - Taxpayer Information', pageWidth / 2, currentY, { align: 'center' });
+    currentY += 8;
+
+    doc.setFont('helvetica', 'normal');
+    const leftX = 20;
+    const midX = pageWidth / 2 + 5;
+    const labelGap = 4;
+    const lineGap = 7;
+
+    // Left column
+    doc.text(`Taxpayer's Name:`, leftX, currentY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${taxpayerInfo.name || '-'}`, leftX + 45, currentY);
+    doc.setFont('helvetica', 'normal');
+    currentY += lineGap;
+
+    doc.text(`TIN:`, leftX, currentY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${taxpayerInfo.tin || '-'}`, leftX + 45, currentY);
+    doc.setFont('helvetica', 'normal');
+    currentY += lineGap;
+
+    doc.text(`Region:`, leftX, currentY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${taxpayerInfo.region || '-'}`, leftX + 45, currentY);
+    doc.setFont('helvetica', 'normal');
+    currentY += lineGap;
+
+    // Right column (aligned starting from initial y of section)
+    let rightY = currentY - (lineGap * 3);
+    doc.text(`Tax Period:`, midX, rightY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(
+      `${new Date(dateRange.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })}`,
+      midX + 35,
+      rightY
+    );
+    doc.setFont('helvetica', 'normal');
+    rightY += lineGap;
+
+    doc.text(`Woreda:`, midX, rightY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${taxpayerInfo.woreda || '-'}`, midX + 35, rightY);
+    doc.setFont('helvetica', 'normal');
+    rightY += lineGap;
+
+    doc.text(`Kebele:`, midX, rightY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${taxpayerInfo.kebele || '-'}`, midX + 35, rightY);
+    doc.setFont('helvetica', 'normal');
+    rightY += lineGap;
+
+    doc.text(`Phone:`, midX, rightY);
+    doc.setFont('helvetica', 'bold');
+    doc.text(`${taxpayerInfo.phone || '-'}`, midX + 35, rightY);
+    doc.setFont('helvetica', 'normal');
+
+    // Move currentY below the right column
+    currentY = Math.max(currentY, rightY) + 12;
+  }
   
   // COMPUTATION OF OUTPUT TAX Section
   doc.setFontSize(12);
@@ -168,6 +240,10 @@ export const downloadPDF = (
   });
   
   currentY = (doc as any).lastAutoTable.finalY + 20;
+  
+  // Force NON-CAPITAL ASSET PURCHASES to start on a new page (Page 2)
+  doc.addPage();
+  currentY = 20;
   
   // NON-CAPITAL ASSET PURCHASES Section
   doc.setFontSize(12);
@@ -332,6 +408,111 @@ export const downloadPDF = (
     }
   });
   
+  currentY = (doc as any).lastAutoTable.finalY + 20;
+
+  // Start DETAILED BREAKDOWN on a fresh page (Page 3)
+  doc.addPage();
+  currentY = 20;
+
+  // DETAILED BREAKDOWN Section
+  doc.setFontSize(12);
+  doc.setFont('helvetica', 'bold');
+  if (currentY > 250) {
+    doc.addPage();
+    currentY = 20;
+  }
+  doc.text('DETAILED BREAKDOWN', 20, currentY);
+  currentY += 8;
+
+  // Iterate by nature code and render item-level tables
+  const natureEntries = Object.entries(vatSummary)
+    .sort(([a], [b]) => {
+      const ma = natureCodeMappings[a];
+      const mb = natureCodeMappings[b];
+      if (!ma || !mb) return a.localeCompare(b);
+      return ma.lineNumber - mb.lineNumber;
+    });
+
+  natureEntries.forEach(([natureCode, data], idx) => {
+    const mapping = natureCodeMappings[natureCode];
+    const title = ` ${natureCode}${mapping ? ` - ${mapping.label}` : ''}`;
+
+    // Collect all matching items across receipts for this nature code
+    const rows: any[] = [];
+    data.receipts.forEach(receipt => {
+      const date = new Date(receipt.receipt_date).toLocaleDateString('en-ET', { year: 'numeric', month: 'short', day: 'numeric' });
+      const receiptNumber = receipt.receipt_number;
+      receipt.items
+        .filter(it => it.item.nature === natureCode)
+        .forEach(it => {
+          const qty = Number(it.quantity);
+          const unitCost = Number(it.unit_cost || it.item.unit_cost);
+          const subtotal = Number(it.subtotal);
+          const taxType = it.tax_type || it.item.tax_type || '';
+          const taxAmount = Number(it.tax_amount || 0);
+          rows.push([
+            date,
+            receiptNumber,
+            it.item.item_description,
+            String(qty),
+            formatCurrency(unitCost),
+            formatCurrency(subtotal),
+            taxType,
+            formatCurrency(taxAmount)
+          ]);
+        });
+    });
+
+    if (rows.length === 0) return;
+
+    // Page break if needed before section title
+    if (currentY > 240) {
+      doc.addPage();
+      currentY = 20;
+    }
+
+    // Section title for this nature code
+    doc.setFont('helvetica', 'bold');
+    doc.text(title, 20, currentY);
+    currentY += 6;
+
+    autoTable(doc, {
+      head: [[
+        'Date',
+        'Receipt No',
+        'Description',
+        'Qty',
+        'Unit Cost',
+        'Subtotal',
+        'Tax Type',
+        'Tax'
+      ]],
+      body: rows,
+      startY: currentY,
+      styles: { fontSize: 8, cellPadding: 2, overflow: 'linebreak', cellWidth: 'wrap' },
+      headStyles: { fillColor: [66, 139, 202], textColor: [255, 255, 255], fontStyle: 'bold' },
+      alternateRowStyles: { fillColor: [245, 245, 245] },
+      // Right-align numerics, let widths auto-wrap to fit page
+      columnStyles: {
+        3: { halign: 'right' },
+        4: { halign: 'right' },
+        5: { halign: 'right' },
+        7: { halign: 'right' }
+      },
+      margin: { left: 20, right: 20 },
+      didDrawPage: () => {
+        // Reset left margin title on new pages for this table
+      }
+    });
+
+    // Update Y for next section or add page if close to end
+    currentY = (doc as any).lastAutoTable.finalY + 14;
+    if (idx < natureEntries.length - 1 && currentY > 240) {
+      doc.addPage();
+      currentY = 20;
+    }
+  });
+
   // Save the PDF
   const startDate = new Date(dateRange.startDate).toISOString().split('T')[0];
   const endDate = new Date(dateRange.endDate).toISOString().split('T')[0];

@@ -276,7 +276,15 @@ const kebele = decodedToken?.Kebele;
       sectionTotals,
       manualAdjustments,
       adjustedVatDue,
-      vatDue
+      vatDue,
+      {
+        name: company,
+        tin: tin,
+        region: company_address,
+        woreda: woreda,
+        kebele: kebele,
+        phone: Phone_number
+      }
     );
   };
 
@@ -332,7 +340,7 @@ const kebele = decodedToken?.Kebele;
             disabled={reportPage <= 1}
             className="px-3 py-1 rounded-md text-sm bg-gray-100 text-gray-700 disabled:opacity-50"
           >
-            Prev Page
+            Prev
           </button>
           <span className="text-sm text-gray-600">Page {reportPage} of {maxReportPage}</span>
           <button
@@ -340,7 +348,7 @@ const kebele = decodedToken?.Kebele;
             disabled={reportPage >= maxReportPage}
             className="px-3 py-1 rounded-md text-sm bg-gray-100 text-gray-700 disabled:opacity-50"
           >
-            Next Page
+            Next
           </button>
         </div>
 
