@@ -15,7 +15,7 @@ export function useDraftAutosave<T extends object>(
   data: T,
   options: AutosaveOptions
 ) {
-  const { token, isTokenValid, enabled = true, intervalMs = 15000 } = options;
+  const { token, isTokenValid, enabled = true, intervalMs = 30000 } = options;
   const latestDataRef = useRef<T>(data);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
 

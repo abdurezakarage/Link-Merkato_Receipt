@@ -456,6 +456,7 @@ function LocalReceiptContent() {
     timeoutRef.current = setTimeout(async () => {
       try {
         const response = await axios.get(`${DJANGO_BASE_URL}/check-receipt-exists/?receipt_number=${encodeURIComponent(receiptNumber)}`, {
+       
           headers: {
             "Authorization": `Bearer ${token}`
           }
