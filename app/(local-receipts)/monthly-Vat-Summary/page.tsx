@@ -4,6 +4,7 @@ import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { DJANGO_BASE_URL } from '../api/api';
 import { FormReportResponse, ReceiptData } from '../local-data-forms/types';
+import { useAuth } from '../../Context/AuthContext';
 
 // Import types and utilities
 import { EditableValues, ManualAdjustments, DateRange } from './types';
@@ -29,7 +30,7 @@ const MonthlySummaryPage: React.FC = () => {
   const [filteredReceipts, setFilteredReceipts] = useState<ReceiptData[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  
+  const { token, user, isLoading: authLoading } = useAuth();
   // Initialize with current month date range
   const currentDate = new Date();
   const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -39,7 +40,7 @@ const MonthlySummaryPage: React.FC = () => {
     startDate: startOfMonth.toISOString().split('T')[0],
     endDate: endOfMonth.toISOString().split('T')[0]
   });
-  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(false);
+  const [showDetailedBreakdown, setShowDetailedBreakdown] = useState(true);
   
   // Edit mode state
   const [isEditMode, setIsEditMode] = useState(false);
@@ -50,6 +51,26 @@ const MonthlySummaryPage: React.FC = () => {
     creditCarriedForward: 0,
   });
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
+
+  // Parse JWT token to get company information
+  const parseJwt = (token: string): any => {
+    try {
+      return JSON.parse(atob(token.split('.')[1]));
+    } catch (e) {
+      return null;
+    }
+  };
+
+const decodedToken = parseJwt(token);
+const company = decodedToken?.company_name;
+const tin = decodedToken?.tin_number;
+const company_address = decodedToken?.Region;
+const Phone_number = decodedToken?.PhoneNumber;
+const woreda = decodedToken?.Wereda;
+const kebele = decodedToken?.Kebele;
+
+
+
 
   const fetchReceipts = async () => {
     setLoading(true);
@@ -233,6 +254,18 @@ const MonthlySummaryPage: React.FC = () => {
   const adjustedVatDue = baseVatDue - manualAdjustments.vatOnGovernmentVoucher - manualAdjustments.otherCredits;
   const finalVatDue = adjustedVatDue - manualAdjustments.creditCarriedForward;
   const vatDue = finalVatDue;
+  const [reportPage, setReportPage] = useState<number>(1);
+  const receiptsPerDetailPage = 15;
+  const detailedTotalPages = React.useMemo(() => {
+    const pages = Object.entries(vatSummary).map(([natureCode, data]) => {
+      const count = data.receipts
+        .flatMap(r => r.items.filter(i => i.item.nature === natureCode)).length;
+      return Math.ceil((count || 0) / receiptsPerDetailPage) || 1;
+    });
+    const maxPages = pages.length ? Math.max(...pages) : 1;
+    return Math.max(1, maxPages);
+  }, [vatSummary]);
+  const maxReportPage = 2 + detailedTotalPages;
 
   // Download handlers
   const handleDownloadPDF = () => {
@@ -286,12 +319,30 @@ const MonthlySummaryPage: React.FC = () => {
           isEditMode={isEditMode}
           onSaveChanges={saveChanges}
           onToggleEditMode={isEditMode ? cancelChanges : toggleEditMode}
-          onToggleDetailedBreakdown={() => setShowDetailedBreakdown(!showDetailedBreakdown)}
-          showDetailedBreakdown={showDetailedBreakdown}
+          onToggleDetailedBreakdown={() => {}}
+          showDetailedBreakdown={true}
           onDownloadPDF={handleDownloadPDF}
           onDownloadCSV={handleDownloadCSV}
           hasData={Object.keys(vatSummary).length > 0}
         />
+
+        <div className="flex items-center justify-end gap-2 mb-4">
+          <button
+            onClick={() => setReportPage(Math.max(1, reportPage - 1))}
+            disabled={reportPage <= 1}
+            className="px-3 py-1 rounded-md text-sm bg-gray-100 text-gray-700 disabled:opacity-50"
+          >
+            Prev Page
+          </button>
+          <span className="text-sm text-gray-600">Page {reportPage} of {maxReportPage}</span>
+          <button
+            onClick={() => setReportPage(Math.min(maxReportPage, reportPage + 1))}
+            disabled={reportPage >= maxReportPage}
+            className="px-3 py-1 rounded-md text-sm bg-gray-100 text-gray-700 disabled:opacity-50"
+          >
+            Next Page
+          </button>
+        </div>
 
         {/* Error Display */}
         {error && (
@@ -309,40 +360,174 @@ const MonthlySummaryPage: React.FC = () => {
           </div>
         )}
 
-        {/* VAT Summary Overview */}
+        {/* VAT Summary Overview
         <SummaryCards
           totalOutputVAT={totalOutputVAT}
           totalInputVAT={totalInputVAT}
           vatDue={vatDue}
-        />
+        /> */}
+
+{/* Taxpayer Information - formatted to match the provided sample */}
+{reportPage === 1 && (
+<div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8 text-black">
+  <div className="border border-black">
+    <div className="bg-gray-200 px-3 py-2 border-b border-black text-center">
+      <h3 className="font-bold">Section 1 - Taxpayer Information</h3>
+    </div>
+    <div className="text-sm">
+      {/* Header row: Name | TIN | Tax Period (Mon, Year) */}
+      <div className="grid grid-cols-12">
+        <div className="col-span-6 border-b border-r border-black p-2">
+          <p className="font-semibold">Taxpayer's Name:</p>
+          <p className="mt-1">{company || '-'}</p>
+        </div>
+        <div className="col-span-3 border-b border-r border-black p-2">
+          <p className="font-semibold">TIN:</p>
+          <p className="mt-1">{tin || '-'}</p>
+        </div>
+        <div className="col-span-3 border-b border-black p-2">
+          <p className="font-semibold">Tax Period:</p>
+          <p className="mt-1">
+            {dateRange?.endDate
+              ? new Date(dateRange.endDate).toLocaleDateString(undefined, { month: 'short', year: 'numeric' })
+              : '-'}
+          </p>
+        </div>
+      </div>
+
+      {/* Second row: Registration Address | Tax Account Number | Official Use Only (placeholder) */}
+      <div className="grid grid-cols-12">
+        <div className="col-span-6 border-b border-r border-black p-2">
+          <p className="font-semibold">Registration Address:</p>
+          <div className="mt-1 grid grid-cols-6 gap-2">
+            {/* <div className="col-span-3">
+              <p className="text-xs font-medium">House No.</p>
+              <p>-</p>
+            </div> */}
+            {/* <div className="col-span-3">
+              <p className="text-xs font-medium">Po.Box</p>
+              <p>-</p>
+            </div> */}
+
+            
+           
+            <div className="col-span-3">
+              <p className="text-xs font-medium">Woreda</p>
+              <p>{woreda || '-'}</p>
+            </div>
+            {/* <div className="col-span-3">
+              <p className="text-xs font-medium">Zone/Sub-City</p>
+              <p>-</p>
+            </div> */}
+            <div className="col-span-3">
+              <p className="text-xs font-medium">Region</p>
+              <p>{company_address || '-'}</p>
+            </div>
+            <div className="col-span-3">
+              <p className="text-xs font-medium">Kebele</p>
+              <p>{kebele || '-'}</p>
+            </div>
+            {/* <div className="col-span-6">
+              <p className="text-xs font-medium">Country</p>
+              <p>Ethiopia</p>
+            </div> */}
+            <div className="col-span-6">
+              <p className="text-xs font-medium">Telephone Number</p>
+              <p>{Phone_number || '-'}</p>
+            </div>
+          </div>
+        </div>
+        <div className="col-span-3 border-b border-r border-black p-2">
+          <p className="font-semibold">Tax Account Number:</p>
+          <p className="mt-1">-</p>
+          <div className="mt-4">
+            <p className="font-semibold">Tax Centre:</p>
+            <p className="mt-1 whitespace-pre-line">-</p>
+          </div>
+        </div>
+        <div className="col-span-3 border-b border-black p-2">
+          <p className="font-semibold">(Official Use Only)</p>
+          <div className="mt-2 space-y-2">
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs font-medium">Document Number</p>
+                <p>-</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium">Document Date</p>
+                <p>-</p>
+              </div>
+            </div>
+            <div className="grid grid-cols-2 gap-2">
+              <div>
+                <p className="text-xs font-medium">Submission Number</p>
+                <p>-</p>
+              </div>
+              <div>
+                <p className="text-xs font-medium">Submission Date</p>
+                <p>-</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+)}
+
+{reportPage <= 2 && (
+  <div className="bg-gray-200 px-3 py-2 border-b border-black text-center text-black" >
+      <h3 className="font-bold">Section 2 - Tax Declaration</h3>
+    </div>
+)}
 
         {/* VAT Form Structure */}
-        <VATTables
-          vatSummary={vatSummary}
-          currentValues={currentValues}
-          sectionTotals={sectionTotals}
-          isEditMode={isEditMode}
-          onValueChange={handleValueChange}
-        />
+        {reportPage === 1 && (
+          <VATTables
+            vatSummary={vatSummary}
+            currentValues={currentValues}
+            sectionTotals={sectionTotals}
+            isEditMode={isEditMode}
+            onValueChange={handleValueChange}
+            visibleSections={['output']}
+          />
+        )}
+        {reportPage === 2 && (
+          <VATTables
+            vatSummary={vatSummary}
+            currentValues={currentValues}
+            sectionTotals={sectionTotals}
+            isEditMode={isEditMode}
+            onValueChange={handleValueChange}
+            visibleSections={['capital', 'nonCapital']}
+          />
+        )}
 
         {/* Final Calculation Section */}
-        <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-          <FinalCalculation
-            manualAdjustments={manualAdjustments}
-            onManualAdjustmentChange={handleManualAdjustmentChange}
-            totalOutputVAT={totalOutputVAT}
-            totalInputVAT={totalInputVAT}
-            adjustedVatDue={adjustedVatDue}
-            vatDue={vatDue}
-            isEditMode={isEditMode}
-          />
-        </div>
+        {reportPage <= 2 && (
+          <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
+            <FinalCalculation
+              manualAdjustments={manualAdjustments}
+              onManualAdjustmentChange={handleManualAdjustmentChange}
+              totalOutputVAT={totalOutputVAT}
+              totalInputVAT={totalInputVAT}
+              adjustedVatDue={adjustedVatDue}
+              vatDue={vatDue}
+              isEditMode={isEditMode}
+            />
+          </div>
+        )}
 
         {/* Detailed Breakdown */}
-        <DetailedBreakdown
-          vatSummary={vatSummary}
-          showDetailedBreakdown={showDetailedBreakdown}
-        />
+        {reportPage >= 3 && (
+          <DetailedBreakdown
+            vatSummary={vatSummary}
+            showDetailedBreakdown={true}
+            globalPage={reportPage - 2}
+            receiptsPerPage={receiptsPerDetailPage}
+          />
+        )}
       </div>
     </div>
   );

@@ -212,12 +212,7 @@ const DateRangeFilters: React.FC<DateRangeFiltersProps> = ({
               Edit Values
             </button>
             
-            <button
-              onClick={onToggleDetailedBreakdown}
-              className="px-6 py-2 bg-purple-600 text-white rounded-md hover:bg-purple-700 focus:outline-none focus:ring-2 focus:ring-purple-500 focus:ring-offset-2"
-            >
-              {showDetailedBreakdown ? 'Hide' : 'Show'} Detailed Breakdown
-            </button>
+            {/* Detailed Breakdown toggle removed */}
             
             <button
               onClick={onDownloadPDF}

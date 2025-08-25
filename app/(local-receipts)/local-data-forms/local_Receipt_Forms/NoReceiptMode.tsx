@@ -42,6 +42,59 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
     setSuccess("");
 
     try {
+      const formatToDDMMYYYY = (input: string) => {
+        if (!input) return input;
+        const parts = input.trim().split(/[\/\-\.\s]/).filter(Boolean);
+        let year: string | undefined;
+        let month: string | undefined;
+        let day: string | undefined;
+        if (parts.length === 3) {
+          if (parts[0].length === 4) {
+            year = parts[0];
+            month = parts[1];
+            day = parts[2];
+          } else if (parts[2].length === 4) {
+            if (parseInt(parts[0], 10) > 12) {
+              day = parts[0];
+              month = parts[1];
+              year = parts[2];
+            } else {
+              day = parts[0];
+              month = parts[1];
+              year = parts[2];
+            }
+          } else if (
+            parts[0].length === 2 &&
+            parts[1].length === 2 &&
+            parts[2].length === 2
+          ) {
+            year = `20${parts[0]}`;
+            month = parts[1];
+            day = parts[2];
+          } else {
+            year = parts[0];
+            month = parts[1];
+            day = parts[2];
+          }
+        } else {
+          const d = new Date(input);
+          if (!isNaN(d.getTime())) {
+            const dd = String(d.getDate()).padStart(2, "0");
+            const mm = String(d.getMonth() + 1).padStart(2, "0");
+            const yyyy = String(d.getFullYear());
+            return `${dd}-${mm}-${yyyy}`;
+          }
+          return input;
+        }
+        const dd = String(parseInt(day as string, 10)).padStart(2, "0");
+        const mm = String(parseInt(month as string, 10)).padStart(2, "0");
+        const yyyy = (year as string).length === 2
+          ? parseInt(year as string, 10) >= 70
+            ? `19${year}`
+            : `20${year}`
+          : (year as string);
+        return `${dd}-${mm}-${yyyy}`;
+      };
       // Handle Purchase Voucher form submission
       if (formData.purchaseVoucher && !formData.withholding) {
         const purchaseVoucherFormData = new FormData();
@@ -49,7 +102,7 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         purchaseVoucherFormData.append('supplier_name', formData.purchaseVoucher.supplierName);
         purchaseVoucherFormData.append('supplier_tin', formData.purchaseVoucher.supplierTIN);
         purchaseVoucherFormData.append('supplier_address', formData.purchaseVoucher.supplierAddress);
-        purchaseVoucherFormData.append('date', formData.purchaseVoucher.date);
+        purchaseVoucherFormData.append('date', formatToDDMMYYYY(formData.purchaseVoucher.date));
         purchaseVoucherFormData.append('amount_paid', String(formData.purchaseVoucher.amountPaid));
         purchaseVoucherFormData.append('description', formData.purchaseVoucher.description);
         
@@ -104,7 +157,7 @@ export default function NoReceiptMode({ token, activeSection }: NoReceiptModePro
         purchaseVoucherFormData.append('supplier_name', formData.purchaseVoucher.supplierName);
         purchaseVoucherFormData.append('supplier_tin', formData.purchaseVoucher.supplierTIN);
         purchaseVoucherFormData.append('supplier_address', formData.purchaseVoucher.supplierAddress);
-        purchaseVoucherFormData.append('date', formData.purchaseVoucher.date);
+        purchaseVoucherFormData.append('date', formatToDDMMYYYY(formData.purchaseVoucher.date));
         purchaseVoucherFormData.append('amount_paid', String(formData.purchaseVoucher.amountPaid));
         purchaseVoucherFormData.append('description', formData.purchaseVoucher.description);
         

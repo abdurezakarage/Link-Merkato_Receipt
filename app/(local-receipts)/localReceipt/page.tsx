@@ -849,7 +849,59 @@ function LocalReceiptContent() {
   // Handle form submit
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    
+    const formatToDDMMYYYY = (input: string) => {
+      if (!input) return input;
+      const parts = input.trim().split(/[\/\-\.\s]/).filter(Boolean);
+      let year: string | undefined;
+      let month: string | undefined;
+      let day: string | undefined;
+      if (parts.length === 3) {
+        if (parts[0].length === 4) {
+          year = parts[0];
+          month = parts[1];
+          day = parts[2];
+        } else if (parts[2].length === 4) {
+          if (parseInt(parts[0], 10) > 12) {
+            day = parts[0];
+            month = parts[1];
+            year = parts[2];
+          } else {
+            day = parts[0];
+            month = parts[1];
+            year = parts[2];
+          }
+        } else if (
+          parts[0].length === 2 &&
+          parts[1].length === 2 &&
+          parts[2].length === 2
+        ) {
+          year = `20${parts[0]}`;
+          month = parts[1];
+          day = parts[2];
+        } else {
+          year = parts[0];
+          month = parts[1];
+          day = parts[2];
+        }
+      } else {
+        const d = new Date(input);
+        if (!isNaN(d.getTime())) {
+          const dd = String(d.getDate()).padStart(2, "0");
+          const mm = String(d.getMonth() + 1).padStart(2, "0");
+          const yyyy = String(d.getFullYear());
+          return `${dd}/${mm}/${yyyy}`;
+        }
+        return input;
+      }
+      const dd = String(parseInt(day as string, 10)).padStart(2, "0");
+      const mm = String(parseInt(month as string, 10)).padStart(2, "0");
+      const yyyy = (year as string).length === 2
+        ? parseInt(year as string, 10) >= 70
+          ? `19${year}`
+          : `20${year}`
+        : (year as string);
+      return `${dd}/${mm}/${yyyy}`;
+    };
     // Check for required fields
     const missingFields = [];
     if (!form.seller.name) missingFields.push('Seller Name');
@@ -965,7 +1017,7 @@ function LocalReceiptContent() {
       if (shouldShowWithholdingDropdown && withholdingRequired === 'yes') {
         withholdingData = {
           withholding_receipt_number: withholdingForm.receiptNumber,
-          withholding_receipt_date: withholdingForm.receiptDate,
+          withholding_receipt_date: formatToDDMMYYYY(withholdingForm.receiptDate),
           transaction_description: withholdingForm.transactionType,
           sub_total: withholdingForm.subTotal,
           tax_withholding_amount: withholdingForm.taxWithholdingAmount,
@@ -990,7 +1042,7 @@ function LocalReceiptContent() {
         },
         receipt_number: form.receiptNumber,
         machine_number: form.machineNumber,
-        receipt_date: form.receiptDate,
+        receipt_date: formatToDDMMYYYY(form.receiptDate),
         calendar_type: form.calendarType,
         receipt_category_id: categoryId,
         receipt_kind_id: kindId,
