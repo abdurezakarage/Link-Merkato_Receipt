@@ -42,7 +42,7 @@ export default function DraftsPanel<T extends { draft_id?: string; receipt_numbe
     event.stopPropagation(); // Prevent triggering the draft selection
     if (!token) return;
     
-    console.log("Deleting draft with ID:", draftId); // Log the draft ID
+    // console.log("Deleting draft with ID:", draftId); // Log the draft ID
     
     try {
       await deleteDraft(draftId, token);

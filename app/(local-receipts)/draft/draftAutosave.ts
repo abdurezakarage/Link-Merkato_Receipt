@@ -66,7 +66,7 @@ export function useDraftAutosave<T extends object>(
  */
 export async function deleteDraft(draftId: string | number, token: string): Promise<void> {
   try {
-    await axios.delete(`${DJANGO_BASE_URL}/drafts/${draftId}`, {
+    await axios.delete(`${DJANGO_BASE_URL}/drafts/${draftId}/`, {
       headers: {
         Authorization: `Bearer ${token}`,
       },
