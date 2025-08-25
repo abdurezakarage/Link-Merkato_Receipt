@@ -58,4 +58,23 @@ export function useDraftAutosave<T extends object>(
   }, [token, isTokenValid, enabled, intervalMs]);
 }
 
+/**
+ * Delete a draft by its ID
+ * @param draftId - The ID of the draft to delete
+ * @param token - Authentication token
+ * @returns Promise that resolves when the draft is deleted
+ */
+export async function deleteDraft(draftId: string | number, token: string): Promise<void> {
+  try {
+    await axios.delete(`${DJANGO_BASE_URL}/drafts/${draftId}`, {
+      headers: {
+        Authorization: `Bearer ${token}`,
+      },
+    });
+  } catch (error) {
+    console.error("Error deleting draft:", error);
+    throw error;
+  }
+}
+
 

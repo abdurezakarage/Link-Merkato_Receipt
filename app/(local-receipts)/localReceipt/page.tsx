@@ -1219,7 +1219,7 @@ function LocalReceiptContent() {
               <DraftsPanel<FormState & { withholdingForm?: WithholdingForm; withholdingRequired?: string; noReceiptMode?: boolean }>
                 token={token}
                 onSelectDraft={applyDraft}
-                title="Your Drafts"
+                title="Drafts"
               />
 
               <form onSubmit={(e) => {
