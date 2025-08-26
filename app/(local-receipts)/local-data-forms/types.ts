@@ -12,6 +12,10 @@ export interface Item {
   reasonOfReceiving?: string; // New field for CRV and Other
   taxType?: string; // vat, tot, exempted for mixed receipts
   declarationNumber?: string; // Declaration number for import/export items
+  bankPermitDate?: string; // For Bank service when import/export is yes
+  permitNo?: string; // For Bank service when import/export is yes
+  bankReference?: string; // For Bank service when import/export is yes
+  bankService?: string; // For Bank service when import/export is yes
 }
 
 export interface SellerInfo {

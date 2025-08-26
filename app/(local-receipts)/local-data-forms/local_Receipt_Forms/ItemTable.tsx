@@ -217,11 +217,10 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                       required
                     >
                       <option value="">Select</option>
-                      <option value="Inland freight">Inland freight</option>
+                      <option value="Inland freight 2">Inland freight</option>
                       <option value="Transportation">Transportation cost</option>
-                      <option value="Bank service charge">Bank service charge</option>
+                      <option value="Bank service">Bank service charge</option>
                       <option value="Warehouse fee">Warehouse fee</option>
-                      <option value="Loading cost">Loading cost</option>
                       <option value="Transit cost">Transitor Fee</option>
                     </select>
                   ) : (
@@ -233,6 +232,49 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                     />
                   )}
                 </div>
+              )}
+
+              {/* Bank Service Extra Fields */}
+              {hasImportExport === 'yes' && item.description === 'Bank service' && (
+                <>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Bank Permit Date</label>
+                    <input
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
+                      type="date"
+                      name="bankPermitDate"
+                      value={item.bankPermitDate || ''}
+                      onChange={e => handleItemChange(idx, e)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Permit No</label>
+                    <input
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
+                      name="permitNo"
+                      value={item.permitNo || ''}
+                      onChange={e => handleItemChange(idx, e)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Bank Reference</label>
+                    <input
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
+                      name="bankReference"
+                      value={item.bankReference || ''}
+                      onChange={e => handleItemChange(idx, e)}
+                    />
+                  </div>
+                  <div className="space-y-2">
+                    <label className="text-sm font-medium text-gray-700">Bank Service charge</label>
+                    <input
+                      className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-colors text-black"
+                      name="bankService"
+                      value={item.bankService || ''}
+                      onChange={e => handleItemChange(idx, e)}
+                    />
+                  </div>
+                </>
               )}
 
               {/* Unit of Measurement */}

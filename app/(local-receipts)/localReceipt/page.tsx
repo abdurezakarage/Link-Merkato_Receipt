@@ -1005,6 +1005,10 @@ function LocalReceiptContent() {
             unit_of_measurement: item.unitOfMeasurement,
             unit_cost: item.unitCost,
             quantity: item.quantity,
+            bank_service: item.bankService,
+            bank_reference: item.bankReference,
+            bank_permit_date: item.bankPermitDate,
+            permit_no: item.permitNo,
           };
         });
       }
