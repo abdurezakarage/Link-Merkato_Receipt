@@ -95,7 +95,7 @@ function LocalReceiptContent() {
     bankName: '',
     itemType: '',
     hasImportExport: '',
-    items: [{ glAccount: '', nature: '', hsCode: '', itemCode: '', description: '', quantity: 1, unitCost: 0, totalCost: 0, unitOfMeasurement: '', category: '', reasonOfReceiving: '', taxType: '', declarationNumber: '' }],
+    items: [{ glAccount: '', nature: '', hsCode: '', itemCode: '', description: '', quantity: 1, unitCost: 0, totalCost: 0, unitOfMeasurement: '', category: '', reasonOfReceiving: '', taxType: '', declarationNumber: '', bankPermitDate: '', permitNo: '', bankReference: '', bankService: '' }],
   });
   const [MainReceipt, setMainReceipt] = useState<File | null>(null);
   const [attachment, setAttachment] = useState<File | null>(null);
@@ -554,7 +554,7 @@ function LocalReceiptContent() {
       const items = [...prev.items];
       
       // Handle string fields
-      if (['glAccount', 'nature', 'hsCode', 'itemCode', 'description', 'category', 'reasonOfReceiving', 'taxType', 'unitOfMeasurement', 'declarationNumber'].includes(name)) {
+      if (['glAccount', 'nature', 'hsCode', 'itemCode', 'description', 'category', 'reasonOfReceiving', 'taxType', 'unitOfMeasurement', 'declarationNumber', 'bankPermitDate', 'permitNo', 'bankReference', 'bankService'].includes(name)) {
         (items[idx] as any)[name] = value;
       } 
       // Handle numeric fields
@@ -584,7 +584,7 @@ function LocalReceiptContent() {
   const addItem = () => {
     setForm((prev) => ({
       ...prev,
-      items: [...prev.items, { glAccount: '', nature: '', hsCode: '', itemCode: '', description: '', quantity: 1, unitCost: 0, totalCost: 0, unitOfMeasurement: '', category: '', reasonOfReceiving: '', taxType: '', declarationNumber: '' }],
+      items: [...prev.items, { glAccount: '', nature: '', hsCode: '', itemCode: '', description: '', quantity: 1, unitCost: 0, totalCost: 0, unitOfMeasurement: '', category: '', reasonOfReceiving: '', taxType: '', declarationNumber: '', bankPermitDate: '', permitNo: '', bankReference: '', bankService: '' }],
     }));
   };
 
@@ -1134,7 +1134,7 @@ function LocalReceiptContent() {
         bankName: '',
         itemType: '',
         hasImportExport: '',
-        items: [{ glAccount: '', nature: '', hsCode: '', itemCode: '', description: '', quantity: 1, unitCost: 0, totalCost: 0, unitOfMeasurement: '', category: '', reasonOfReceiving: '', taxType: '', declarationNumber: '' }],
+        items: [{ glAccount: '', nature: '', hsCode: '', itemCode: '', description: '', quantity: 1, unitCost: 0, totalCost: 0, unitOfMeasurement: '', category: '', reasonOfReceiving: '', taxType: '', declarationNumber: '', bankPermitDate: '', permitNo: '', bankReference: '', bankService: '' }],
       });
       setMainReceipt(null);
       setAttachment(null);

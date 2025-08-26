@@ -12,7 +12,7 @@ interface VATTablesProps {
   sectionTotals: SectionTotals;
   isEditMode: boolean;
   onValueChange: (natureCode: string, field: 'total' | 'vat', value: string) => void;
-  visibleSections?: Array<'output' | 'capital' | 'nonCapital'>;
+  sectionType: 'output' | 'capital' | 'nonCapital';
 }
 
 const VATTables: React.FC<VATTablesProps> = ({
@@ -21,20 +21,53 @@ const VATTables: React.FC<VATTablesProps> = ({
   sectionTotals,
   isEditMode,
   onValueChange,
-  visibleSections = ['output', 'capital', 'nonCapital']
+  sectionType
 }) => {
-  const renderVATSection = (
-    sectionType: 'output' | 'capital' | 'nonCapital',
-    title: string,
-    totalLineNumber: string,
-    totalVATLineNumber: string,
-    totalLabel: string,
-    shadedCodes: string[]
-  ) => {
-    return (
+  const getSectionConfig = () => {
+    switch (sectionType) {
+      case 'output':
+        return {
+          title: 'COMPUTATION OF OUTPUT TAX',
+          totalLineNumber: '55',
+          totalVATLineNumber: '60',
+          totalLabel: 'Total sales/Supplies',
+          shadedCodes: ['15', '20'],
+          vatColumnTitle: 'Output VAT',
+          vatColor: 'text-red-600',
+          backgroundClass: 'bg-blue-50'
+        };
+      case 'capital':
+        return {
+          title: 'CAPITAL ASSET PURCHASES',
+          totalLineNumber: '90',
+          totalVATLineNumber: '95',
+          totalLabel: 'Total capital assets',
+          shadedCodes: ['85'],
+          vatColumnTitle: 'Input VAT',
+          vatColor: 'text-green-600',
+          backgroundClass: 'bg-green-50'
+        };
+      case 'nonCapital':
+        return {
+          title: 'NON-CAPITAL ASSET PURCHASES',
+          totalLineNumber: '165',
+          totalVATLineNumber: '170',
+          totalLabel: 'Total inputs',
+          shadedCodes: ['130'],
+          vatColumnTitle: 'Input VAT',
+          vatColor: 'text-green-600',
+          backgroundClass: 'bg-green-50'
+        };
+    }
+  };
+
+  const config = getSectionConfig();
+
+  return (
+    <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
       <div className="p-6 border-t border-gray-200">
         <h4 className="text-md font-semibold text-gray-900 mb-4 border-b border-gray-200 pb-2">
-          {title}
+          {config.title}
         </h4>
         <div className="overflow-x-auto">
           <table className="min-w-full divide-y divide-gray-200">
@@ -45,7 +78,7 @@ const VATTables: React.FC<VATTablesProps> = ({
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Total Amount</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Line</th>
                 <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                  {sectionType === 'output' ? 'Output VAT' : 'Input VAT'}
+                  {config.vatColumnTitle}
                 </th>
               </tr>
             </thead>
@@ -56,9 +89,8 @@ const VATTables: React.FC<VATTablesProps> = ({
                 .map(([natureCode, mapping]) => {
                   const originalData = vatSummary[natureCode] || { total: 0, vat: 0, count: 0 };
                   const currentData = currentValues[natureCode] || { total: 0, vat: 0 };
-                  const isShaded = shadedCodes.includes(natureCode);
-                  const backgroundClass = originalData.count > 0 ? 
-                    (sectionType === 'output' ? 'bg-blue-50' : 'bg-green-50') : '';
+                  const isShaded = config.shadedCodes.includes(natureCode);
+                  const backgroundClass = originalData.count > 0 ? config.backgroundClass : '';
                   
                   return (
                     <tr key={natureCode} className={backgroundClass}>
@@ -84,15 +116,13 @@ const VATTables: React.FC<VATTablesProps> = ({
                       <td className={`px-4 py-3 text-sm text-center font-medium ${isShaded ? 'bg-gray-300' : ''}`}>
                         {mapping.vatLineNumber || '-'}
                       </td>
-                      <td className={`px-4 py-3 text-sm font-medium ${isShaded ? 'bg-gray-300' : ''} ${
-                        sectionType === 'output' ? 'text-red-600' : 'text-green-600'
-                      }`}>
+                      <td className={`px-4 py-3 text-sm font-medium ${isShaded ? 'bg-gray-300' : ''} ${config.vatColor}`}>
                         {isShaded ? '' : (
                           <EditableField
                             value={currentData.vat}
                             onChange={(value) => onValueChange(natureCode, 'vat', value)}
                             isEditable={isEditMode && !isShaded}
-                            className={`font-medium ${sectionType === 'output' ? 'text-red-600' : 'text-green-600'}`}
+                            className={`font-medium ${config.vatColor}`}
                           />
                         )}
                         {isEditMode && !isShaded && (
@@ -105,15 +135,13 @@ const VATTables: React.FC<VATTablesProps> = ({
                   );
                 })}
               <tr className="bg-gray-50 font-semibold">
-                <td className="px-4 py-3 text-sm font-medium text-gray-900">{totalLineNumber}</td>
-                <td className="px-4 py-3 text-sm text-gray-900">{totalLabel}</td>
+                <td className="px-4 py-3 text-sm font-medium text-gray-900">{config.totalLineNumber}</td>
+                <td className="px-4 py-3 text-sm text-gray-900">{config.totalLabel}</td>
                 <td className="px-4 py-3 text-sm text-gray-900 font-medium">
                   {formatCurrency(sectionTotals[sectionType].total)}
                 </td>
-                <td className="px-4 py-3 text-sm text-center font-medium text-gray-900">{totalVATLineNumber}</td>
-                <td className={`px-4 py-3 text-sm font-medium ${
-                  sectionType === 'output' ? 'text-red-600' : 'text-green-600'
-                }`}>
+                <td className="px-4 py-3 text-sm text-center font-medium text-gray-900">{config.totalVATLineNumber}</td>
+                <td className={`px-4 py-3 text-sm font-medium ${config.vatColor}`}>
                   {formatCurrency(sectionTotals[sectionType].vat)}
                 </td>
               </tr>
@@ -121,39 +149,6 @@ const VATTables: React.FC<VATTablesProps> = ({
           </table>
         </div>
       </div>
-    );
-  };
-
-  return (
-    <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
-      {visibleSections.includes('output') && renderVATSection(
-        'output',
-        'COMPUTATION OF OUTPUT TAX',
-        '55',
-        '60',
-        'Total sales/Supplies',
-        ['15', '20']
-      )}
-
-      {/* CAPITAL ASSET PURCHASES */}
-      {visibleSections.includes('capital') && renderVATSection(
-        'capital',
-        'CAPITAL ASSET PURCHASES',
-        '90',
-        '95',
-        'Total capital assets',
-        ['85']
-      )}
-
-      {/* NON-CAPITAL ASSET PURCHASES */}
-      {visibleSections.includes('nonCapital') && renderVATSection(
-        'nonCapital',
-        'NON-CAPITAL ASSET PURCHASES',
-        '165',
-        '170',
-        'Total inputs',
-        ['130']
-      )}
     </div>
   );
 };

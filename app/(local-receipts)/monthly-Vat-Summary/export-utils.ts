@@ -151,7 +151,7 @@ export const downloadPDF = (
     columnStyles: {
       0: { cellWidth: 20, halign: 'center' },
       1: { cellWidth: 80 },
-      2: { cellWidth: 30, halign: 'right' },
+      2: { cellWidth: 40, halign: 'right' },
       3: { cellWidth: 20, halign: 'center' },
       4: { cellWidth: 30, halign: 'right' }
     },
@@ -219,7 +219,7 @@ export const downloadPDF = (
     columnStyles: {
       0: { cellWidth: 20, halign: 'center' },
       1: { cellWidth: 80 },
-      2: { cellWidth: 30, halign: 'right' },
+      2: { cellWidth: 40, halign: 'right' },
       3: { cellWidth: 20, halign: 'center' },
       4: { cellWidth: 30, halign: 'right' }
     },
@@ -291,7 +291,7 @@ export const downloadPDF = (
     columnStyles: {
       0: { cellWidth: 20, halign: 'center' },
       1: { cellWidth: 80 },
-      2: { cellWidth: 30, halign: 'right' },
+      2: { cellWidth: 40, halign: 'right' },
       3: { cellWidth: 20, halign: 'center' },
       4: { cellWidth: 30, halign: 'right' }
     },

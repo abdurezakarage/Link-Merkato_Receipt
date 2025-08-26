@@ -164,7 +164,7 @@ export default function Register() {
                   {error.firstname && <div className="text-red-500 text-sm">{error.firstname}</div>}
                 </div>
                 <div>
-                  <label className="block mb-2 font-semibold text-gray-700">Lat Name</label>
+                  <label className="block mb-2 font-semibold text-gray-700">Last Name</label>
                   <input
                     type="text"
                     name="lastname"

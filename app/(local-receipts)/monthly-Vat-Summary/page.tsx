@@ -3,6 +3,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import { DJANGO_BASE_URL } from '../api/api';
+import { SPRING_BASE_URL } from '../api/api';
 import { FormReportResponse, ReceiptData } from '../local-data-forms/types';
 import { useAuth } from '../../Context/AuthContext';
 
@@ -31,6 +32,7 @@ const MonthlySummaryPage: React.FC = () => {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const { token, user, isLoading: authLoading } = useAuth();
+  const [importExport, setImportExport] = useState<any | null>(null);
   // Initialize with current month date range
   const currentDate = new Date();
   const startOfMonth = new Date(currentDate.getFullYear(), currentDate.getMonth(), 1);
@@ -61,13 +63,19 @@ const MonthlySummaryPage: React.FC = () => {
     }
   };
 
-const decodedToken = parseJwt(token);
-const company = decodedToken?.company_name;
-const tin = decodedToken?.tin_number;
-const company_address = decodedToken?.Region;
-const Phone_number = decodedToken?.PhoneNumber;
-const woreda = decodedToken?.Wereda;
-const kebele = decodedToken?.Kebele;
+// Get company information from token when available
+const getCompanyInfo = () => {
+  if (!token) return {};
+  const decodedToken = parseJwt(token);
+  return {
+    company: decodedToken?.company_name,
+    tin: decodedToken?.tin_number,
+    company_address: decodedToken?.Region,
+    Phone_number: decodedToken?.PhoneNumber,
+    woreda: decodedToken?.Wereda,
+    kebele: decodedToken?.Kebele
+  };
+};
 
 
 
@@ -78,7 +86,11 @@ const kebele = decodedToken?.Kebele;
 
     try {
       const response = await axios.get<FormReportResponse>(
-        `${DJANGO_BASE_URL}/receipts`
+        `${DJANGO_BASE_URL}/receipts`,{
+          headers: {
+            'Authorization': `Bearer ${token}`
+          }
+        }
       );
 
       if (response.data.results) {
@@ -95,6 +107,40 @@ const kebele = decodedToken?.Kebele;
     }
   };
 
+  // Fetch Import/Export VAT from Spring backend and store raw response
+  const fetchImportExportVat = async () => {
+    try {
+      if (!token) {
+        console.log('No token available for import/export VAT request');
+        return;
+      }
+      
+      const decoded = parseJwt(token);
+      const userId = decoded?.user_id;
+      
+      if (!userId) {
+        console.log('No user_id found in token for import/export VAT request');
+        return;
+      }
+      
+      console.log('Fetching import/export VAT for user:', userId);
+      console.log('Request URL:', `${SPRING_BASE_URL}/clerk/report/${userId}`);
+      
+      const response = await axios.get(`${SPRING_BASE_URL}/clerk/report/${userId}`, {
+        headers: { 'Authorization': `Bearer ${token}` }
+      });
+      
+      console.log('Import/export VAT response:', response.data);
+      setImportExport(response.data);
+    } catch (e) {
+      console.error('Error fetching import/export VAT:', e);
+      if (axios.isAxiosError(e)) {
+        console.error('Response status:', e.response?.status);
+        console.error('Response data:', e.response?.data);
+      }
+    }
+  };
+
   const handleFilterReceipts = (receiptsData: ReceiptData[], dateRange: DateRange) => {
     const filtered = filterReceiptsByDateRange(receiptsData, dateRange);
     setFilteredReceipts(filtered);
@@ -108,6 +154,13 @@ const kebele = decodedToken?.Kebele;
   useEffect(() => {
     fetchReceipts();
   }, []);
+
+  // Separate useEffect for import/export VAT that depends on token
+  useEffect(() => {
+    if (token) {
+      fetchImportExportVat();
+    }
+  }, [token]);
 
   // Initialize editable values when receipts change
   useEffect(() => {
@@ -242,8 +295,113 @@ const kebele = decodedToken?.Kebele;
 
   // Calculate VAT summary and related values
   const vatSummary = calculateVATSummary(filteredReceipts);
-  const currentValues = getCurrentValues(vatSummary, isEditMode, editableValues);
-  const sectionTotals = calculateSectionTotals(vatSummary, currentValues);
+
+  // Build augmented summary by merging import/export totals and synthetic breakdowns
+  const augmentedVatSummary: typeof vatSummary = React.useMemo(() => {
+    if (!importExport) return vatSummary;
+    const cloned: any = JSON.parse(JSON.stringify(vatSummary));
+
+    const ensureEntry = (natureCode: string) => {
+      if (!cloned[natureCode]) {
+        cloned[natureCode] = { total: 0, vat: 0, count: 0, receipts: [] };
+      }
+    };
+
+    // Helper to make a synthetic receipt row for breakdown
+    const makeSyntheticReceipt = (
+      natureCode: string,
+      src: any
+    ): ReceiptData => {
+      const receipt: any = {
+        id: Math.floor(Math.random() * 1e9),
+        receipt_number: src.declarationnumber || 'N/A',
+        receipt_date: src.declarationDate || '',
+        calendar_type: 'Gregorian',
+        issued_by_details: { id: 0, name: '-', tin_number: '-', address: '-' },
+        issued_to_details: { id: 0, name: '-', tin_number: '-', address: '-' },
+        receipt_category_id: 0,
+        receipt_kind_id: 0,
+        receipt_type_id: 0,
+        receipt_name_id: 0,
+        receipt_category: 'Import/Export',
+        receipt_kind: '-',
+        receipt_type: '-',
+        receipt_name: '-',
+        is_withholding_applicable: false,
+        payment_method_type: '-',
+        bank_name: '-',
+        items: [
+          {
+            id: Math.floor(Math.random() * 1e9),
+            item: {
+              item_code: src.hscode || '-',
+              item_description: src.itemdescription || '-',
+              unit_of_measurement: src.unitofmeasurement || '-',
+              gl_account: '-',
+              nature: String(natureCode),
+              tax_type: 'VAT',
+              unit_cost: String(src.unitCost ?? 0)
+            },
+            quantity: String(src.quantity ?? 1),
+            unit_cost: String(src.unitCost ?? 0),
+            tax_type: 'VAT',
+            tax_amount: String(src.vatPeritem ?? 0),
+            discount_amount: '0',
+            subtotal: Number(src.costPeritem ?? 0),
+            total_after_tax: Number((src.costPeritem ?? 0) + (src.vatPeritem ?? 0))
+          }
+        ],
+        purchase_recipt_number: null,
+        withholding_receipt_number: null,
+        reason_of_receiving: null,
+        created_at: '',
+        updated_at: '',
+        subtotal: String(src.costPeritem ?? 0),
+        tax: String(src.vatPeritem ?? 0),
+        total: String((src.costPeritem ?? 0) + (src.vatPeritem ?? 0)),
+        withholding_amount: '0',
+        net_payable_to_supplier: '0',
+        documents: {}
+      };
+      return receipt as ReceiptData;
+    };
+
+    // Map nature code totals from backend
+    const additions: Array<{ code: string; total: number; vat: number; items: any[] }>
+      = [
+        { code: '110', total: Number(importExport.totalcost110 || 0), vat: Number(importExport.vatAmount115 || 0), items: importExport.item110 || [] },
+        { code: '75',  total: Number(importExport.totalcost75 || 0),  vat: Number(importExport.vatAmoutn80 || 0),  items: importExport.item75 || [] },
+        { code: '85',  total: Number(importExport.totalcost85 || 0),  vat: 0,                                             items: importExport.item85 || [] },
+        { code: '130', total: Number(importExport.totalcost130 || 0), vat: 0,                                             items: importExport.item130 || [] },
+      ];
+
+    additions.forEach(({ code, total, vat, items }) => {
+      if (total === 0 && vat === 0 && (!items || items.length === 0)) return;
+      ensureEntry(code);
+      cloned[code].total += total;
+      cloned[code].vat += vat;
+      cloned[code].count += items?.length || 0;
+      if (items && items.length > 0) {
+        const syntheticReceipts = items.map((it: any) => makeSyntheticReceipt(code, it));
+        // Avoid duplicates by using receipt_number key
+        const existingKeys = new Set((cloned[code].receipts || []).map((r: ReceiptData) => r.receipt_number));
+        syntheticReceipts.forEach((sr: ReceiptData) => {
+          if (!existingKeys.has(sr.receipt_number)) {
+            cloned[code].receipts.push(sr);
+          }
+        });
+      }
+    });
+
+    return cloned;
+  }, [vatSummary, importExport]);
+
+  const currentValuesBase = getCurrentValues(augmentedVatSummary, isEditMode, editableValues);
+
+  // Use current values derived from augmented summary to avoid double counting
+  const currentValues = currentValuesBase;
+
+  const sectionTotals = calculateSectionTotals(augmentedVatSummary, currentValues);
 
   // Calculate final VAT due/credit with manual adjustments
   const totalOutputVAT = sectionTotals.output.vat;
@@ -278,12 +436,12 @@ const kebele = decodedToken?.Kebele;
       adjustedVatDue,
       vatDue,
       {
-        name: company,
-        tin: tin,
-        region: company_address,
-        woreda: woreda,
-        kebele: kebele,
-        phone: Phone_number
+        name: getCompanyInfo().company,
+        tin: getCompanyInfo().tin,
+        region: getCompanyInfo().company_address,
+        woreda: getCompanyInfo().woreda,
+        kebele: getCompanyInfo().kebele,
+        phone: getCompanyInfo().Phone_number
       }
     );
   };
@@ -387,11 +545,11 @@ const kebele = decodedToken?.Kebele;
       <div className="grid grid-cols-12">
         <div className="col-span-6 border-b border-r border-black p-2">
           <p className="font-semibold">Taxpayer's Name:</p>
-          <p className="mt-1">{company || '-'}</p>
+                          <p className="mt-1">{getCompanyInfo().company || '-'}</p>
         </div>
         <div className="col-span-3 border-b border-r border-black p-2">
           <p className="font-semibold">TIN:</p>
-          <p className="mt-1">{tin || '-'}</p>
+                          <p className="mt-1">{getCompanyInfo().tin || '-'}</p>
         </div>
         <div className="col-span-3 border-b border-black p-2">
           <p className="font-semibold">Tax Period:</p>
@@ -421,7 +579,7 @@ const kebele = decodedToken?.Kebele;
            
             <div className="col-span-3">
               <p className="text-xs font-medium">Woreda</p>
-              <p>{woreda || '-'}</p>
+              <p>{getCompanyInfo().woreda || '-'}</p>
             </div>
             {/* <div className="col-span-3">
               <p className="text-xs font-medium">Zone/Sub-City</p>
@@ -429,11 +587,11 @@ const kebele = decodedToken?.Kebele;
             </div> */}
             <div className="col-span-3">
               <p className="text-xs font-medium">Region</p>
-              <p>{company_address || '-'}</p>
+              <p>{getCompanyInfo().company_address || '-'}</p>
             </div>
             <div className="col-span-3">
               <p className="text-xs font-medium">Kebele</p>
-              <p>{kebele || '-'}</p>
+              <p>{getCompanyInfo().kebele || '-'}</p>
             </div>
             {/* <div className="col-span-6">
               <p className="text-xs font-medium">Country</p>
@@ -441,7 +599,7 @@ const kebele = decodedToken?.Kebele;
             </div> */}
             <div className="col-span-6">
               <p className="text-xs font-medium">Telephone Number</p>
-              <p>{Phone_number || '-'}</p>
+              <p>{getCompanyInfo().Phone_number || '-'}</p>
             </div>
           </div>
         </div>
@@ -493,27 +651,37 @@ const kebele = decodedToken?.Kebele;
         {/* VAT Form Structure */}
         {reportPage === 1 && (
           <VATTables
-            vatSummary={vatSummary}
+            vatSummary={augmentedVatSummary}
             currentValues={currentValues}
             sectionTotals={sectionTotals}
             isEditMode={isEditMode}
             onValueChange={handleValueChange}
-            visibleSections={['output']}
+            sectionType="output"
           />
         )}
         {reportPage === 2 && (
-          <VATTables
-            vatSummary={vatSummary}
-            currentValues={currentValues}
-            sectionTotals={sectionTotals}
-            isEditMode={isEditMode}
-            onValueChange={handleValueChange}
-            visibleSections={['capital', 'nonCapital']}
-          />
+          <>
+            <VATTables
+              vatSummary={augmentedVatSummary}
+              currentValues={currentValues}
+              sectionTotals={sectionTotals}
+              isEditMode={isEditMode}
+              onValueChange={handleValueChange}
+              sectionType="capital"
+            />
+            <VATTables
+              vatSummary={augmentedVatSummary}
+              currentValues={currentValues}
+              sectionTotals={sectionTotals}
+              isEditMode={isEditMode}
+              onValueChange={handleValueChange}
+              sectionType="nonCapital"
+            />
+          </>
         )}
 
         {/* Final Calculation Section */}
-        {reportPage <= 2 && (
+        {reportPage === 2 && (
           <div className="bg-white rounded-lg shadow-sm overflow-hidden mb-8">
             <FinalCalculation
               manualAdjustments={manualAdjustments}
@@ -530,7 +698,7 @@ const kebele = decodedToken?.Kebele;
         {/* Detailed Breakdown */}
         {reportPage >= 3 && (
           <DetailedBreakdown
-            vatSummary={vatSummary}
+            vatSummary={augmentedVatSummary}
             showDetailedBreakdown={true}
             globalPage={reportPage - 2}
             receiptsPerPage={receiptsPerDetailPage}
