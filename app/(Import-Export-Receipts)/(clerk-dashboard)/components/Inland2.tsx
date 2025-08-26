@@ -1,5 +1,5 @@
 "use client";
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { BASE_API_URL } from "../../import-api/ImportApi";
 
 interface TransportFeePayload {
@@ -19,6 +19,44 @@ export default function Inland2() {
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+
+  useEffect(() => {
+    if (!declarationnumber) return;
+
+    const timeout = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch(
+          `${BASE_API_URL}/api/v1/clerk/inland2/${declarationnumber}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setFormData({
+            inlandfreight2: data.inlandfreight2 || "",
+            loadingcost: data.loadingcost || "",
+            laodingvat: data.laodingvat || "",
+          });
+        } else {
+          // Clear form if no data found
+          setFormData({
+            inlandfreight2: "",
+            loadingcost: "",
+            laodingvat: "",
+          });
+        }
+      } catch (err) {
+        console.error("Error fetching inland2 info:", err);
+      }
+    }, 1000); // debounce 600ms
+
+    return () => clearTimeout(timeout);
+  }, [declarationnumber]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;

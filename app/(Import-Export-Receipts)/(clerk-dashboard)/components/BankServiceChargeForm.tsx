@@ -1,5 +1,5 @@
 "use client";
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { BASE_API_URL } from "../../import-api/ImportApi";
 
 interface BankPermitPayload {
@@ -28,6 +28,54 @@ export default function BankServiceFeeForm() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [isSubmitting, setIsSubmitting] = useState(false);
+
+  // 🔹 Auto-fill when declaration number changes
+  useEffect(() => {
+    if (!declarationnumber) return;
+
+    const timeout = setTimeout(async () => {
+      try {
+        const res = await fetch(
+          `${BASE_API_URL}/api/v1/clerk/bankInfo/${declarationnumber}`,
+          {
+            headers: {
+              Authorization: `Bearer ${localStorage.getItem("token")}`,
+            },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setFormData((prev: any) => ({
+            ...prev,
+            bankname: data.bankname || "",
+            bankdate: data.bankdate || "",
+            bankpermitdate: data.bankpermitdate || "",
+            permitno: data.permitno || "",
+            permitamount: data.permitamount || "",
+            bankreference: data.bankreference || "",
+            bankservice: data.bankservice || "",
+          }));
+        } else {
+          // clear when not found
+          setFormData((prev: any) => ({
+            ...prev,
+            bankname: "",
+            bankdate: "",
+            bankpermitdate: "",
+            permitno: "",
+            permitamount: "",
+            bankreference: "",
+            bankservice: "",
+          }));
+        }
+      } catch (err) {
+        console.error("Fetch error:", err);
+      }
+    }, 1000); // waits 3s after typing stops
+
+    return () => clearTimeout(timeout); // cleanup debounce
+  }, [declarationnumber]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;

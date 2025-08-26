@@ -1,31 +1,33 @@
 "use client";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
 import { BASE_API_URL } from "../../import-api/ImportApi";
+import { BASE_API_URL_local } from "../../import-api/ImportApi";
 
 interface WarehouseFeePayload {
   receiptnumber: string;
   receiptdate: string;
+   withholdingtaxreceiptdate: string; // Add this
   receiptmachinenumber: string;
   receiptcalendar: string;
   withholdingtaxreceiptno: string;
-  withholdingtaxReceiptdate: string;
-  withholdingamount: number;
-  amountbeforetax: number;
+  withholdingamount: number | string;
+  amountbeforetax: number | string;
 }
 
 export default function WarehouseFeeForm() {
   const [formData, setFormData] = useState<WarehouseFeePayload>({
     receiptnumber: "",
     receiptdate: "",
+   withholdingtaxreceiptdate: "", // Add this
+
     receiptmachinenumber: "",
     receiptcalendar: "",
     withholdingtaxreceiptno: "",
-    withholdingtaxReceiptdate: "",
-    withholdingamount: 0,
-    amountbeforetax: 0,
+    withholdingamount: '',
+    amountbeforetax: '',
   });
 
   const [declarationnumber, setDeclarationNumber] = useState<string>("");
@@ -35,6 +37,108 @@ export default function WarehouseFeeForm() {
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
+  const [isFetchingData, setIsFetchingData] = useState<boolean>(false);
+  
+  // Use a ref to track the last fetched declaration number
+  const lastFetchedDeclarationNumber = useRef<string>("");
+
+  // Add useEffect to fetch data when declarationnumber changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (declarationnumber ) {
+        fetchWarehouseData();
+      }
+    }, 500); // Debounce to avoid too many API calls
+
+    return () => clearTimeout(timer);
+  }, [declarationnumber]);
+const fetchWarehouseData = async () => {
+  if (!declarationnumber) {
+    return;
+  }
+
+  const token = localStorage.getItem("token");
+  if (!token) {
+    console.warn("No token found in localStorage—cannot fetch");
+    return;
+  }
+
+  setIsFetchingData(true);
+  try {
+    const url = `${BASE_API_URL_local}/api/warehouse-details/?declaration_number=${declarationnumber}`;
+    console.log("Fetching from URL:", url);
+
+    const response = await fetch(url, {
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${token}`,
+      },
+    });
+
+    if (!response.ok) {
+      const json = await response.json();
+      console.error(
+        `Fetch failed. Status: ${response.status} ${response.statusText}.`,
+        "Backend response:",
+        json
+      );
+      setIsFetchingData(false);
+      return;
+    }
+
+    const responseData = await response.json();
+    console.log("Fetched warehouse data:", responseData);
+
+    // Extract the data from the nested structure: {count: 1, data: Array(1)}
+    const dataArray = responseData.data;
+    
+    // Check if data array exists and has at least one item
+    if (!Array.isArray(dataArray) || dataArray.length === 0) {
+      console.log("No data found for this declaration number - empty array returned");
+      setIsFetchingData(false);
+      return;
+    }
+
+    // Extract the first item from the data array
+    const actualData = dataArray[0];
+    console.log("Actual data to use:", actualData);
+
+    if (!actualData) {
+      console.log("No data found for this declaration number");
+      setIsFetchingData(false);
+      return;
+    }
+
+    // Update the form data with fetched values
+    setFormData({
+      receiptnumber: actualData.receiptnumber || "",
+      receiptdate: actualData.receiptdate || "",
+      withholdingtaxreceiptdate: actualData.withholdingtaxReceiptdate || actualData.withholdingtaxreceiptdate || "",
+      receiptmachinenumber: actualData.receiptmachinenumber || "",
+      receiptcalendar: actualData.receiptcalendar || "",
+      withholdingtaxreceiptno: actualData.withholdingtaxreceiptno || "",
+      withholdingamount: actualData.withholdingamount !== undefined && actualData.withholdingamount !== null 
+        ? actualData.withholdingamount.toString() 
+        : '',
+      amountbeforetax: actualData.amountbeforetax !== undefined && actualData.amountbeforetax !== null 
+        ? actualData.amountbeforetax.toString() 
+        : '',
+    });
+    
+    console.log("receiptcalendar from actualData:", actualData.receiptcalendar);
+
+    // Set withholding tax applicability based on fetched data
+    setIsWithholdingTaxApplicable(!!actualData.withholdingtaxreceiptno);
+    
+    // Update last fetched declaration number
+    lastFetchedDeclarationNumber.current = declarationnumber;
+  } catch (error) {
+    console.error("Network or other error during fetch:", error);
+  } finally {
+    setIsFetchingData(false);
+  }
+};
+ 
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -54,14 +158,12 @@ export default function WarehouseFeeForm() {
         setFormData((prev) => ({
           ...prev,
           withholdingtaxreceiptno: "",
-          withholdingtaxReceiptdate: "",
-          withholdingamount: 0,
+          withholdingamount: '',
         }));
       }
     } else {
-      const processedValue =
-        type === "number" ? (value === "" ? 0 : parseFloat(value)) : value;
-      setFormData((prev) => ({ ...prev, [name]: processedValue }));
+      // For number inputs, keep as string for proper display but convert to number when submitting
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -88,6 +190,13 @@ export default function WarehouseFeeForm() {
     }
 
     try {
+      // Prepare data for submission - convert string numbers back to numbers
+      const submissionData = {
+        ...formData,
+        withholdingamount: formData.withholdingamount ? parseFloat(formData.withholdingamount as string) : 0,
+        amountbeforetax: formData.amountbeforetax ? parseFloat(formData.amountbeforetax as string) : 0,
+      };
+
       const apiUrl = `${BASE_API_URL}/api/v1/clerk/warehouseInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
@@ -96,7 +205,8 @@ export default function WarehouseFeeForm() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) {
@@ -135,15 +245,16 @@ export default function WarehouseFeeForm() {
       setFormData({
         receiptnumber: "",
         receiptdate: "",
+        withholdingtaxreceiptdate:"",
         receiptmachinenumber: "",
         receiptcalendar: "",
         withholdingtaxreceiptno: "",
-        withholdingtaxReceiptdate: "",
-        withholdingamount: 0,
-        amountbeforetax: 0,
+        withholdingamount: '',
+        amountbeforetax: '',
       });
       setDeclarationNumber("");
       setIsWithholdingTaxApplicable(false);
+      lastFetchedDeclarationNumber.current = "";
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         setMessage("Network error: Could not connect to the server. ❌");
@@ -186,20 +297,30 @@ export default function WarehouseFeeForm() {
               >
                 Declaration Number
               </label>
-              <input
-                type="text"
-                id="declarationnumber"
-                name="declarationnumber"
-                value={declarationnumber}
-                onChange={handleChange}
-                className={`w-full border rounded px-3 py-2 ${
-                  isDuplicate
-                    ? "border-red-500 ring-2 ring-red-200"
-                    : "border-gray-300"
-                }`}
-                placeholder="D123456"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="declarationnumber"
+                  name="declarationnumber"
+                  value={declarationnumber}
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    isDuplicate
+                      ? "border-red-500 ring-2 ring-red-200"
+                      : "border-gray-300"
+                  }`}
+                  placeholder="D123456"
+                  required
+                />
+                {isFetchingData && (
+                  <div className="absolute right-3 top-3">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the declaration number to auto-fill the form
+              </p>
             </div>
 
             {/* Amount Before Tax */}
@@ -210,13 +331,12 @@ export default function WarehouseFeeForm() {
               >
                 Amount Before Tax
               </label>
+              
               <input
                 type="number"
                 id="amountbeforetax"
                 name="amountbeforetax"
-                value={
-                  formData.amountbeforetax === 0 ? "" : formData.amountbeforetax
-                }
+                value={formData.amountbeforetax}
                 onChange={handleChange}
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="1000.00"
@@ -231,6 +351,7 @@ export default function WarehouseFeeForm() {
                 className="block font-medium mb-1"
               >
                 Withholding Tax Applicable?
+                
               </label>
               <select
                 id="isWithholdingTaxApplicable"
@@ -253,20 +374,17 @@ export default function WarehouseFeeForm() {
                     className="block font-medium mb-1"
                   >
                     Withholding Amount
+                    
                   </label>
                   <input
                     type="number"
                     id="withholdingamount"
                     name="withholdingamount"
-                    value={
-                      formData.withholdingamount === 0
-                        ? ""
-                        : formData.withholdingamount
-                    }
+                    value={formData.withholdingamount}
                     onChange={handleChange}
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="500.00"
-                    required
+                    required={isWithholdingTaxApplicable}
                   />
                 </div>
 
@@ -276,6 +394,7 @@ export default function WarehouseFeeForm() {
                     className="block font-medium mb-1"
                   >
                     Withholding Tax Receipt No.
+                    
                   </label>
                   <input
                     type="text"
@@ -285,25 +404,7 @@ export default function WarehouseFeeForm() {
                     onChange={handleChange}
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="WHT-789"
-                    required
-                  />
-                </div>
-
-                <div className="mb-4">
-                  <label
-                    htmlFor="withholdingtaxReceiptdate"
-                    className="block font-medium mb-1"
-                  >
-                    Withholding Tax Receipt Date
-                  </label>
-                  <input
-                    type="date"
-                    id="withholdingtaxReceiptdate"
-                    name="withholdingtaxReceiptdate"
-                    value={formData.withholdingtaxReceiptdate}
-                    onChange={handleChange}
-                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    required={isWithholdingTaxApplicable}
                   />
                 </div>
               </>

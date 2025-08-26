@@ -1,5 +1,5 @@
 "use client";
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect } from "react";
 import { BASE_API_URL } from "../../import-api/ImportApi";
 
 interface CommercialInvoicePayload {
@@ -36,6 +36,49 @@ export default function CommercialInvoiceForm() {
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+
+  // 🔹 Auto-fill when declaration number changes
+  useEffect(() => {
+    if (!declarationnumber) return;
+
+    const timeout = setTimeout(async () => {
+      try {
+        const token = localStorage.getItem("token");
+        if (!token) return;
+
+        const res = await fetch(
+          `${BASE_API_URL}/api/v1/clerk/commercialinvoice/${declarationnumber}`,
+          {
+            headers: { Authorization: `Bearer ${token}` },
+          }
+        );
+
+        if (res.ok) {
+          const data = await res.json();
+          setFormData({
+            commertialDate: data.commertialDate || "",
+            invoiceno: data.invoiceno || "",
+            amountcommercialinvoce: data.amountcommercialinvoce || 0,
+          });
+
+          // mark as duplicate if invoice exists
+          setIsDuplicate(Boolean(data && Object.keys(data).length));
+        } else {
+          // clear form if not found
+          setFormData({
+            commertialDate: "",
+            invoiceno: "",
+            amountcommercialinvoce: 0,
+          });
+          setIsDuplicate(false);
+        }
+      } catch (err) {
+        console.error("Error fetching commercial invoice:", err);
+      }
+    }, 600); // debounce 600ms
+
+    return () => clearTimeout(timeout);
+  }, [declarationnumber]);
 
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value, type } = e.target;

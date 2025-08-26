@@ -1,6 +1,6 @@
 "use client";
 
-import CustomClearanceFeeForm from "../components/ClearanceForm";
+import TransitorForm from "../components/TransitorForm";
 import WarehouseFileViewer from "../components/clearanceFileViewer";
 
 export default function MainLayout() {
@@ -8,7 +8,7 @@ export default function MainLayout() {
     <div className="flex flex-col lg:flex-row min-h-screen bg-gray-100">
       {/* First Column: Receipt Upload Form */}
       <div className="w-full lg:w-1/3 p-4 border-r border-gray-200 lg:h-screen lg:overflow-y-auto">
-        <CustomClearanceFeeForm />
+        <TransitorForm />
       </div>
 
       {/* Second Column: Warehouse File Viewer */}

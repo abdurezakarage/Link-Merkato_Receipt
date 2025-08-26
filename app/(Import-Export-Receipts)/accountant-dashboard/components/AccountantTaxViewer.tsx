@@ -3,8 +3,12 @@ import { useEffect, useState } from "react";
 import axios from "axios";
 import { ChevronDown, ChevronUp, Printer, Search } from "lucide-react";
 import { BASE_API_URL } from "../../import-api/ImportApi";
+import { costBuildUPExcel } from "./costBuildUPExcel"; // Adjust the path as needed
+import styles from "./Accountant.module.css";
+import VatableItems from "./VatableItems";
+import NonVatableItems from "./nonVatable";
 
-interface TaxAmountPerItem {
+export interface TaxAmountPerItem {
   dpvAmountPerDeclaration: number | null;
   dutyTax: number | null;
   exciseTax: number | null;
@@ -18,15 +22,14 @@ interface TaxAmountPerItem {
   totalTaxPerItem: string;
   dpvAmountPerItem: string;
 }
-interface companyInfo {
+export interface companyInfo {
   companyname: string;
   firstname: string;
   lastname: string;
   tinnumber: string;
 }
-interface ItemInfo {
+export interface ItemInfo {
   bankServicePerItem: number | null;
-
   hscode: string;
   itemdescription: string;
   quantity: number;
@@ -40,10 +43,17 @@ interface ItemInfo {
   loadingCostPerItem: number | null;
   grandTotalInETBPerItem: number | null;
   unitCostInETBPerItem: number | null;
+  externalfreight: number | string;
+  djibouticost: number | string;
+  inlandFreight1: number | string;
+  insurancecost: number | string;
+  subtotal: number | string
+
 }
 
-interface TaxData {
+export interface TaxData {
   declarationNumber: string;
+  exchangerate: number | string,
   grandTotalInETB: number;
   iteminfo: ItemInfo[];
   companyInfo: companyInfo;
@@ -63,6 +73,10 @@ interface TaxData {
   totalsurtax: number | null;
   totalvat: number | null;
   totalwithholdingTax: number | null;
+  totalFob: number | string;
+
+
+
 }
 
 export default function AllTaxViewer() {
@@ -186,226 +200,237 @@ export default function AllTaxViewer() {
   };
 
   const printDeclaration = (declarationNumber: string) => {
-    const printWindow = window.open("", "", "width=900,height=650");
+    const printWindow = window.open("", "_blank", "width=1400,height=900");
     const declaration = data.find(
       (d) => d.declarationNumber === declarationNumber
     );
 
     if (printWindow && declaration) {
-      printWindow.document.write(`
-        <html>
-          <head>
-            <title>Tax Declaration ${declarationNumber}</title>
-            <style>
-              body { font-family: Arial, sans-serif; margin: 20px; }
-              .header { text-align: center; margin-bottom: 20px; }
-              .declaration-number { font-size: 18px; font-weight: bold; margin-bottom: 10px; }
-              .company-name { font-size: 16px; margin-bottom: 5px; }
-              .summary-section { margin-bottom: 20px; }
-              .section-title { font-weight: bold; border-bottom: 1px solid #ddd; padding-bottom: 5px; margin: 15px 0 10px 0; }
-              .summary-grid { display: grid; grid-template-columns: repeat(3, 1fr); gap: 15px; margin-bottom: 20px; }
-              .summary-card { border: 1px solid #ddd; padding: 12px; border-radius: 5px; }
-              .card-title { font-weight: bold; margin-bottom: 8px; color: #333; }
-              .items-table { width: 100%; border-collapse: collapse; margin-bottom: 20px; }
-              .items-table th, .items-table td { border: 1px solid #ddd; padding: 8px; text-align: left; }
-              .items-table th { background-color: #f5f5f5; }
-              .tax-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 10px; }
-              .tax-item { border: 1px solid #eee; padding: 8px; border-radius: 4px; font-size: 14px; }
-              .tax-label { font-weight: 600; color: #555; }
-              .total-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 10px; margin-bottom: 20px; }
-              .total-item { border: 1px solid #ddd; padding: 10px; border-radius: 4px; }
-              .total-label { font-weight: bold; margin-bottom: 5px; }
-              .total-value { font-size: 15px; }
-              .total-row { font-weight: bold; background-color: #f9f9f9; }
-              @media print {
-                body { -webkit-print-color-adjust: exact; }
-                .page-break { page-break-after: always; }
+      // Create the print content with all necessary data
+      const printContent = `
+      <html>
+        <head>
+          <title>Tax Declaration ${declarationNumber}</title>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 20px; 
+              font-size: 10px;
+            }
+            .header { 
+              text-align: center; 
+              margin-bottom: 20px; 
+              border-bottom: 2px solid #333;
+              padding-bottom: 10px;
+            }
+            .declaration-number { 
+              font-size: 18px; 
+              font-weight: bold; 
+              margin-bottom: 10px; 
+            }
+            .company-info {
+              margin-bottom: 10px;
+            }
+            .company-name { 
+              font-size: 16px; 
+              margin-bottom: 5px; 
+            }
+            .items-table { 
+              width: 100%; 
+              border-collapse: collapse; 
+              margin-bottom: 20px; 
+            }
+            .items-table th, .items-table td { 
+              border: 1px solid #ddd; 
+              padding: 4px; 
+              text-align: left; 
+              font-size: 9px; 
+            }
+            .items-table th { 
+              background-color: #f5f5f5; 
+              font-weight: bold;
+            }
+            .total-row { 
+              font-weight: bold; 
+              background-color: #e6f7ff; 
+            }
+            .section-title {
+              font-weight: bold;
+              margin: 15px 0 10px 0;
+              border-bottom: 1px solid #ccc;
+              padding-bottom: 5px;
+            }
+            @media print {
+              body { 
+                -webkit-print-color-adjust: exact; 
+                margin: 0; 
+                padding: 15px; 
               }
-            </style>
-          </head>
-          <body>
-            <div class="header">
-              <div class="declaration-number">Declaration #${declarationNumber}</div>
-              <div class="company-name">${
-                declaration.companyInfo?.companyname || "Unknown Company"
-              }</div>
-              <div>${new Date().toLocaleDateString()}</div>
+              .page-break { 
+                page-break-after: always; 
+              }
+              .items-table {
+                zoom: 85%;
+              }
+            }
+          </style>
+        </head>
+        <body>
+          <div class="header">
+            <div class="declaration-number">Declaration #${declarationNumber}</div>
+            <div class="company-info">
+              <div class="company-name">${declaration.companyInfo?.companyname || "Unknown Company"
+        }</div>
+              <div>TIN: ${declaration.companyInfo?.tinnumber || "N/A"}</div>
+              <div>Contact: ${declaration.companyInfo?.firstname || ""} ${declaration.companyInfo?.lastname || ""
+        }</div>
             </div>
+            <div>Print Date: ${new Date().toLocaleDateString()}</div>
+          </div>
 
-            <div class="summary-section">
-              <div class="section-title">Financial Summary</div>
-              
-              <div class="total-grid">
-                <div class="total-item">
-                  <div class="total-label">Grand Total</div>
-                  <div class="total-value">${declaration.grandTotalInETB?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Total Tax</div>
-                  <div class="total-value">${declaration.totalTaxPerDeclaration?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Total VAT</div>
-                  <div class="total-value">${declaration.totalVatPerDeclaration?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Bank Service Charge</div>
-                  <div class="total-value">${declaration.totalBankService?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Transitor Fee</div>
-                  <div class="total-value">${declaration.totalTransitorFee?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Transport Fee</div>
-                  <div class="total-value">${declaration.totalTransportFee?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">WareHouse Fee</div>
-                  <div class="total-value">${declaration.totalWareHouseFee?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Total Withholding</div>
-                  <div class="total-value">${declaration.totalWithholding?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">DPV Amount</div>
-                  <div class="total-value">${declaration.totaldpvAmountPerDeclaration?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Duty Tax</div>
-                  <div class="total-value">${declaration.totaldutyTax?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Excise Tax</div>
-                  <div class="total-value">${declaration.totalexciseTax?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Scanning Fee</div>
-                  <div class="total-value">${declaration.totalscanningFee?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Scanning Fee VAT</div>
-                  <div class="total-value">${declaration.totalscanningFeeVAT?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Social Welfare Tax</div>
-                  <div class="total-value">${declaration.totalsocialWelfareTax?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Surtax</div>
-                  <div class="total-value">${declaration.totalsurtax?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">VAT</div>
-                  <div class="total-value">${declaration.totalvat?.toLocaleString()} ETB</div>
-                </div>
-                
-                <div class="total-item">
-                  <div class="total-label">Withholding Tax</div>
-                  <div class="total-value">${declaration.totalwithholdingTax?.toLocaleString()} ETB</div>
-                </div>
-              </div>
-            </div>
-
-            <div class="section-title">Items Details</div>
-            <table class="items-table">
-              <thead>
-                <tr>
-                  <th>Item</th>
-                  <th>HS Code</th>
-                  <th>Quantity</th>
-                  <th>Unit Price</th>
-                  <th>inlandFeright2 Per Item</th>
-                  <th>loading Cost Per Item</th>
-                  <th>unit Cost Per Item</th>
-
-    
-
-                </tr>
-              </thead>
-              <tbody>
-                ${declaration.iteminfo
-                  .map(
-                    (item) => `
-                  <tr>
-                    <td>${item.itemdescription}</td>
-                    <td>${item.hscode}</td>
-                    <td>${item.quantity}</td>
-                    <td>${item.unitprice?.toLocaleString()} ETB</td>
-                    <td>${item.inlandFeright2PerItem}</td>
-                    <td>${item.loadingCostPerItem}</td>
-                    <td>${
-                      item.unitCostInETBPerItem
-                    }</td>                              
-
-                               
-
-                  </tr>
-                `
-                  )
-                  .join("")}
-              </tbody>
-            </table>
-
-            <div class="section-title">Tax Details</div>
-            <div class="tax-grid">
+          <div class="section-title">Items Details</div>
+          <table class="items-table">
+            <thead>
+              <tr>
+                <th>Item</th>
+                <th>Description</th>
+                <th>HS Code</th>
+                <th>Qty</th>
+                <th>Unit Price</th>
+                <th>DPV</th>
+                <th>Duty Tax</th>
+                <th>Excise Tax</th>
+                <th>Surtax</th>
+                <th>Social Welfare</th>
+                <th>VAT</th>
+                <th>Scanning Fee</th>
+                <th>Withholding Tax</th>
+                <th>Total Tax</th>
+                <th>Inland Freight 2</th>
+                <th>Bank Service</th>
+                <th>Transport</th>
+                <th>Warehouse</th>
+                <th>Loading Cost</th>
+                <th>Transitor Fee</th>
+                <th>Grand Total (ETB)</th>
+                <th>Unit Cost (ETB)</th>
+              </tr>
+            </thead>
+            <tbody>
               ${declaration.iteminfo
-                .flatMap((item) =>
-                  item.taxAmountPerItem
-                    ?.map((tax, index) =>
-                      Object.entries(tax)
-                        .map(([key, value]) =>
-                          value !== null
-                            ? `
-                      <div class="tax-item">
-                        <div class="tax-label">${key
-                          .replace(/([A-Z])/g, " $1")
-                          .trim()}</div>
-                        <div>${
-                          typeof value === "number"
-                            ? value.toLocaleString()
-                            : value || "N/A"
-                        } ETB</div>
-                      </div>
-                    `
-                            : ""
-                        )
-                        .join("")
-                    )
-                    .join("")
-                )
-                .join("")}
-            </div>
+          .map(
+            (item, i) => `
+                <tr>
+                  <td>${i + 1}</td>
+                  <td>${item.itemdescription}</td>
+                  <td>${item.hscode || "-"}</td>
+                  <td>${item.quantity}</td>
+                  <td>${item.unitprice?.toLocaleString() || "-"}</td>
+                  <td>${item.taxAmountPerItem?.[0]?.dpvAmountPerItem || "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.dutyTax?.toLocaleString() || "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.exciseTax?.toLocaleString() ||
+              "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.surtax?.toLocaleString() || "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.socialWelfareTax?.toLocaleString() ||
+              "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.vat?.toLocaleString() || "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.scanningFee?.toLocaleString() ||
+              "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.withholdingTax?.toLocaleString() ||
+              "-"
+              }</td>
+                  <td>${item.taxAmountPerItem?.[0]?.totalTaxPerItem || "-"}</td>
+                  <td>${item.inlandFeright2PerItem?.toLocaleString() || "-"
+              }</td>
+                  <td>${item.bankServicePerItem?.toLocaleString() || "-"}</td>
+                  <td>${item.transportFeePerItem?.toLocaleString() || "-"}</td>
+                  <td>${item.warehousePerItem?.toLocaleString() || "-"}</td>
+                  <td>${item.loadingCostPerItem?.toLocaleString() || "-"}</td>
+                  <td>${item.transitorPerItem?.toLocaleString() || "-"}</td>
+                  <td>${item.grandTotalInETBPerItem?.toLocaleString() || "-"
+              }</td>
+                  <td>${item.unitCostInETBPerItem?.toLocaleString() || "-"}</td>
+                </tr>
+              `
+          )
+          .join("")}
+              
+              <!-- TOTAL ROW -->
+              <tr class="total-row">
+                <td colspan="5">TOTAL:</td>
+                <td>${declaration.totaldpvAmountPerDeclaration?.toLocaleString() ||
+        "-"
+        }</td>
+                <td>${declaration.totaldutyTax?.toLocaleString() || "-"}</td>
+                <td>${declaration.totalexciseTax?.toLocaleString() || "-"}</td>
+                <td>${declaration.totalsurtax?.toLocaleString() || "-"}</td>
+                <td>${declaration.totalsocialWelfareTax?.toLocaleString() || "-"
+        }</td>
+                <td>${declaration.totalvat?.toLocaleString() || "-"}</td>
+                <td>${declaration.totalscanningFee?.toLocaleString() || "-"
+        }</td>
+                <td>${declaration.totalwithholdingTax?.toLocaleString() || "-"
+        }</td>
+                <td>${declaration.totalTaxPerDeclaration?.toLocaleString() || "-"
+        }</td>
+                <td></td>
+                <td>${declaration.totalBankService?.toLocaleString() || "-"
+        }</td>
+                <td>${declaration.totalTransportFee?.toLocaleString() || "-"
+        }</td>
+                <td>${declaration.totalWareHouseFee?.toLocaleString() || "-"
+        }</td>
+                <td></td>
+                <td>${declaration.totalTransitorFee?.toLocaleString() || "-"
+        }</td>
+                <td>${declaration.grandTotalInETB?.toLocaleString() || "-"}</td>
+                <td></td>
+              </tr>
+            </tbody>
+          </table>
 
-            <script>
-              setTimeout(() => {
-                window.print();
+          <div class="section-title">Declaration Summary</div>
+          <table class="items-table">
+            <tr>
+              <td>Total VAT per Declaration:</td>
+              <td><strong>${declaration.totalVatPerDeclaration?.toLocaleString() || "-"
+        } ETB</strong></td>
+            </tr>
+            <tr>
+              <td>Total Withholding Tax:</td>
+              <td><strong>${declaration.totalWithholding?.toLocaleString() || "-"
+        } ETB</strong></td>
+            </tr>
+            <tr>
+              <td>Grand Total in ETB:</td>
+              <td><strong>${declaration.grandTotalInETB?.toLocaleString() || "-"
+        } ETB</strong></td>
+            </tr>
+          </table>
+
+          <script>
+            setTimeout(() => {
+              window.print();
+              window.onafterprint = function() {
                 window.close();
-              }, 200);
-            </script>
-          </body>
-        </html>
-      `);
+              };
+            }, 1000);
+          </script>
+        </body>
+      </html>
+    `;
+
+      printWindow.document.write(printContent);
       printWindow.document.close();
     }
   };
-
   if (loading)
     return (
       <div className="flex justify-center items-center h-64">
@@ -427,6 +452,8 @@ export default function AllTaxViewer() {
       </div>
     );
   }
+
+
 
   return (
     <div className="p-4 space-y-6 max-w-7xl mx-auto">
@@ -520,17 +547,6 @@ export default function AllTaxViewer() {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
-                      <button
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          printDeclaration(declaration.declarationNumber);
-                        }}
-                        className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
-                        title="Print this declaration"
-                      >
-                        <Printer size={16} />
-                        <span className="text-xs hidden md:inline">Print</span>
-                      </button>
                       <div className="text-gray-500">
                         {expandedDeclarations[declaration.declarationNumber] ? (
                           <ChevronUp size={18} />
@@ -546,187 +562,58 @@ export default function AllTaxViewer() {
                       {/* Financial Summary Section with horizontal scroll */}
                       <div className="border-b pb-3">
                         <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                          Financial Summary for{" "}
-                          {declaration.companyInfo.tinnumber}{" "}
+                          cost build up for {declaration.companyInfo.tinnumber}{" "}
                           <p className="text-orraneg">tin Number</p>
                         </h3>
 
-                        <div className="overflow-x-auto">
-                          <div className="grid grid-cols-1 md:grid-cols-3 gap-3 min-w-[800px]">
-                            {/* Summary Card */}
-                            <div className="bg-blue-50 p-3 rounded-lg border border-blue-100 min-w-[250px]">
-                              <h3 className="font-medium text-blue-800 text-sm mb-2">
-                                Totals
-                              </h3>
-                              <div className="space-y-1">
-                                <div className="flex justify-between py-1 border-b border-blue-100">
-                                  <span className="text-gray-600 text-xs">
-                                    Grand Total:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.grandTotalInETB?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1 border-b border-blue-100">
-                                  <span className="text-gray-600 text-xs">
-                                    Total custom Tax:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalTaxPerDeclaration?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total duty Tax:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totaldutyTax?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
+                        <div className="overflow-x-auto"></div>
+                      </div>
 
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total exciseTax:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalexciseTax?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total surtax:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalsurtax?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total socialWelfareTax:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalsocialWelfareTax?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total vat:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalvat?.toLocaleString()} ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total withholdingTax:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalwithholdingTax?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total scanningFee:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalscanningFee?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total scanningFeeVAT:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalscanningFeeVAT?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total dpv Amount Per Declaration :
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totaldpvAmountPerDeclaration?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total Withholding:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalWithholding?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
+                      {/* print and excel */}
 
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Total WareHouseFee:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalWareHouseFee?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
+                      <div className="flex justify-end space-x-2">
+                        {/* Print button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            printDeclaration(declaration.declarationNumber);
+                          }}
+                          className="flex items-center space-x-1 text-blue-600 hover:text-blue-800 p-1 rounded hover:bg-blue-50"
+                          title="Print this declaration"
+                        >
+                          <Printer size={16} />
+                          <span className="text-xs hidden md:inline">
+                            Print
+                          </span>
+                        </button>
 
-                            {/* Fees Card */}
-                            <div className="bg-purple-50 p-3 rounded-lg border border-purple-100 min-w-[250px]">
-                              <h3 className="font-medium text-purple-800 text-sm mb-2">
-                                Fees & Charges
-                              </h3>
-                              <div className="space-y-1">
-                                <div className="flex justify-between py-1 border-b border-purple-100">
-                                  <span className="text-gray-600 text-xs">
-                                    Bank Service:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalBankService?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1 border-b border-purple-100">
-                                  <span className="text-gray-600 text-xs">
-                                    Transit Fee:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalTransitorFee?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                                <div className="flex justify-between py-1">
-                                  <span className="text-gray-600 text-xs">
-                                    Warehouse Fee:
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalWareHouseFee?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-
-                                <div className="flex justify-between py-1 border-b border-purple-100">
-                                  <span className="text-gray-600 text-xs">
-                                    transport Fee Per Item :
-                                  </span>
-                                  <span className="font-medium text-xs">
-                                    {declaration.totalTransportFee?.toLocaleString()}{" "}
-                                    ETB
-                                  </span>
-                                </div>
-                              </div>
-                            </div>
-                          </div>
-                        </div>
+                        {/* Excel download button */}
+                        <button
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            costBuildUPExcel(declaration);
+                          }}
+                          className="flex items-center space-x-1 text-green-600 hover:text-green-800 p-1 rounded hover:bg-green-50"
+                          title="Download as Excel"
+                        >
+                          <svg
+                            xmlns="http://www.w3.org/2000/svg"
+                            className="h-4 w-4"
+                            fill="none"
+                            viewBox="0 0 24 24"
+                            stroke="currentColor"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                            />
+                          </svg>
+                          <span className="text-xs hidden md:inline">
+                            Excel
+                          </span>
+                        </button>
                       </div>
 
                       {/* Items Section */}
@@ -743,12 +630,15 @@ export default function AllTaxViewer() {
                         <div className="overflow-x-auto">
                           <table className="min-w-full divide-y divide-gray-200">
                             <thead className="bg-gray-50">
-                              <tr>
-                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  Item
+                              <tr className={styles["table-column"]}>
+                                <th className="px-3 py-2 bg-red text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Item No
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  HS Code
+                                  Description
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Unit
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Qty
@@ -756,16 +646,109 @@ export default function AllTaxViewer() {
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
                                   Unit Price
                                 </th>
-
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  inland Feright2/Item
+                                  FOB Cost
                                 </th>
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  loading Cost/Item
+                                  exchangerate
+
                                 </th>
 
                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
-                                  unit Cost/Item
+                                  Subtotal
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  External Freight
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Djibouti Cost
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Inland Freight 1
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Insurance Cost
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Total Freight Cost
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  DPV
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                   Duty Tax
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                   Excise
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Surtax
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Social Welfare
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  VAT
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Scanning Fee
+                                </th>
+                                 <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Scanning FeeVat
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Withholding Tax 3%
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Total Tax
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Inland Freight 2
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Bank Service Charge
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Transportation Cost
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Warehouse Fee
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Warehouse Fee VAT
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Empty Container Loading Cost
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Empty Container Loading Cost VAT
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Transitor Fee
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Transitor Fee VAT
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Grand in ETB
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Total VAT
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Total Withholding
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Unit Cost in ETB
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Unit
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Penalty Paid to Customs
+                                </th>
+                                <th className="px-3 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">
+                                  Total Taxes Paid to Customs
                                 </th>
                               </tr>
                             </thead>
@@ -778,10 +761,14 @@ export default function AllTaxViewer() {
                                   }
                                 >
                                   <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
+                                    {i + 1}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                                     {item.itemdescription}
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.hscode}
+                                    {/* Unit - not in interface, using placeholder */}
+                                    -
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                                     {item.quantity}
@@ -790,64 +777,367 @@ export default function AllTaxViewer() {
                                     {item.unitprice?.toLocaleString()} ETB
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.inlandFeright2PerItem?.toLocaleString()}{" "}
-                                    ETB
+                                    {/* FOB Cost - not in interface */}
+
+                                    {declaration.totalFob?.toLocaleString()}
+
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.loadingCostPerItem?.toLocaleString()}{" "}
-                                    ETB
+                                    {/* FOB Cost - not in interface */}
+                                    {declaration.exchangerate?.toLocaleString()}
                                   </td>
 
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
-                                    {item.unitCostInETBPerItem?.toLocaleString()}
+                                    {/* Subtotal - calculate from quantity * unitprice */}
+                                    {(
+                                      item.subtotal
+                                    )?.toLocaleString()}{" "}
+
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* External Freight - not in interface */}
+                                    {item.externalfreight?.toLocaleString()}
+
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Djibouti Clearance - not in interface */}
+                                    {item.djibouticost?.toLocaleString()}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Inland Freight 1 - not in interface */}
+                                    {item.inlandFreight1?.toLocaleString()}
+
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Insurance Cost - not in interface */}
+                                    {item.insurancecost?.toLocaleString()}                                 
+
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Total Freight Cost - not in interface */}
+                                {((item.inlandFreight1 || 0)  +  (item.djibouticost || 0)  + (item.insurancecost || 0) +  (item.externalfreight || 0)).toLocaleString()}               
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* DPV - from taxAmountPerItem */}
+                                      {item.taxAmountPerItem?.[0]?.dpvAmountPerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Custom Duty Tax - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.dutyTax?.toLocaleString() ||
+                                      "-"}{" "}
+                                  
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Custom Excise - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.exciseTax?.toLocaleString() ||
+                                      "-"}{" "}
+                                  
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Surtax - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.surtax?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Social Welfare - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.socialWelfareTax?.toLocaleString() ||
+                                      "-"}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* VAT - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.vat?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                    <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Scanning Fee - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.scanningFee?.toLocaleString() ||
+                                      "-"}
+                                    ETB
+                                  </td>
+                                    <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* scanningFeeVAT */}
+                                    {item.taxAmountPerItem?.[0]?.scanningFeeVAT?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Withholding Tax 3% - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.withholdingTax?.toLocaleString() ||
+                                      "-"}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Total Tax - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]
+                                      ?.totalTaxPerItem || "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Inland Freight 2 - from interface */}
+                                    {item.inlandFeright2PerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Bank Service Charge - from interface */}
+                                    {item.bankServicePerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Transportation Cost - from interface */}
+                                    {item.transportFeePerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Warehouse Fee - from interface */}
+                                    {item.warehousePerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Warehouse Fee VAT - not in interface */}
+                                    -
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Empty Container Loading Cost - from interface */}
+                                    {item.loadingCostPerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Empty Container Loading Cost VAT - not in interface */}
+                                    -
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Transitor Fee - from interface */}
+                                    {item.transitorPerItem?.toLocaleString() ||
+
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Transitor Fee VAT - not in interface */}
+                                      {item.transportFeePerItem.toLocaleString() ||
+
+                                      "-"}{" "}
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Grand Total in ETB - from interface */}
+                                    {item.grandTotalInETBPerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Total VAT - from declaration level */}
+                                    {declaration.totalvat?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Total Withholding - from declaration level */}
+                                    {declaration.totalWithholding?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Unit Cost in ETB - from interface */}
+                                    {item.unitCostInETBPerItem?.toLocaleString() ||
+                                      "-"}{" "}
+                                    ETB
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Unit - not in interface */}-
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Penalty Paid to Customs - not in interface */}
+                                    -
+                                  </td>
+                                  <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
+                                    {/* Total Taxes Paid to Customs - from taxAmountPerItem */}
+                                    {item.taxAmountPerItem?.[0]?.totalTaxPerDeclaration?.toLocaleString() ||
+                                      "-"}
                                     ETB
                                   </td>
                                 </tr>
                               ))}
+                              {/* TOTAL ROW WITH BACKEND-CALCULATED VALUES */}
+                            
+                              <tr className="bg-blue-100 font-bold">
+                                <td
+                                  colSpan={1}
+                                  className="px-3 py-2 text-right text-xs uppercase"
+                                >
+                                  TOTAL:
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Quantity Total */}
+                                    {declaration.iteminfo.reduce((sum, item) => sum + (item.quantity || 0), 0).toLocaleString()
+                                    }
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Unit Price Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* FOB Cost Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Subtotal Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* External Freight Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Djibouti Clearance Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Inland Freight 1 Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Insurance Cost Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Total Freight Cost Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totaldpvAmountPerDeclaration?.toLocaleString() ||
+                                    "-"}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totaldutyTax?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalexciseTax?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalsurtax?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalsocialWelfareTax?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalvat?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalscanningFee?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalwithholdingTax?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalTaxPerDeclaration?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Inland Freight 2 Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalBankService?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalTransportFee?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalWareHouseFee?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Warehouse Fee VAT Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Empty Container Loading Cost Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Empty Container Loading Cost VAT Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalTransitorFee?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Transitor Fee VAT Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.grandTotalInETB?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalVatPerDeclaration?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {declaration.totalWithholding?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Unit Cost in ETB Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Unit Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Penalty Paid to Customs Total */}
+                                </td>
+                                <td className="px-3 py-2 whitespace-nowrap text-xs">
+                                  {/* Total Taxes Paid to Customs Total - this is totalTaxPerDeclaration */}
+                                  {declaration.totalTaxPerDeclaration?.toLocaleString() ||
+                                    "-"}{" "}
+                                  ETB
+                                </td>
+                              </tr>
                             </tbody>
                           </table>
                         </div>
-                      </div>
 
-                      {/* Tax Details Section with horizontal scroll */}
-                      {declaration.iteminfo.some(
-                        (item) => item.taxAmountPerItem?.length > 0
-                      ) && (
-                        <div className="pt-3">
-                          <h3 className="text-sm font-semibold text-gray-800 mb-2">
-                            Tax Details
-                          </h3>
-                          <div className="overflow-x-auto ">
-                            <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 min-w-[800px] ">
-                              {declaration.iteminfo.flatMap((item) =>
-                                item.taxAmountPerItem?.map((tax, index) =>
-                                  Object.entries(tax).map(
-                                    ([key, value]) =>
-                                      value !== null && (
-                                        <div
-                                          key={`${key}-${index}`}
-                                          className="bg-red-50 p-2 rounded-lg border border-gray-800 shadow-xs min-w-[200px]"
-                                        >
-                                          <h4 className="font-medium text-black-700 capitalize text-xs mb-1">
-                                            {key
-                                              .replace(/([A-Z])/g, " $1")
-                                              .trim()}
-                                          </h4>
-                                          <p className="text-black-900 font-bold text-xs">
-                                            {typeof value === "number"
-                                              ? value.toLocaleString()
-                                              : value || "N/A"}{" "}
-                                            ETB
-                                          </p>
-                                        </div>
-                                      )
-                                  )
-                                )
-                              )}
-                            </div>
-                          </div>
-                        </div>
-                      )}
+                        {/* Add the VAT components here */}
+                        <VatableItems
+                          items={declaration.iteminfo}
+                          declarationNumber={declaration.declarationNumber}
+                          companyName={
+                            declaration.companyInfo?.companyname ||
+                            "Unknown Company"
+                          }
+                        />
+                        <NonVatableItems
+                          items={declaration.iteminfo}
+                          declarationNumber={declaration.declarationNumber}
+                          companyName={
+                            declaration.companyInfo?.companyname ||
+                            "Unknown Company"
+                          }
+                        />
+                      </div>
                     </div>
                   )}
                 </div>
