@@ -1400,35 +1400,35 @@ function LocalReceiptContent() {
                         isActive={activeSection === 'items'}
                         isCompleted={formProgress.items}
                       >
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                   <div className="flex items-center gap-5">
-                     <label className="font-semibold text-gray-700">Does the receipt have import/export related items?</label>
-                     <div className="flex items-center gap-4">
-                       <label className="flex items-center gap-2 cursor-pointer">
-                         <input
-                           type="radio"
-                           name="hasImportExport"
-                           value="yes"
-                           checked={form.hasImportExport === 'yes'}
-                           onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
-                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                           required
-                         />
-                         <span className="text-gray-700">Yes</span>
-                       </label>
-                       <label className="flex items-center gap-2 cursor-pointer">
-                         <input
-                           type="radio"
-                           name="hasImportExport"
-                           value="no"
-                           checked={form.hasImportExport === 'no'}
-                           onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
-                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                           required
-                         />
-                         <span className="text-gray-700">No</span>
-                       </label>
-                     </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
+                    <label className="font-semibold text-gray-700">Does the receipt have import/export related items?</label>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-300 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 w-full sm:w-auto">
+                        <input
+                          type="radio"
+                          name="hasImportExport"
+                          value="yes"
+                          checked={form.hasImportExport === 'yes'}
+                          onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
+                          className="w-6 h-6 sm:w-5 sm:h-5 text-blue-600 border-gray-300 focus:ring-blue-500 shrink-0"
+                          required
+                        />
+                        <span className="text-gray-700 text-base select-none">Yes</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-300 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 w-full sm:w-auto">
+                        <input
+                          type="radio"
+                          name="hasImportExport"
+                          value="no"
+                          checked={form.hasImportExport === 'no'}
+                          onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
+                          className="w-6 h-6 sm:w-5 sm:h-5 text-blue-600 border-gray-300 focus:ring-blue-500 shrink-0"
+                          required
+                        />
+                        <span className="text-gray-700 text-base select-none">No</span>
+                      </label>
+                    </div>
                    </div>
                   {/* Item Type Selection */}
                   {(form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Crv' || form.receiptCategory === 'Other' || form.receiptCategory === 'Buyer') && (
@@ -1515,7 +1515,7 @@ function LocalReceiptContent() {
                           </button>
                         </div>
                       </FormSection>
-                   
+
 
                       {/* Payment & Documents Section */}
                       <FormSection
