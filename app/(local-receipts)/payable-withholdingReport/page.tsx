@@ -60,7 +60,7 @@ const woreda = decodedToken?.Wereda;
     const getWithholdingReceipts = async () => {
       try {
           setLoading(true);
-        const response = await axios.get(`${DJANGO_BASE_URL}/reports/expense-withholding`);
+        const response = await axios.get(`${DJANGO_BASE_URL}/reports/revenue-withholding`);
           // Store the full report data
           setReportData(response.data);
           // Extract the data array from the response
