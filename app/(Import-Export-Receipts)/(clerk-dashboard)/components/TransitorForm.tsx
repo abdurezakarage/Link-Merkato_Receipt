@@ -1,9 +1,10 @@
 "use client";
 import DatePicker from "react-datepicker";
 import "react-datepicker/dist/react-datepicker.css";
-import { useState, FormEvent, ChangeEvent } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
 import { BASE_API_URL } from "../../import-api/ImportApi";
+import { BASE_API_URL_local } from "../../import-api/ImportApi";
 
 interface ClearanceFeePayload {
   receiptnumber: string;
@@ -12,8 +13,8 @@ interface ClearanceFeePayload {
   receiptcalendar: string;
   withholdingtaxreceiptno: string;
   withholdingtaxReceiptdate: string;
-  withholdingamount: number;
-  amountbeforetax: number;
+  withholdingamount: number | string;
+  amountbeforetax: number | string;
 }
 
 export default function ClearanceFeeForm() {
@@ -24,8 +25,8 @@ export default function ClearanceFeeForm() {
     receiptcalendar: "",
     withholdingtaxreceiptno: "",
     withholdingtaxReceiptdate: "",
-    withholdingamount: 0,
-    amountbeforetax: 0,
+    withholdingamount: '',
+    amountbeforetax: '',
   });
 
   const [declarationnumber, setDeclarationNumber] = useState<string>("");
@@ -33,7 +34,107 @@ export default function ClearanceFeeForm() {
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
-  const [isSubmitting, setIsSubmitting] = useState<boolean>(false); // Moved inside component
+  const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isDuplicate, setIsDuplicate] = useState<boolean>(false);
+  const [isFetchingData, setIsFetchingData] = useState<boolean>(false);
+  
+  // Use a ref to track the last fetched declaration number
+  const lastFetchedDeclarationNumber = useRef<string>("");
+
+  // Add useEffect to fetch data when declarationnumber changes
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      if (declarationnumber && declarationnumber !== lastFetchedDeclarationNumber.current) {
+        fetchClearanceData();
+      }
+    }, 500); // Debounce to avoid too many API calls
+
+    return () => clearTimeout(timer);
+  }, [declarationnumber]);
+
+  const fetchClearanceData = async () => {
+    if (!declarationnumber) {
+      return;
+    }
+
+    const token = localStorage.getItem("token");
+    if (!token) {
+      console.warn("No token found in localStorage—cannot fetch");
+      return;
+    }
+
+    setIsFetchingData(true);
+    try {
+      const url = `${BASE_API_URL_local}/api/transistor-details/?declaration_number=${declarationnumber}`;
+      console.log("Fetching from URL:", url);
+      const response = await fetch(url, {
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${token}`,
+        },
+      });
+
+      if (!response.ok) {
+        const json = await response.json();
+        console.error(
+          `Fetch failed. Status: ${response.status} ${response.statusText}.`,
+          "Backend response:",
+          json
+        );
+        setIsFetchingData(false);
+        return;
+      }
+
+      const responseData = await response.json();
+      console.log("Fetched clearance data:", responseData);
+
+      // Extract the data from the nested structure: {count: 1, data: Array(1)}
+      const dataArray = responseData.data;
+      
+      // Check if data array exists and has at least one item
+      if (!Array.isArray(dataArray) || dataArray.length === 0) {
+        console.log("No data found for this declaration number - empty array returned");
+        setIsFetchingData(false);
+        return;
+      }
+
+      // Extract the first item from the data array
+      const actualData = dataArray[0];
+      console.log("Actual data to use:", actualData);
+
+      if (!actualData) {
+        console.log("No data found for this declaration number");
+        setIsFetchingData(false);
+        return;
+      }
+
+      // Update the form data with fetched values
+      setFormData({
+        receiptnumber: actualData.receiptnumber || "",
+        receiptdate: actualData.receiptdate || "",
+        receiptmachinenumber: actualData.receiptmachinenumber || "",
+        receiptcalendar: actualData.receiptcalendar || "",
+        withholdingtaxreceiptno: actualData.withholdingtaxreceiptno || "",
+        withholdingtaxReceiptdate: actualData.withholdingtaxReceiptdate || "",
+        withholdingamount: actualData.withholdingamount !== undefined && actualData.withholdingamount !== null 
+          ? actualData.withholdingamount.toString() 
+          : '',
+        amountbeforetax: actualData.amountbeforetax !== undefined && actualData.amountbeforetax !== null 
+          ? actualData.amountbeforetax.toString() 
+          : '',
+      });
+
+      // Set withholding tax applicability based on fetched data
+      setIsWithholdingTaxApplicable(!!actualData.withholdingtaxreceiptno);
+      
+      // Update last fetched declaration number
+      lastFetchedDeclarationNumber.current = declarationnumber;
+    } catch (error) {
+      console.error("Network or other error during fetch:", error);
+    } finally {
+      setIsFetchingData(false);
+    }
+  };
 
   const handleChange = (
     e: ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -42,6 +143,10 @@ export default function ClearanceFeeForm() {
 
     if (name === "declarationnumber") {
       setDeclarationNumber(value);
+      if (isDuplicate) {
+        setIsDuplicate(false);
+        e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
+      }
     } else if (name === "isWithholdingTaxApplicable") {
       const isApplicable = value === "Yes";
       setIsWithholdingTaxApplicable(isApplicable);
@@ -50,13 +155,12 @@ export default function ClearanceFeeForm() {
           ...prev,
           withholdingtaxreceiptno: "",
           withholdingtaxReceiptdate: "",
-          withholdingamount: 0,
+          withholdingamount: '',
         }));
       }
     } else {
-      const processedValue =
-        type === "number" ? (value === "" ? 0 : parseFloat(value)) : value;
-      setFormData((prev) => ({ ...prev, [name]: processedValue }));
+      // For number inputs, keep as string for proper display but convert to number when submitting
+      setFormData((prev) => ({ ...prev, [name]: value }));
     }
   };
 
@@ -64,6 +168,7 @@ export default function ClearanceFeeForm() {
     e.preventDefault();
     setMessage(null);
     setIsSubmitting(true);
+    setIsDuplicate(false);
 
     if (!declarationnumber) {
       setMessage("Declaration number is required");
@@ -82,6 +187,13 @@ export default function ClearanceFeeForm() {
     }
 
     try {
+      // Prepare data for submission - convert string numbers back to numbers
+      const submissionData = {
+        ...formData,
+        withholdingamount: formData.withholdingamount ? parseFloat(formData.withholdingamount as string) : 0,
+        amountbeforetax: formData.amountbeforetax ? parseFloat(formData.amountbeforetax as string) : 0,
+      };
+
       const apiUrl = `${BASE_API_URL}/api/v1/clerk/clearanceInfo/${declarationnumber}`;
 
       const response = await fetch(apiUrl, {
@@ -90,7 +202,7 @@ export default function ClearanceFeeForm() {
           "Content-Type": "application/json",
           Authorization: `Bearer ${token}`,
         },
-        body: JSON.stringify(formData),
+        body: JSON.stringify(submissionData),
       });
 
       if (!response.ok) {
@@ -101,8 +213,18 @@ export default function ClearanceFeeForm() {
           const errorData = await response.json();
           errorMessage = errorData.message || errorMessage;
 
-          if (response.status === 409) {
-            alert("Declaration is already taken. Please use a different one.");
+          if (
+            response.status === 409 ||
+            errorMessage.toLowerCase().includes("already exists")
+          ) {
+            setMessage(
+              "This declaration number already exists. Please use a different one. ❌"
+            );
+            setIsDuplicate(true);
+            const input = document.getElementById("declarationnumber");
+            input?.classList.add("border-red-500", "ring-2", "ring-red-200");
+            setIsSubmitting(false);
+            return;
           }
         } else {
           const errorText = await response.text();
@@ -111,17 +233,7 @@ export default function ClearanceFeeForm() {
         throw new Error(errorMessage);
       }
 
-      const contentType = response.headers.get("content-type");
-      let successMsg = "Clearance fee receipt submitted successfully! ✅";
-
-      if (contentType && contentType.includes("application/json")) {
-        const data = await response.json();
-        successMsg = data.message || successMsg;
-      } else {
-        const successText = await response.text();
-        successMsg = successText || successMsg;
-      }
-
+      const successMsg = "Clearance fee receipt submitted successfully! ✅";
       setMessage(successMsg);
       setFormSubmitted(true);
 
@@ -133,21 +245,19 @@ export default function ClearanceFeeForm() {
         receiptcalendar: "",
         withholdingtaxreceiptno: "",
         withholdingtaxReceiptdate: "",
-        withholdingamount: 0,
-        amountbeforetax: 0,
+        withholdingamount: '',
+        amountbeforetax: '',
       });
       setDeclarationNumber("");
       setIsWithholdingTaxApplicable(false);
+      lastFetchedDeclarationNumber.current = "";
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
-        const errMsg = "Network error: Could not connect to the server. ❌";
-        setMessage(errMsg);
+        setMessage("Network error: Could not connect to the server. ❌");
       } else if (error instanceof Error) {
-        const errMsg = `Failed to submit data. Error: ${error.message} ❌`;
-        setMessage(errMsg);
+        setMessage(`Failed to submit data. Error: ${error.message} ❌`);
       } else {
-        const errMsg = "Failed to submit data. An unknown error occurred. ❌";
-        setMessage(errMsg);
+        setMessage("Failed to submit data. An unknown error occurred. ❌");
       }
     } finally {
       setIsSubmitting(false);
@@ -183,16 +293,30 @@ export default function ClearanceFeeForm() {
               >
                 Declaration Number
               </label>
-              <input
-                type="text"
-                id="declarationnumber"
-                name="declarationnumber"
-                value={declarationnumber}
-                onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
-                placeholder="D123456"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="declarationnumber"
+                  name="declarationnumber"
+                  value={declarationnumber}
+                  onChange={handleChange}
+                  className={`w-full border rounded px-3 py-2 ${
+                    isDuplicate
+                      ? "border-red-500 ring-2 ring-red-200"
+                      : "border-gray-300"
+                  }`}
+                  placeholder="D123456"
+                  required
+                />
+                {isFetchingData && (
+                  <div className="absolute right-3 top-3">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the declaration number to auto-fill the form
+              </p>
             </div>
 
             {/* Amount Before Tax */}
@@ -207,11 +331,9 @@ export default function ClearanceFeeForm() {
                 type="number"
                 id="amountbeforetax"
                 name="amountbeforetax"
-                value={
-                  formData.amountbeforetax === 0 ? "" : formData.amountbeforetax
-                }
+                value={formData.amountbeforetax}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="1000.00"
                 required
               />
@@ -230,7 +352,7 @@ export default function ClearanceFeeForm() {
                 name="isWithholdingTaxApplicable"
                 value={isWithholdingTaxApplicable ? "Yes" : "No"}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               >
                 <option value="No">No</option>
                 <option value="Yes">Yes</option>
@@ -251,15 +373,11 @@ export default function ClearanceFeeForm() {
                     type="number"
                     id="withholdingamount"
                     name="withholdingamount"
-                    value={
-                      formData.withholdingamount === 0
-                        ? ""
-                        : formData.withholdingamount
-                    }
+                    value={formData.withholdingamount}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="500.00"
-                    required
+                    required={isWithholdingTaxApplicable}
                   />
                 </div>
 
@@ -276,9 +394,9 @@ export default function ClearanceFeeForm() {
                     name="withholdingtaxreceiptno"
                     value={formData.withholdingtaxreceiptno}
                     onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                     placeholder="WHT-789"
-                    required
+                    required={isWithholdingTaxApplicable}
                   />
                 </div>
 
@@ -289,14 +407,23 @@ export default function ClearanceFeeForm() {
                   >
                     Withholding Tax Receipt Date
                   </label>
-                  <input
-                    type="date"
+                  <DatePicker
                     id="withholdingtaxReceiptdate"
-                    name="withholdingtaxReceiptdate"
-                    value={formData.withholdingtaxReceiptdate}
-                    onChange={handleChange}
-                    className="w-full border rounded px-3 py-2"
-                    required
+                    selected={
+                      formData.withholdingtaxReceiptdate
+                        ? parse(formData.withholdingtaxReceiptdate, "dd-MM-yyyy", new Date())
+                        : null
+                    }
+                    onChange={(date: Date | null) => {
+                      const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
+                      setFormData((prev) => ({
+                        ...prev,
+                        withholdingtaxReceiptdate: formattedDate,
+                      }));
+                    }}
+                    dateFormat="dd/MM/yyyy"
+                    placeholderText="dd/mm/yyyy"
+                    className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
               </>
@@ -313,7 +440,7 @@ export default function ClearanceFeeForm() {
                 name="receiptnumber"
                 value={formData.receiptnumber}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="R123456"
                 required
               />
@@ -332,7 +459,7 @@ export default function ClearanceFeeForm() {
                 name="receiptmachinenumber"
                 value={formData.receiptmachinenumber}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="M98765"
                 required
               />
@@ -351,7 +478,7 @@ export default function ClearanceFeeForm() {
                 name="receiptcalendar"
                 value={formData.receiptcalendar}
                 onChange={handleChange}
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                 placeholder="Gregorian"
                 required
               />
@@ -377,7 +504,7 @@ export default function ClearanceFeeForm() {
                 }}
                 dateFormat="dd/MM/yyyy"
                 placeholderText="dd/mm/yyyy"
-                className="w-full border rounded px-3 py-2"
+                className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
 
@@ -397,10 +524,13 @@ export default function ClearanceFeeForm() {
               ✅ Form Submitted Successfully!
             </h2>
             <button
-              onClick={() => setFormSubmitted(false)}
+              onClick={() => {
+                setFormSubmitted(false);
+                setMessage(null);
+              }}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
             >
-              Submit Another Clearance
+              Submit Another
             </button>
           </div>
         )}

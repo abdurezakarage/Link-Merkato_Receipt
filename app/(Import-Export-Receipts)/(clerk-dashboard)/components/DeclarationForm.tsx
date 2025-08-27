@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter } from "next/navigation";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 
 import PreviewModal from "../declaration/preview/PreviewModal"; // Keep your existing modal import
 import { BASE_API_URL } from "../../import-api/ImportApi";
@@ -48,6 +48,7 @@ type TaxDto = {
 
 type ItemManagementDto = {
   hscode: string;
+  natureofitem: string;
   itemdescription: string;
   unitofmeasurement: string;
   quantity: number | null;
@@ -252,6 +253,28 @@ function ItemFormPage({
           value={item.hscode}
           onChange={(e) => handleItemChange(index, "hscode", e.target.value)}
         />
+        {/* Add this dropdown for Nature of Item */}
+        <div className="flex flex-col w-full">
+          <label className="font-medium mb-1 text-sm text-gray-700">
+            Nature of Item <span className="text-red-500">*</span>
+          </label>
+          <select
+            value={item.natureofitem || "75"}
+            onChange={(e) =>
+              handleItemChange(index, "natureofitem", e.target.value)
+            }
+            className="w-full border border-gray-300 rounded-md px-3 py-2 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
+            required
+          >
+            <option value="">Select Nature of Item</option>
+            <option value="75">75-Imported capital assets</option>
+            <option value="85">85-Vat or unclaimed inputs</option>
+
+            <option value="110">110-Imported inputs purchase</option>
+
+            <option value="130">130-Purchase with no Vat</option>
+          </select>
+        </div>
         <InputField
           label="Item Description"
           name="itemdescription"
@@ -424,7 +447,7 @@ function ItemFormPage({
           <span>Add Tax to Item #{index + 1}</span>
         </button>
       </div>
-      <div className="flex justify-end mt-4">
+      <div className="f+lex justify-end mt-4">
         <button
           type="button"
           onClick={() => removeItem(index)}
@@ -460,6 +483,77 @@ export default function DeclarationForm() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPreview, setShowPreview] = useState(false);
+
+  //save to draft
+  const saveDraft = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId");
+      if (!token || !userId) return;
+
+      await fetch(
+        `${BASE_API_URL}/api/v1/clerk/declaration/draft/${tinNumber}`,
+        {
+          method: "PATCH", // Or POST depending on your API
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      console.log("Draft saved successfully!");
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+    }
+  };
+  // save it draft interval
+  useEffect(() => {
+    const interval = setInterval(() => {
+      saveDraft();
+    }, 15000); // every 30 seconds
+    return () => clearInterval(interval);
+  }, [formData]);
+
+  // fetch draft data
+  const fetchDraft = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const tinNumber = localStorage.getItem("tin_number");
+      if (!token || !tinNumber) return;
+
+      const response = await fetch(
+        `${BASE_API_URL}/api/v1/clerk/declaration/draft/${tinNumber}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch draft");
+
+      const draftData = await response.json();
+
+      if (draftData) {
+        setFormData(draftData);
+        // Optionally set page to last edited
+        setPage(draftData.itemManagementdto.length ? 2 : 1);
+      }
+    } catch (err) {
+      console.error(err);
+    }
+  };
+
+  useEffect(() => {
+    fetchDraft();
+  }, []);
+  // delete draft after submit:
+
+  //   await fetch(`${BASE_API_URL}/api/v1/clerk/bankInfo/draft/${declarationnumber}`, {
+  //   method: "DELETE",
+  //   headers: { "Authorization": `Bearer ${token}` },
+  // });
 
   // General form field change handler
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -532,6 +626,7 @@ export default function DeclarationForm() {
         ...prev.itemManagementdto,
         {
           hscode: "",
+          natureofitem: "",
           itemdescription: "",
           unitofmeasurement: "",
           quantity: null,
