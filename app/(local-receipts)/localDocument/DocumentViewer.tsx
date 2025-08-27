@@ -45,13 +45,13 @@ export default function DocumentViewer({
     const originalUrl = activeDoc.url;
     
     // Debug logging
-    console.log('DocumentViewer URL Debug:', {
-      documentType: activeDoc.key,
-      originalUrl,
-      startsWithHttps: originalUrl.startsWith('https'),
-      startsWithMedia: originalUrl.startsWith('/media/') || originalUrl.startsWith('media/'),
-      startsWithApi: originalUrl.startsWith('/api/')
-    });
+    // console.log('DocumentViewer URL Debug:', {
+    //   documentType: activeDoc.key,
+    //   originalUrl,
+    //   startsWithHttps: originalUrl.startsWith('https'),
+    //   startsWithMedia: originalUrl.startsWith('/media/') || originalUrl.startsWith('media/'),
+    //   startsWithApi: originalUrl.startsWith('/api/')
+    // });
     
     // If the URL is already a full URL, use it directly
     if (originalUrl.startsWith('http')) {

@@ -48,7 +48,7 @@ export default function DraftsPanel<T extends { draft_id?: string; receipt_numbe
       await deleteDraft(draftId, token);
       // Remove the deleted draft from the local state
       setDrafts(prevDrafts => prevDrafts.filter(draft => (draft as any).draft_id !== draftId));
-      console.log("Successfully deleted draft with ID:", draftId); // Log successful deletion
+      //console.log("Successfully deleted draft with ID:", draftId); // Log successful deletion
     } catch (error) {
       console.error("Failed to delete draft with ID:", draftId, error); // Log error with draft ID
       // Optionally show an error message to the user

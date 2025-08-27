@@ -9,15 +9,18 @@ type AutosaveOptions = {
   isTokenValid?: () => boolean;
   enabled?: boolean;
   intervalMs?: number;
+  /** If true, send immediately on mount; if false, wait for first interval */
+  leading?: boolean;
 };
 
 export function useDraftAutosave<T extends object>(
   data: T,
   options: AutosaveOptions
 ) {
-  const { token, isTokenValid, enabled = true, intervalMs = 30000 } = options;
+  const { token, isTokenValid, enabled = true, intervalMs = 30000, leading = false } = options;
   const latestDataRef = useRef<T>(data);
   const timerRef = useRef<NodeJS.Timeout | null>(null);
+  const timeoutRef = useRef<NodeJS.Timeout | null>(null);
 
   // Keep latest data reference updated
   useEffect(() => {
@@ -48,14 +51,22 @@ export function useDraftAutosave<T extends object>(
       }
     };
 
-    // Fire immediately on mount/change, then on interval
-    sendPatch();
-    timerRef.current = setInterval(sendPatch, intervalMs);
+    // Either fire immediately (leading) or wait for the first interval
+    if (leading) {
+      sendPatch();
+      timerRef.current = setInterval(sendPatch, intervalMs);
+    } else {
+      timeoutRef.current = setTimeout(() => {
+        sendPatch();
+        timerRef.current = setInterval(sendPatch, intervalMs);
+      }, intervalMs);
+    }
 
     return () => {
       if (timerRef.current) clearInterval(timerRef.current);
+      if (timeoutRef.current) clearTimeout(timeoutRef.current);
     };
-  }, [token, isTokenValid, enabled, intervalMs]);
+  }, [token, isTokenValid, enabled, intervalMs, leading]);
 }
 
 /**
