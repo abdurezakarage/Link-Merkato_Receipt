@@ -257,19 +257,19 @@ function LocalReceiptContent() {
     const hasWithholding = searchParams.get('hasWithholding') === 'true';
     const view = searchParams.get('view');
 
-    console.log('URL Parameters:', {
-      documentId,
-      receiptNumber,
-      mainReceiptUrl,
-      attachmentUrl,
-      withholdingReceiptUrl,
-      hasWithholding,
-      view
-    });
+    // console.log('URL Parameters:', {
+    //   documentId,
+    //   receiptNumber,
+    //   mainReceiptUrl,
+    //   attachmentUrl,
+    //   withholdingReceiptUrl,
+    //   hasWithholding,
+    //   view
+    // });
     
     // Only enable document view mode if we have a documentId and receiptNumber
     if (documentId && receiptNumber) {
-      console.log('Enabling document view mode');
+      // console.log('Enabling document view mode');
       setDocumentViewMode(true);
       setDocumentData({
         documentId,
@@ -666,8 +666,45 @@ function LocalReceiptContent() {
      // Check buyer info
      const buyerComplete = Boolean(form.buyer.name && form.buyer.tin && form.buyer.address);
     // Check items (only required for certain receipt categories)
-    const itemsComplete = (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Other' || form.receiptCategory === 'Buyer') 
-      ? Boolean(form.itemType && form.items.length > 0 && form.items.every(item => Boolean(item.description && item.totalCost > 0)))
+    const itemsComplete = (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Crv' || form.receiptCategory === 'Other' || form.receiptCategory === 'Buyer') 
+      ? Boolean(form.hasImportExport && form.itemType && form.items.length > 0 && form.items.every(item => {
+          // Basic validation for all items
+          const basicValidation = Boolean(item.glAccount && item.nature && item.quantity > 0 && item.unitCost > 0 && item.totalCost > 0);
+          
+          // Description validation - required for most categories but not always
+          let descriptionValidation = true;
+          if (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Other') {
+            descriptionValidation = Boolean(item.description);
+          }
+          
+          // Additional validation based on receipt category
+          let categoryValidation = true;
+          
+          if (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Other') {
+            categoryValidation = Boolean(item.hsCode && item.itemCode && item.unitOfMeasurement);
+          }
+          
+          if (form.receiptCategory === 'Crv') {
+            categoryValidation = Boolean(item.reasonOfReceiving);
+          }
+          
+          // Mixed receipt validation
+          if (form.receiptName === 'MIXED') {
+            categoryValidation = categoryValidation && Boolean(item.taxType);
+          }
+          
+          // Import/Export validation
+          if (form.hasImportExport === 'yes') {
+            categoryValidation = categoryValidation && Boolean(item.declarationNumber);
+            
+            // Bank service specific validation
+            if (item.description === 'Bank service') {
+              categoryValidation = categoryValidation && Boolean(item.bankPermitDate && item.permitNo && item.bankReference && item.bankService);
+            }
+          }
+          
+          return basicValidation && descriptionValidation && categoryValidation;
+        }))
       : true;
     
     // Check payment info
@@ -709,12 +746,42 @@ function LocalReceiptContent() {
       receiptDetails: !!(form.receiptCategory && form.receiptType && form.receiptKind && form.receiptName && form.receiptNumber && form.receiptDate && form.calendarType),
       items: (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Crv' || form.receiptCategory === 'Other' || form.receiptCategory === 'Buyer') 
         ? !!(form.hasImportExport && form.itemType && form.items.length > 0 && form.items.every(item => {
-            const basicValidation = item.description && item.totalCost > 0;
-            // If import/export is yes, declaration number is required
-            if (form.hasImportExport === 'yes') {
-              return basicValidation && item.declarationNumber;
+            // Basic validation for all items
+            const basicValidation = item.glAccount && item.nature && item.quantity > 0 && item.unitCost > 0 && item.totalCost > 0;
+            
+            // Description validation - required for most categories but not always
+            let descriptionValidation = true;
+            if (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Other') {
+              descriptionValidation = !!item.description;
             }
-            return basicValidation;
+            
+            // Additional validation based on receipt category
+            let categoryValidation = true;
+            
+            if (form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Other') {
+              categoryValidation = !!(item.hsCode && item.itemCode && item.unitOfMeasurement);
+            }
+            
+            if (form.receiptCategory === 'Crv') {
+              categoryValidation = !!item.reasonOfReceiving;
+            }
+            
+            // Mixed receipt validation
+            if (form.receiptName === 'MIXED') {
+              categoryValidation = categoryValidation && !!item.taxType;
+            }
+            
+            // Import/Export validation
+            if (form.hasImportExport === 'yes') {
+              categoryValidation = categoryValidation && !!item.declarationNumber;
+              
+              // Bank service specific validation
+              if (item.description === 'Bank service') {
+                categoryValidation = categoryValidation && !!(item.bankPermitDate && item.permitNo && item.bankReference && item.bankService);
+              }
+            }
+            
+            return basicValidation && descriptionValidation && categoryValidation;
           }))
         : true,
       payment: !!(form.paymentMethod && (form.paymentMethod.toLowerCase().includes('bank') ? form.bankName : true)),
@@ -1400,36 +1467,37 @@ function LocalReceiptContent() {
                         isActive={activeSection === 'items'}
                         isCompleted={formProgress.items}
                       >
-                <div className="grid grid-cols-2 gap-4 mb-4">
-                   <div className="flex items-center gap-5">
-                     <label className="font-semibold text-gray-700">Does the receipt have import/export related items?</label>
-                     <div className="flex items-center gap-4">
-                       <label className="flex items-center gap-2 cursor-pointer">
-                         <input
-                           type="radio"
-                           name="hasImportExport"
-                           value="yes"
-                           checked={form.hasImportExport === 'yes'}
-                           onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
-                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                           required
-                         />
-                         <span className="text-gray-700">Yes</span>
-                       </label>
-                       <label className="flex items-center gap-2 cursor-pointer">
-                         <input
-                           type="radio"
-                           name="hasImportExport"
-                           value="no"
-                           checked={form.hasImportExport === 'no'}
-                           onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
-                           className="w-4 h-4 text-blue-600 border-gray-300 focus:ring-blue-500"
-                           required
-                         />
-                         <span className="text-gray-700">No</span>
-                       </label>
-                     </div>
+                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
+                    <label className="font-semibold text-gray-700">Does the receipt have import/export related items?</label>
+                    <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-300 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 w-full sm:w-auto">
+                        <input
+                          type="radio"
+                          name="hasImportExport"
+                          value="yes"
+                          checked={form.hasImportExport === 'yes'}
+                          onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
+                          className="w-6 h-6 sm:w-5 sm:h-5 text-blue-600 border-gray-300 focus:ring-blue-500 shrink-0"
+                          required
+                        />
+                        <span className="text-gray-700 text-base select-none">Yes</span>
+                      </label>
+                      <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-300 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 w-full sm:w-auto">
+                        <input
+                          type="radio"
+                          name="hasImportExport"
+                          value="no"
+                          checked={form.hasImportExport === 'no'}
+                          onChange={e => setForm(f => ({ ...f, hasImportExport: e.target.value }))}
+                          className="w-6 h-6 sm:w-5 sm:h-5 text-blue-600 border-gray-300 focus:ring-blue-500 shrink-0"
+                          required
+                        />
+                        <span className="text-gray-700 text-base select-none">No</span>
+                      </label>
+                    </div>
                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                 
                   {/* Item Type Selection */}
                   {(form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Crv' || form.receiptCategory === 'Other' || form.receiptCategory === 'Buyer') && (
                     <div className="flex items-center gap-4">
@@ -1515,7 +1583,7 @@ function LocalReceiptContent() {
                           </button>
                         </div>
                       </FormSection>
-                   
+
 
                       {/* Payment & Documents Section */}
                       <FormSection

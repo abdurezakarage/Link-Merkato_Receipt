@@ -53,29 +53,29 @@ export interface GroupedDocument {
   uploaded_at: string;
 }
 
-export const fetchLocalDocuments = async (token: string, tinNumber: string): Promise<GroupedDocument[]> => {
+export const fetchLocalDocuments = async (token: string, tinNumber: string, page: number = 1): Promise<DocumentsApiResponse> => {
   try {
     const response = await axios.get<DocumentsApiResponse>(`${DJANGO_BASE_URL}/get-documents`, {
       headers: {
         "Authorization": `Bearer ${token}`
-      }
+      },
+      params: { page }
     });
 
     // Debug logging for API response
-    console.log('API Response Debug:', {
-      count: response.data.count,
-      next: response.data.next,
-      sample: response.data.results.slice(0, 3).map(doc => ({
-        id: doc.id,
-        receipt_number: doc.receipt_number,
-        main_file_url: doc.main_file_url,
-        main_attachment_url: doc.main_attachment_url,
-        withholding_file_url: doc.withholding_file_url,
-      }))
-    });
+    // console.log('API Response Debug:', {
+    //   count: response.data.count,
+    //   next: response.data.next,
+    //   sample: response.data.results.slice(0, 3).map(doc => ({
+    //     id: doc.id,
+    //     receipt_number: doc.receipt_number,
+    //     main_file_url: doc.main_file_url,
+    //     main_attachment_url: doc.main_attachment_url,
+    //     withholding_file_url: doc.withholding_file_url,
+    //   }))
+    // });
 
-    // Map API documents into grouped documents
-    return mapApiResultsToGrouped(response.data);
+    return response.data;
   } catch (error) {
     console.error('Error fetching local documents:', error);
     throw error;
@@ -130,13 +130,13 @@ const mapApiResultsToGrouped = (response: DocumentsApiResponse): GroupedDocument
 
 export const getDocumentUrl = (documentPath: string): string => {
   if (!documentPath) {
-    console.log('getDocumentUrl: Empty documentPath provided');
+    //console.log('getDocumentUrl: Empty documentPath provided');
     return '';
   }
   
   // If the path is already a full URL, return it
   if (documentPath.startsWith('https')) {
-    console.log('getDocumentUrl: Full URL detected, returning as-is:', documentPath);
+    //console.log('getDocumentUrl: Full URL detected, returning as-is:', documentPath);
     return documentPath;
   }
   
@@ -148,13 +148,13 @@ export const getDocumentUrl = (documentPath: string): string => {
   const sanitizedPath = documentPath.replace(/^\/+/, '');
   const fullUrl = `${MEDIA_BASE_URL}${sanitizedPath}`;
   
-  console.log('getDocumentUrl: URL construction:', { 
-    documentPath, 
-    sanitizedPath, 
-    DJANGO_BASE_URL,
-    MEDIA_BASE_URL, 
-    fullUrl 
-  });
+  // console.log('getDocumentUrl: URL construction:', { 
+  //   documentPath, 
+  //   sanitizedPath, 
+  //   DJANGO_BASE_URL,
+  //   MEDIA_BASE_URL, 
+  //   fullUrl 
+  // });
   
   return fullUrl;
 };
@@ -165,6 +165,8 @@ export default function LocalDocumentPage() {
   const [documents, setDocuments] = useState<GroupedDocument[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const [hasNextPage, setHasNextPage] = useState(true);
 
   // Ensure documents are always displayed with most recent uploads first
   const sortedDocuments = React.useMemo(() => {
@@ -194,9 +196,10 @@ export default function LocalDocumentPage() {
     }
   };
 
-  // Fetch documents when component mounts
+  // Fetch documents when component mounts and when page changes
   useEffect(() => {
     const loadDocuments = async () => {
+      setLoading(true);
       if (!token || !isTokenValid()) {
         setError('Invalid or missing token');
         setLoading(false);
@@ -213,11 +216,22 @@ export default function LocalDocumentPage() {
           return;
         }
 
-        const fetchedDocuments = await fetchLocalDocuments(token, tinNumber);
-        setDocuments(fetchedDocuments);
+        const response = await fetchLocalDocuments(token, tinNumber, currentPage);
+        const grouped = mapApiResultsToGrouped(response);
+        if (grouped.length === 0 && currentPage > 1) {
+          setCurrentPage(p => Math.max(1, p - 1));
+          return;
+        }
+        setDocuments(grouped);
+        setHasNextPage(!!response.next);
+        setError('');
       } catch (err) {
         console.error('Error loading documents:', err);
-        setError('Failed to load documents');
+        if (currentPage > 1) {
+          setCurrentPage(p => Math.max(1, p - 1));
+        } else {
+          setError('Failed to load documents');
+        }
       } finally {
         setLoading(false);
       }
@@ -226,12 +240,12 @@ export default function LocalDocumentPage() {
     if (!isLoading) {
       loadDocuments();
     }
-  }, [token, isLoading, isTokenValid]);
+  }, [token, isLoading, isTokenValid, currentPage]);
 
   // Handle document selection and navigation
   const handleDocumentSelect = (document: GroupedDocument) => {
     // Debug log the document data
-    console.log('Selected Document:', document);
+    //console.log('Selected Document:', document);
 
     // Make sure we have a main document
     if (!document.main_document?.file_url) {
@@ -255,7 +269,7 @@ export default function LocalDocumentPage() {
     });
     
     // Debug log the URL parameters
-    console.log('Navigation Parameters:', Object.fromEntries(params.entries()));
+    //console.log('Navigation Parameters:', Object.fromEntries(params.entries()));
     
     router.push(`/localReceipt?${params.toString()}`);
   };
@@ -430,6 +444,27 @@ export default function LocalDocumentPage() {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+              {documents.length > 0 && (
+                <div className="flex items-center justify-between mt-8 text-black">
+                  <div className="text-sm text-gray-600">Page {currentPage}</div>
+                  <div className="flex items-center gap-2 text-black">
+                    <button
+                      className="px-3 py-1.5 rounded border border-gray-300 text-sm disabled:opacity-50"
+                      disabled={currentPage <= 1}
+                      onClick={() => setCurrentPage(p => Math.max(1, p - 1))}
+                    >
+                      Previous
+                    </button>
+                    <button
+                      className="px-3 py-1.5 rounded border border-gray-300 text-sm disabled:opacity-50"
+                      disabled={!hasNextPage}
+                      onClick={() => setCurrentPage(p => p + 1)}
+                    >
+                      Next
+                    </button>
+                  </div>
                 </div>
               )}
             </>
