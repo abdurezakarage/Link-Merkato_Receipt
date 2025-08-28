@@ -1,6 +1,6 @@
 /* Style header cells */
 .table-column th:nth-child(4),
-.table-column th:nth-child(13),
+.table-column th:nth-child(14),
 .table-column th:nth-child(22),
 .table-column th:nth-child(34),
 .table-column th:nth-child(35),
@@ -13,7 +13,7 @@
 
 /* Style all data cells in the same columns */
 tr td:nth-child(4),
-tr td:nth-child(13),
+tr td:nth-child(14),
 tr td:nth-child(22),
 tr td:nth-child(34),
 tr td:nth-child(35),
