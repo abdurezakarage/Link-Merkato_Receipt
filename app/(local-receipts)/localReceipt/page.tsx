@@ -1467,8 +1467,7 @@ function LocalReceiptContent() {
                         isActive={activeSection === 'items'}
                         isCompleted={formProgress.items}
                       >
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
-                  <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
+                       <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-5">
                     <label className="font-semibold text-gray-700">Does the receipt have import/export related items?</label>
                     <div className="flex flex-col sm:flex-row items-start sm:items-center gap-3 sm:gap-4">
                       <label className="flex items-center gap-3 cursor-pointer p-3 rounded-lg border border-gray-300 hover:border-blue-500 focus-within:ring-2 focus-within:ring-blue-500 w-full sm:w-auto">
@@ -1497,6 +1496,8 @@ function LocalReceiptContent() {
                       </label>
                     </div>
                    </div>
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 mb-4">
+                 
                   {/* Item Type Selection */}
                   {(form.receiptCategory === 'Revenue' || form.receiptCategory === 'Expense' || form.receiptCategory === 'Crv' || form.receiptCategory === 'Other' || form.receiptCategory === 'Buyer') && (
                     <div className="flex items-center gap-4">
