@@ -10,6 +10,7 @@
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
+    "@react-pdf/renderer": "^4.3.0",
     "axios": "^1.11.0",
     "date-fns": "^3.6.0",
     "jspdf": "^3.0.1",
