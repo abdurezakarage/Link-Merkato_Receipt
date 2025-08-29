@@ -37,6 +37,8 @@ export default function LocalDocumentUpload() {
     const [withholdingReceiptNumber, setWithholdingReceiptNumber] = useState("");
     const [receiptNumberExists, setReceiptNumberExists] = useState<boolean | null>(null);
     const [checkingReceiptNumber, setCheckingReceiptNumber] = useState(false);
+    const [isImportExport, setIsImportExport] = useState<"yes" | "no">("no");
+    const [declarationNumber, setDeclarationNumber] = useState("");
     const timeoutRef = React.useRef<NodeJS.Timeout | undefined>(undefined);
 
     // Debounced receipt number validator
@@ -114,6 +116,14 @@ export default function LocalDocumentUpload() {
       }
     };
 
+    // Handle import/export option change
+    const handleImportExportChange = (value: "yes" | "no") => {
+      setIsImportExport(value);
+      if (value === "no") {
+        setDeclarationNumber("");
+      }
+    };
+
     // Handle form submit
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
       e.preventDefault();
@@ -158,6 +168,15 @@ export default function LocalDocumentUpload() {
             return;
           }
         }
+
+        // Validate declaration number if import/export is yes
+        if (isImportExport === "yes") {
+          if (!declarationNumber.trim()) {
+            setError("Declaration number is required for import/export receipts.");
+            setSubmitting(false);
+            return;
+          }
+        }
         const roles = localStorage.getItem("roles");
         if (!roles) {
           setError("User role not found. Please log in again.");
@@ -175,6 +194,10 @@ export default function LocalDocumentUpload() {
               fileFormData.append("main_receipt_data.main_receipt", MainReceipt);
               fileFormData.append("main_receipt_data.main_receipt_filename", MainReceipt.name);
               fileFormData.append("main_receipt_data.main_receipt_content_type", MainReceipt.type);
+              fileFormData.append("main_receipt_data.is_import_export", isImportExport);
+              if (isImportExport === "yes" && declarationNumber.trim()) {
+                fileFormData.append("declaration_number", declarationNumber.trim());
+              }
             }
             
             if (attachment) {
@@ -197,7 +220,7 @@ export default function LocalDocumentUpload() {
               },
             });
             
-            console.log('Files uploaded successfully:', uploadResponse.data);
+           // console.log('Files uploaded successfully:', uploadResponse.data);
             setSuccess("Documents uploaded successfully!");
             // Briefly show success then navigate based on role
             try {
@@ -284,7 +307,7 @@ export default function LocalDocumentUpload() {
             return;
           }
         } else {
-          console.log('No files to upload');
+          //console.log('No files to upload');
         }
         
        
@@ -318,7 +341,7 @@ export default function LocalDocumentUpload() {
                 )}
                   {/* File Upload Section */}
 
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                     {/* Receipt Number */}
                     <div className="mb-6">
                       <label className="block text-sm font-medium text-gray-700 mb-2">
@@ -342,6 +365,53 @@ export default function LocalDocumentUpload() {
                         <p className="text-sm text-green-600 mt-1">Receipt number is available.</p>
                       )} */}
                     </div>
+{/* does the receipt relate to a local or import/export receipt*/}
+<div className="mb-4">
+                        <label className="block text-sm font-medium text-gray-700 mb-2">
+                          Does this receipt relate to an import/export receipt? *
+                        </label>
+                        <div className="flex gap-4">
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="isImportExport"
+                              value="yes"
+                              checked={isImportExport === "yes"}
+                              onChange={(e) => handleImportExportChange(e.target.value as "yes" | "no")}
+                              className="mr-2"
+                            />
+                            Yes
+                          </label>
+                          <label className="flex items-center">
+                            <input
+                              type="radio"
+                              name="isImportExport"
+                              value="no"
+                              checked={isImportExport === "no"}
+                              onChange={(e) => handleImportExportChange(e.target.value as "yes" | "no")}
+                              className="mr-2"
+                            />
+                            No
+                          </label>
+                        </div>
+                        {isImportExport === "yes" && (
+                          <div className="mt-4">
+                            <label className="block text-sm font-medium text-gray-700 mb-2">
+                              Declaration Number *
+                            </label>
+                            <input
+                              type="text"
+                              name="declarationNumber"
+                              value={declarationNumber}
+                              onChange={(e) => setDeclarationNumber(e.target.value)}
+                              className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                              required
+                            />
+                          </div>
+                        )}
+                      </div>
+
+
                     <FileUpload
                       label="Upload Receipt *"
                       accept="image/*,.pdf"

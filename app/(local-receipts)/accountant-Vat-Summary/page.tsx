@@ -111,7 +111,7 @@ const getCompanyInfo = () => {
   const fetchImportExportVat = async () => {
     try {
       if (!token) {
-        console.log('No token available for import/export VAT request');
+        //console.log('No token available for import/export VAT request');
         return;
       }
       
@@ -119,18 +119,18 @@ const getCompanyInfo = () => {
       const userId = decoded?.user_id;
       
       if (!userId) {
-        console.log('No user_id found in token for import/export VAT request');
+       //  console.log('No user_id found in token for import/export VAT request');
         return;
       }
       
-      console.log('Fetching import/export VAT for user:', userId);
-      console.log('Request URL:', `${SPRING_BASE_URL}/accountant/report1/${userId}`);
+      //console.log('Fetching import/export VAT for user:', userId);
+      //console.log('Request URL:', `${SPRING_BASE_URL}/accountant/report1/${userId}`);
       
       const response = await axios.get(`${SPRING_BASE_URL}/accountant/report1/${userId}`, {
         headers: { 'Authorization': `Bearer ${token}` }
       });
       
-      console.log('Import/export VAT response:', response.data);
+      //console.log('Import/export VAT response:', response.data);
       setImportExport(response.data);
     } catch (e) {
       console.error('Error fetching import/export VAT:', e);

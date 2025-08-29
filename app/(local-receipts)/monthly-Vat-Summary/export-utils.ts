@@ -1,6 +1,6 @@
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
-import { natureCodeMappings } from './constants';
+import { natureCodeMappings, excludeVATCodes } from './constants';
 import { formatCurrency, formatDateRange } from './utils';
 import { EditableValues, VATSummaryData, SectionTotals, ManualAdjustments, DateRange } from './types';
 
@@ -31,13 +31,6 @@ export const downloadPDF = (
   // Period Information
   doc.setFontSize(12);
   doc.text(`Period: ${formatDateRange(dateRange)}`, pageWidth / 2, 35, { align: 'center' });
-  // doc.text(`Report Generated: ${new Date().toLocaleDateString('en-US', { 
-  //   year: 'numeric', 
-  //   month: 'long', 
-  //   day: 'numeric',
-  //   hour: '2-digit',
-  //   minute: '2-digit'
-  // })}`, 20, 50);
   
   let currentY = 50;
 
@@ -115,7 +108,7 @@ export const downloadPDF = (
     ['Line', 'Description', 'Total Amount', 'Line', 'Output VAT']
   ];
   
-  // Add output tax entries
+  // Add output tax entries using currentValues (which includes edited values)
   Object.entries(natureCodeMappings)
     .filter(([_, mapping]) => mapping.section === 'output')
     .sort(([_, a], [__, b]) => a.lineNumber - b.lineNumber)
@@ -183,7 +176,7 @@ export const downloadPDF = (
     ['Line', 'Description', 'Total Amount', 'Line', 'Input VAT']
   ];
   
-  // Add capital asset entries
+  // Add capital asset entries using currentValues
   Object.entries(natureCodeMappings)
     .filter(([_, mapping]) => mapping.section === 'capital')
     .sort(([_, a], [__, b]) => a.lineNumber - b.lineNumber)
@@ -255,7 +248,7 @@ export const downloadPDF = (
     ['Line', 'Description', 'Total Amount', 'Line', 'Input VAT']
   ];
   
-  // Add non-capital asset entries
+  // Add non-capital asset entries using currentValues
   Object.entries(natureCodeMappings)
     .filter(([_, mapping]) => mapping.section === 'nonCapital')
     .sort(([_, a], [__, b]) => a.lineNumber - b.lineNumber)
@@ -417,11 +410,7 @@ export const downloadPDF = (
   // DETAILED BREAKDOWN Section
   doc.setFontSize(12);
   doc.setFont('helvetica', 'bold');
-  if (currentY > 250) {
-    doc.addPage();
-    currentY = 20;
-  }
-  doc.text('DETAILED BREAKDOWN', 20, currentY);
+  doc.text('DETAILED BREAKDOWN BY NATURE', 20, currentY);
   currentY += 8;
 
   // Iterate by nature code and render item-level tables
@@ -435,7 +424,7 @@ export const downloadPDF = (
 
   natureEntries.forEach(([natureCode, data], idx) => {
     const mapping = natureCodeMappings[natureCode];
-    const title = ` ${natureCode}${mapping ? ` - ${mapping.label}` : ''}`;
+    const title = `${natureCode}${mapping ? ` - ${mapping.label}` : ''}`;
 
     // Collect all matching items across receipts for this nature code
     const rows: any[] = [];
@@ -450,15 +439,30 @@ export const downloadPDF = (
           const subtotal = Number(it.subtotal);
           const taxType = it.tax_type || it.item.tax_type || '';
           const taxAmount = Number(it.tax_amount || 0);
+          
+          // For detail breakdown: exclude VAT tax type from VAT calculations and add to subtotal
+          let displaySubtotal = subtotal;
+          let displayTaxAmount = taxAmount;
+          
+          if (taxType && taxType !== 'VAT') {
+            // For non-VAT tax type items, add tax to subtotal and show 0 in tax column
+            displaySubtotal = subtotal + taxAmount;
+            displayTaxAmount = 0;
+          }
+          
+          // For excluded nature codes (15,20,85,130), do not display a tax value
+          const isExcludedNature = excludeVATCodes.includes(natureCode);
+          const taxCellText = isExcludedNature ? '' : formatCurrency(displayTaxAmount);
+
           rows.push([
             date,
             receiptNumber,
             it.item.item_description,
             String(qty),
             formatCurrency(unitCost),
-            formatCurrency(subtotal),
+            formatCurrency(displaySubtotal),
             taxType,
-            formatCurrency(taxAmount)
+            taxCellText
           ]);
         });
     });
@@ -500,6 +504,14 @@ export const downloadPDF = (
         7: { halign: 'right' }
       },
       margin: { left: 20, right: 20 },
+      didParseCell: function (data) {
+        // Shade the Tax column for excluded nature codes
+        if (data.section === 'body' && excludeVATCodes.includes(natureCode)) {
+          if ((data.column as any).index === 7) {
+            data.cell.styles.fillColor = [200, 200, 200];
+          }
+        }
+      },
       didDrawPage: () => {
         // Reset left margin title on new pages for this table
       }

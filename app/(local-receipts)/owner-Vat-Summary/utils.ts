@@ -79,7 +79,7 @@ export const calculateVATSummary = (filteredReceipts: ReceiptData[]): { [key: st
       const taxType = item.tax_type || item.item.tax_type;
       
      // console.log(`  Item ${itemIndex + 1}: Nature=${natureCode}, TaxType=${taxType}, Subtotal=${item.subtotal}, Tax=${item.tax_amount}`);
-     // console.log(`  Item details:`, item);
+      //console.log(`  Item details:`, item);
       
       if (!summary[natureCode]) {
         summary[natureCode] = { total: 0, vat: 0, count: 0, receipts: [] };
@@ -103,7 +103,7 @@ export const calculateVATSummary = (filteredReceipts: ReceiptData[]): { [key: st
           const vatAmount = Number(item.tax_amount);
           const totalAmountForTOT = subtotal + vatAmount;
           
-          //console.log(`  TOT Calculation: Subtotal=${subtotal} + VAT=${vatAmount} = Total=${totalAmountForTOT}`);
+         // console.log(`  TOT Calculation: Subtotal=${subtotal} + VAT=${vatAmount} = Total=${totalAmountForTOT}`);
           
           summary[natureCode].total += totalAmountForTOT;
           // Only include VAT amount if it's actually a VAT type (TOT is not VAT for calculation purposes)
