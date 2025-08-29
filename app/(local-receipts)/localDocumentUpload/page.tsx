@@ -64,13 +64,13 @@ export default function LocalDocumentUpload() {
     }, [token, isTokenValid]);
 
     // Trigger validation when receipt number changes
-    useEffect(() => {
-      if (receiptNumber) {
-        checkReceiptNumber(receiptNumber);
-      } else {
-        setReceiptNumberExists(null);
-      }
-    }, [receiptNumber, checkReceiptNumber]);
+    // useEffect(() => {
+    //   if (receiptNumber) {
+    //     checkReceiptNumber(receiptNumber);
+    //   } else {
+    //     setReceiptNumberExists(null);
+    //   }
+    // }, [receiptNumber, checkReceiptNumber]);
 
     // Cleanup debounce on unmount
     useEffect(() => {
@@ -355,12 +355,12 @@ export default function LocalDocumentUpload() {
                         className="w-64 px-3 py-2 border border-gray-300 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
                         required
                       />
-                      {checkingReceiptNumber && (
+                      {/* {checkingReceiptNumber && (
                         <p className="text-sm text-blue-600 mt-1">Checking receipt number...</p>
                       )}
                       {receiptNumber && receiptNumberExists === true && !checkingReceiptNumber && (
                         <p className="text-sm text-red-600 mt-1">This receipt number already submitted.</p>
-                      )}
+                      )} */}
                       {/* {receiptNumber && receiptNumberExists === false && !checkingReceiptNumber && (
                         <p className="text-sm text-green-600 mt-1">Receipt number is available.</p>
                       )} */}

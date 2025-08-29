@@ -472,13 +472,13 @@ function LocalReceiptContent() {
   }, [token, isTokenValid]);
 
   // Trigger check when receipt number changes in the form
-  useEffect(() => {
-    if (form.receiptNumber) {
-      checkReceiptNumber(form.receiptNumber);
-    } else {
-      setReceiptNumberExists(null);
-    }
-  }, [form.receiptNumber, checkReceiptNumber]);
+  // useEffect(() => {
+  //   if (form.receiptNumber) {
+  //     checkReceiptNumber(form.receiptNumber);
+  //   } else {
+  //     setReceiptNumberExists(null);
+  //   }
+  // }, [form.receiptNumber, checkReceiptNumber]);
 
   // Handle input changes
   const handleChange = (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) => {
