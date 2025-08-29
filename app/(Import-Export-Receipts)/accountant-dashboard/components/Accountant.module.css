@@ -1,25 +1,25 @@
-/* Style header cells */
-.table-column th:nth-child(4),
-.table-column th:nth-child(14),
-.table-column th:nth-child(22),
-.table-column th:nth-child(34),
-.table-column th:nth-child(35),
-.table-column th:nth-child(36),
-.table-column th:nth-child(37),
-.table-column th:nth-child(38) {
+/* Scoped header cells */
+.tableColumn th:nth-child(4),
+.tableColumn th:nth-child(14),
+.tableColumn th:nth-child(22),
+.tableColumn th:nth-child(34),
+.tableColumn th:nth-child(35),
+.tableColumn th:nth-child(36),
+.tableColumn th:nth-child(37),
+.tableColumn th:nth-child(38) {
   background-color: yellow;
   color: black;
 }
 
-/* Style all data cells in the same columns */
-.tableColumn td:nth-child(4),
-.tableColumn td:nth-child(14),
-.tableColumn td:nth-child(22),
-.tableColumn td:nth-child(34),
-.tableColumn td:nth-child(35),
-.tableColumn td:nth-child(36),
-.tableColumn td:nth-child(37),
-.tableColumn td:nth-child(38) {
+/* Scoped data cells */
+.tableRow td:nth-child(4),
+.tableRow td:nth-child(14),
+.tableRow td:nth-child(22),
+.tableRow td:nth-child(34),
+.tableRow td:nth-child(35),
+.tableRow td:nth-child(36),
+.tableRow td:nth-child(37),
+.tableRow td:nth-child(38) {
   background-color: yellow;
   color: black;
 }

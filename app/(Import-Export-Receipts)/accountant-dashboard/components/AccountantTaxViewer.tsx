@@ -8,6 +8,9 @@ import styles from "./Accountant.module.css";
 import VatableItems from "./VatableItems";
 import NonVatableItems from "./nonVatable";
 import CostSheet from "./costSheeet";
+import StockRecord from "./costSheeet";
+
+
 
 
 export interface TaxAmountPerItem {
@@ -760,9 +763,9 @@ export default function AllTaxViewer() {
                               {declaration.iteminfo.map((item, i) => (
                                 <tr
                                   key={i}
-                                  className={
-                                    i % 2 === 0 ? "bg-white" : "bg-gray-50"
-                                  }
+                                  className={`${i % 2 === 0 ? "bg-white" : "bg-gray-50"} ${styles.tableRow}`}
+                                    
+                                  
                                 >
                                   <td className="px-3 py-2 whitespace-nowrap text-xs font-medium text-gray-900">
                                     {i + 1}
@@ -1209,7 +1212,7 @@ export default function AllTaxViewer() {
             companyTin={declaration.companyInfo?.tinnumber || ""}
         // You need to add this to your interface
           />
-                       <NonVatableItems
+             <NonVatableItems
             items={declaration.iteminfo}
             declarationNumber={declaration.declarationNumber}
             companyName={
@@ -1219,6 +1222,15 @@ export default function AllTaxViewer() {
             companyTin={declaration.companyInfo?.tinnumber || ""}
             // You need to add this to your interface
           />
+             <StockRecord
+  items={declaration.iteminfo}
+  declarationNumber={String(declaration.declarationNumber)}
+  companyName={declaration.companyInfo?.companyname || "Unknown Company"} 
+  
+/>
+
+  
+
                       </div>
                     </div>
                   )}

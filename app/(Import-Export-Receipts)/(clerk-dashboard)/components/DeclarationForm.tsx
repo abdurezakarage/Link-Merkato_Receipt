@@ -492,7 +492,7 @@ export default function DeclarationForm() {
       if (!token || !userId) return;
 
       await fetch(
-        `${BASE_API_URL}/api/v1/clerk/declaration/draft/${tinNumber}`,
+        `${BASE_API_URL}/api/v1/clerk/savedraft/${userId}`,
         {
           method: "PATCH", // Or POST depending on your API
           headers: {
@@ -511,7 +511,7 @@ export default function DeclarationForm() {
   useEffect(() => {
     const interval = setInterval(() => {
       saveDraft();
-    }, 15000); // every 30 seconds
+    }, 500); // every 30 seconds
     return () => clearInterval(interval);
   }, [formData]);
 
@@ -519,11 +519,10 @@ export default function DeclarationForm() {
   const fetchDraft = async () => {
     try {
       const token = localStorage.getItem("token");
-      const tinNumber = localStorage.getItem("tin_number");
-      if (!token || !tinNumber) return;
-
+      const userId = localStorage.getItem("userId");
+      if (!token || !userId) return;
       const response = await fetch(
-        `${BASE_API_URL}/api/v1/clerk/declaration/draft/${tinNumber}`,
+        `${BASE_API_URL}/api/v1/clerk/getsavedraft/${userId}`,
         {
           headers: {
             Authorization: `Bearer ${token}`,
