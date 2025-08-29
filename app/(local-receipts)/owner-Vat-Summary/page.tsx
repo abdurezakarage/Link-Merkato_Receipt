@@ -81,6 +81,9 @@ const getCompanyInfo = () => {
 
 
   const fetchReceipts = async () => {
+    if (!token || authLoading) {
+      return;
+    }
     setLoading(true);
     setError(null);
 
@@ -152,8 +155,10 @@ const getCompanyInfo = () => {
   };
 
   useEffect(() => {
-    fetchReceipts();
-  }, []);
+    if (token && !authLoading) {
+      fetchReceipts();
+    }
+  }, [token, authLoading]);
 
   // Separate useEffect for import/export VAT that depends on token
   useEffect(() => {

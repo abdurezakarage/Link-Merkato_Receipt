@@ -217,7 +217,8 @@ const ItemTable: React.FC<ItemTableProps> = ({ items, handleItemChange, addItem,
                       required
                     >
                       <option value="">Select</option>
-                      <option value="Inland freight 2">Inland freight</option>
+                      <option value="Inland_freight_2">Inland Freight 2</option>
+                      <option value="Loading_Cost">Loading Cost</option>
                       <option value="Transportation">Transportation cost</option>
                       <option value="Bank service">Bank service charge</option>
                       <option value="Warehouse fee">Warehouse fee</option>
