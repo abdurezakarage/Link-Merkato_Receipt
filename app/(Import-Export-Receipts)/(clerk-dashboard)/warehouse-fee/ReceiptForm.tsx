@@ -17,7 +17,15 @@ interface WarehouseFeePayload {
   amountbeforetax: number | string;
 }
 
-export default function WarehouseFeeForm() {
+interface ReceiptFormProps {
+  declarationNumber?: string;
+  onDeclarationNumberChange?: (value: string) => void;
+}
+
+export default function WarehouseFeeForm({ 
+  declarationNumber = "", 
+  onDeclarationNumberChange 
+}: ReceiptFormProps) {
   const [formData, setFormData] = useState<WarehouseFeePayload>({
     receiptnumber: "",
     receiptdate: "",
@@ -30,7 +38,7 @@ export default function WarehouseFeeForm() {
     amountbeforetax: '',
   });
 
-  const [declarationnumber, setDeclarationNumber] = useState<string>("");
+  const [declarationnumber, setDeclarationNumber] = useState<string>(declarationNumber);
   const [isWithholdingTaxApplicable, setIsWithholdingTaxApplicable] =
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -41,6 +49,11 @@ export default function WarehouseFeeForm() {
   
   // Use a ref to track the last fetched declaration number
   const lastFetchedDeclarationNumber = useRef<string>("");
+
+  // Update local state when prop changes
+  useEffect(() => {
+    setDeclarationNumber(declarationNumber);
+  }, [declarationNumber]);
 
   // Add useEffect to fetch data when declarationnumber changes
   useEffect(() => {
@@ -147,6 +160,10 @@ const fetchWarehouseData = async () => {
 
     if (name === "declarationnumber") {
       setDeclarationNumber(value);
+      // Call the callback to update parent state
+      if (onDeclarationNumberChange) {
+        onDeclarationNumberChange(value);
+      }
       if (isDuplicate) {
         setIsDuplicate(false);
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
@@ -253,6 +270,10 @@ const fetchWarehouseData = async () => {
         amountbeforetax: '',
       });
       setDeclarationNumber("");
+      // Reset parent state
+      if (onDeclarationNumberChange) {
+        onDeclarationNumberChange("");
+      }
       setIsWithholdingTaxApplicable(false);
       lastFetchedDeclarationNumber.current = "";
     } catch (error) {
@@ -508,6 +529,10 @@ const fetchWarehouseData = async () => {
               onClick={() => {
                 setFormSubmitted(false);
                 setMessage(null);
+                // Reset declaration number in parent state
+                if (onDeclarationNumberChange) {
+                  onDeclarationNumberChange("");
+                }
               }}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
             >
