@@ -786,12 +786,12 @@ export default function AllTaxViewer() {
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                                     {/* FOB Cost - not in interface */}
 
-                                    {i === 0 ?declaration.totalFob:""}
+                                    {"-"}
 
                                   </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                                     {/* FOB Cost - not in interface */}
-                                    {i === 0 ? declaration.exchangerate : ""}
+                                    { declaration.exchangerate}
                                     
                                   </td>
 
@@ -890,7 +890,7 @@ export default function AllTaxViewer() {
                                                     (item.taxAmountPerItem?.[0]?.scanningFeeVAT || 0) +
                                                     (item.taxAmountPerItem?.[0]?.withholdingTax || 0) 
                                                   ).toLocaleString()}{" "}
-                                                  ETB
+                                                
                                                 </td>
                                   <td className="px-3 py-2 whitespace-nowrap text-xs text-gray-500">
                                     {/* Inland Freight 2 - from interface */}
@@ -985,7 +985,7 @@ export default function AllTaxViewer() {
                                                     (item.taxAmountPerItem?.[0]?.scanningFeeVAT || 0) +
                                                     (item.taxAmountPerItem?.[0]?.withholdingTax || 0) 
                                                   ).toLocaleString()}{" "}
-                                                  ETB
+                                               
                                                 </td>
                                 </tr>
                               ))}
@@ -1012,7 +1012,7 @@ export default function AllTaxViewer() {
                                 </td>
                                 <td className="px-3 py-2 whitespace-nowrap text-xs">
                                   {/* FOB Cost Total */}
-                                    {/* {declaration.totalFob} */}
+                                     {declaration.totalFob}
 
                                 </td>
                                  
@@ -1048,14 +1048,13 @@ export default function AllTaxViewer() {
                                 </td>
                                 <td className="px-3 py-2 whitespace-nowrap text-xs">
                                   {/* Total Freight Cost Total */}
-                                   {/* {( 
+                                  {( 
     (declaration.totalDjibouticost || 0) +
     (declaration.totalExternalFreight || 0) +
 
     (declaration.totalInlandFreight1 || 0) +
     (declaration.totalInsurancecost || 0)
-  )} */}
-
+  )} 
 
                                 </td>
                                 <td className="px-3 py-2 whitespace-nowrap text-xs">
@@ -1068,7 +1067,6 @@ export default function AllTaxViewer() {
                                   {/* Total totaldutyTax  Total */}
                                   {declaration.totaldutyTax ||
                                     "-"}
-                                  ETB
                                   
                                 </td>
 
@@ -1076,7 +1074,6 @@ export default function AllTaxViewer() {
                                 {/* totalexciseTax */}
                                       {declaration.totalexciseTax ||
                                     "-"}{" "}
-                                  ETB
                                 </td>
                                 <td className="px-3 py-2 whitespace-nowrap text-xs">
                                  {/* totalsurtax */}

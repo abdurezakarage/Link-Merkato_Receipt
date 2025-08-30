@@ -485,68 +485,68 @@ export default function DeclarationForm() {
   const [showPreview, setShowPreview] = useState(false);
 
   //save to draft
-  const saveDraft = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      if (!token || !userId) return;
+  // const saveDraft = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     const userId = localStorage.getItem("userId");
+  //     if (!token || !userId) return;
 
-      await fetch(
-        `${BASE_API_URL}/api/v1/clerk/savedraft/${userId}`,
-        {
-          method: "PATCH", // Or POST depending on your API
-          headers: {
-            "Content-Type": "application/json",
-            Authorization: `Bearer ${token}`,
-          },
-          body: JSON.stringify(formData),
-        }
-      );
-      console.log("Draft saved successfully!");
-    } catch (err) {
-      console.error("Failed to save draft:", err);
-    }
-  };
+  //     await fetch(
+  //       `${BASE_API_URL}/api/v1/clerk/savedraft/${userId}`,
+  //       {
+  //         method: "PATCH", // Or POST depending on your API
+  //         headers: {
+  //           "Content-Type": "application/json",
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //         body: JSON.stringify(formData),
+  //       }
+  //     );
+  //     console.log("Draft saved successfully!");
+  //   } catch (err) {
+  //     console.error("Failed to save draft:", err);
+  //   }
+  // };
   // save it draft interval
-  useEffect(() => {
-    const interval = setInterval(() => {
-      saveDraft();
-    }, 500); // every 30 seconds
-    return () => clearInterval(interval);
-  }, [formData]);
+  // useEffect(() => {
+  //   const interval = setInterval(() => {
+  //     saveDraft();
+  //   }, 15000); // every 30 seconds
+  //   return () => clearInterval(interval);
+  // }, [formData]);
 
   // fetch draft data
-  const fetchDraft = async () => {
-    try {
-      const token = localStorage.getItem("token");
-      const userId = localStorage.getItem("userId");
-      if (!token || !userId) return;
-      const response = await fetch(
-        `${BASE_API_URL}/api/v1/clerk/getsavedraft/${userId}`,
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        }
-      );
+  // const fetchDraft = async () => {
+  //   try {
+  //     const token = localStorage.getItem("token");
+  //     const userId = localStorage.getItem("userId");
+  //     if (!token || !userId) return;
+  //     const response = await fetch(
+  //       `${BASE_API_URL}/api/v1/clerk/getsavedraft/${userId}`,
+  //       {
+  //         headers: {
+  //           Authorization: `Bearer ${token}`,
+  //         },
+  //       }
+  //     );
 
-      if (!response.ok) throw new Error("Failed to fetch draft");
+  //     if (!response.ok) throw new Error("Failed to fetch draft");
 
-      const draftData = await response.json();
+  //     const draftData = await response.json();
 
-      if (draftData) {
-        setFormData(draftData);
-        // Optionally set page to last edited
-        setPage(draftData.itemManagementdto.length ? 2 : 1);
-      }
-    } catch (err) {
-      console.error(err);
-    }
-  };
+  //     if (draftData) {
+  //       setFormData(draftData);
+  //       // Optionally set page to last edited
+  //       setPage(draftData.itemManagementdto.length ? 2 : 1);
+  //     }
+  //   } catch (err) {
+  //     console.error(err);
+  //   }
+  // };
 
-  useEffect(() => {
-    fetchDraft();
-  }, []);
+  // useEffect(() => {
+  //   fetchDraft();
+  // }, []);
   // delete draft after submit:
 
   //   await fetch(`${BASE_API_URL}/api/v1/clerk/bankInfo/draft/${declarationnumber}`, {
