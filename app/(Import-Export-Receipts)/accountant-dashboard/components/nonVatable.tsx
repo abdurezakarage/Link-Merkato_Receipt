@@ -71,7 +71,7 @@ useEffect(() => {
 
 if (loading) return <div className="p-4">Loading Non-VAT report data...</div>;
 if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
-if (!data || data.item130.length === 0) return null;  // <-- check item130
+// if (!data || data.item130.length === 0) return null;  // <-- check item130
 
 
   const handlePrint = () => {

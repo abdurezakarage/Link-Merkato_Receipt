@@ -60,13 +60,13 @@ type FormData = {
   custombranchname: string;
   declarationnumber: string;
   declarationdispensedate: string;
-  fobamountusdt: number | null;
-  exchangerate: number | null;
-  externalfreight: number | null;
-  insuranceCost: number | null;
-  inlandfreight1: number | null;
-  djibouticost: number | null;
-  othercost1: number | null;
+   fobamountusdt: number | '';        
+  exchangerate: number | '';        
+  externalfreight: number | '';     
+  insuranceCost: number | '';       
+  inlandfreight1: number | '';       
+  djibouticost: number | '';         
+  othercost1: number | '';           
   itemManagementdto: ItemManagementDto[];
   // taxApplicationdto: TaxDto[];
 };
@@ -147,7 +147,7 @@ function InputField({
         type={type}
         name={name}
         id={name}
-        value={value === null ? "" : value}
+        value={value === null ? "" : value} // Convert null to empty string
         onChange={onChange}
         className="border border-gray-300 rounded-md px-3 py-2 text-sm w-full focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-all duration-200"
         required={required}
@@ -158,7 +158,6 @@ function InputField({
     </div>
   );
 }
-
 function UnitOfMeasurementDropdown({
   value,
   onChange,
@@ -269,9 +268,8 @@ function ItemFormPage({
             <option value="">Select Nature of Item</option>
             <option value="75">75-Imported capital assets</option>
             <option value="85">85-Vat or unclaimed inputs</option>
-
             <option value="110">110-Imported inputs purchase</option>
-
+            <option value="115">115-Imported inputs purchase</option>
             <option value="130">130-Purchase with no Vat</option>
           </select>
         </div>
@@ -308,37 +306,37 @@ function ItemFormPage({
           )}
         </div>
         <InputField
-          label="Quantity"
-          name="quantity"
-          type="number"
-          value={item.quantity}
-          onChange={(e) =>
-            handleItemChange(
-              index,
-              "quantity",
-              e.target.value === "" ? null : Number(e.target.value)
-            )
-          }
-          min="1"
-          step="any"
-          placeholder="e.g., 10"
-        />
-        <InputField
-          label="Unit Cost"
-          name="unitCost"
-          type="number"
-          value={item.unitCost}
-          onChange={(e) =>
-            handleItemChange(
-              index,
-              "unitCost",
-              e.target.value === "" ? null : parseFloat(e.target.value)
-            )
-          }
-          min="0"
-          step="any"
-          placeholder="e.g., 150.00"
-        />
+  label="Quantity"
+  name="quantity"
+  type="number"
+  value={item.quantity}
+  onChange={(e) =>
+    handleItemChange(
+      index,
+      "quantity",
+      e.target.value === "" ? null : Number(e.target.value)
+    )
+  }
+  min="1"
+  step="any"
+  placeholder="e.g., 10"
+/>
+      <InputField
+  label="Unit Cost"
+  name="unitCost"
+  type="number"
+  value={item.unitCost}
+  onChange={(e) =>
+    handleItemChange(
+      index,
+      "unitCost",
+      e.target.value === "" ? null : parseFloat(e.target.value)
+    )
+  }
+  min="0"
+  step="any"
+  placeholder="e.g., 150.00"
+/>
       </div>
 
       <h5 className="font-bold text-md mt-6 text-gray-800">
@@ -468,14 +466,14 @@ export default function DeclarationForm() {
     custombranchname: "",
     declarationnumber: "",
     declarationdispensedate: "",
-    fobamountusdt: null,
-    exchangerate: null,
-    externalfreight: null,
-    insuranceCost: null,
-    inlandfreight1: null,
-    djibouticost: null,
-    othercost1: null,
-    itemManagementdto: [],
+    fobamountusdt: '',        // Empty string instead of null
+  exchangerate: '',         // Empty string instead of null
+  externalfreight: '',      // Empty string instead of null
+  insuranceCost: '',        // Empty string instead of null
+  inlandfreight1: '',       // Empty string instead of null
+  djibouticost: '',         // Empty string instead of null
+  othercost1: '',           // Empty string instead of null
+  itemManagementdto: [],
     // taxApplicationdto: [], // This will be used for the final submission only
   });
   // page: 1 = General Info, 2 to (N+1) = Item pages, (N+2) = Summary Page
@@ -485,68 +483,96 @@ export default function DeclarationForm() {
   const [showPreview, setShowPreview] = useState(false);
 
   //save to draft
-  // const saveDraft = async () => {
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     const userId = localStorage.getItem("userId");
-  //     if (!token || !userId) return;
+  const saveDraft = async () => {
+    try {
+      const token = localStorage.getItem("token");
+      const userId = localStorage.getItem("userId");
+      if (!token || !userId) return;
 
-  //     await fetch(
-  //       `${BASE_API_URL}/api/v1/clerk/savedraft/${userId}`,
-  //       {
-  //         method: "PATCH", // Or POST depending on your API
-  //         headers: {
-  //           "Content-Type": "application/json",
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //         body: JSON.stringify(formData),
-  //       }
-  //     );
-  //     console.log("Draft saved successfully!");
-  //   } catch (err) {
-  //     console.error("Failed to save draft:", err);
-  //   }
-  // };
+      await fetch(
+        `${BASE_API_URL}/api/v1/clerk/savedraft/${userId}`,
+        {
+          method: "PATCH", // Or POST depending on your API
+          headers: {
+            "Content-Type": "application/json",
+            Authorization: `Bearer ${token}`,
+          },
+          body: JSON.stringify(formData),
+        }
+      );
+      // console.log("Draft saved successfully!",formData);
+    } catch (err) {
+      console.error("Failed to save draft:", err);
+    }
+  };
   // save it draft interval
-  // useEffect(() => {
-  //   const interval = setInterval(() => {
-  //     saveDraft();
-  //   }, 15000); // every 30 seconds
-  //   return () => clearInterval(interval);
-  // }, [formData]);
+ useEffect(() => {
+  const interval = setInterval(() => {
+    try {
+      saveDraft();
+    } catch (error) {
+      console.error("Error in auto-save:", error);
+    }
+  }, 15000); // every 15 seconds
+  
+  return () => clearInterval(interval);
+}, [formData]);
 
   // fetch draft data
-  // const fetchDraft = async () => {
-  //   try {
-  //     const token = localStorage.getItem("token");
-  //     const userId = localStorage.getItem("userId");
-  //     if (!token || !userId) return;
-  //     const response = await fetch(
-  //       `${BASE_API_URL}/api/v1/clerk/getsavedraft/${userId}`,
-  //       {
-  //         headers: {
-  //           Authorization: `Bearer ${token}`,
-  //         },
-  //       }
-  //     );
+const fetchDraft = async () => {
+  try {
+    const token = localStorage.getItem("token");
+    const userId = localStorage.getItem("userId");
+    if (!token || !userId) return;
+    
+    const response = await fetch(
+      `${BASE_API_URL}/api/v1/clerk/getsavedraft/${userId}`,
+      {
+        headers: {
+          Authorization: `Bearer ${token}`,
+        },
+      }
+    );
 
-  //     if (!response.ok) throw new Error("Failed to fetch draft");
+    if (!response.ok) {
+      console.error("Failed to fetch draft:", response.status);
+      return;
+    }
 
-  //     const draftData = await response.json();
+    const draftData = await response.json();
+    
+    // Check if draftData exists and has the expected structure
+    if (draftData && typeof draftData === 'object') {
+      // Safely update form data with fallback values
+      setFormData({
+        custombranchname: draftData.custombranchname || "",
+        declarationnumber: draftData.declarationnumber || "",
+        declarationdispensedate: draftData.declarationdispensedate || "",
+        fobamountusdt: draftData.fobamountusdt || '',
+        exchangerate: draftData.exchangerate || '',
+        externalfreight: draftData.externalfreight || '',
+        insuranceCost: draftData.insuranceCost || '',
+        inlandfreight1: draftData.inlandfreight1 || '',
+        djibouticost: draftData.djibouticost || '',
+        othercost1: draftData.othercost1 || '',
+        itemManagementdto: Array.isArray(draftData.itemManagementdto) 
+          ? draftData.itemManagementdto 
+          : [],
+      });
+      
+      // Optionally set page to last edited
+      if (Array.isArray(draftData.itemManagementdto) && draftData.itemManagementdto.length > 0) {
+        setPage(2); // Go to first item page if items exist
+      }
+    }
+  } catch (err) {
+    console.error("Error fetching draft:", err);
+  }
+};
 
-  //     if (draftData) {
-  //       setFormData(draftData);
-  //       // Optionally set page to last edited
-  //       setPage(draftData.itemManagementdto.length ? 2 : 1);
-  //     }
-  //   } catch (err) {
-  //     console.error(err);
-  //   }
-  // };
-
-  // useEffect(() => {
-  //   fetchDraft();
-  // }, []);
+  useEffect(() => {
+    fetchDraft();
+  }, []);
   // delete draft after submit:
 
   //   await fetch(`${BASE_API_URL}/api/v1/clerk/bankInfo/draft/${declarationnumber}`, {
@@ -555,20 +581,21 @@ export default function DeclarationForm() {
   // });
 
   // General form field change handler
-  const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    const { name, value } = e.target;
-    setFormData((prev) => ({
-      ...prev,
-      [name]:
-        name.includes("amount") ||
-        name.includes("Cost") ||
-        name.includes("rate")
-          ? value === ""
-            ? null
-            : parseFloat(value)
-          : value,
-    }));
-  };
+const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const { name, value } = e.target;
+  setFormData((prev) => ({
+    ...prev,
+    [name]:
+      name.includes("amount") ||
+      name.includes("Cost") ||
+      name.includes("rate") ||
+      name.includes("freight") ||
+      name.includes("djibouticost") ||
+      name.includes("othercost1")
+        ? value === "" ? null : parseFloat(value) // Return null for empty, number for values
+        : value,
+  }));
+};
 
   // TIN number specific change handler (with validation pattern)
   const handleTinChange = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -690,29 +717,29 @@ export default function DeclarationForm() {
 
   // --- Validation Functions ---
   const validatePage1 = () => {
-    if (!formData.custombranchname) {
-      setError("Branch name is required.");
-      return false;
-    }
-    if (!formData.declarationnumber) {
-      setError("Declaration number is required.");
-      return false;
-    }
-    if (!formData.declarationdispensedate) {
-      setError("Declaration date is required.");
-      return false;
-    }
-    if (formData.fobamountusdt === null || formData.fobamountusdt < 0) {
-      setError("FOB amount (USD) is required and cannot be negative.");
-      return false;
-    }
-    if (formData.exchangerate === null || formData.exchangerate < 0) {
-      setError("Exchange rate is required and cannot be negative.");
-      return false;
-    }
-    setError(""); // Clear error if validation passes
-    return true;
-  };
+  if (!formData.custombranchname) {
+    setError("Branch name is required.");
+    return false;
+  }
+  if (!formData.declarationnumber) {
+    setError("Declaration number is required.");
+    return false;
+  }
+  if (!formData.declarationdispensedate) {
+    setError("Declaration date is required.");
+    return false;
+  }
+  if (formData.fobamountusdt === '' || formData.fobamountusdt < 0) {
+    setError("FOB amount (USD) is required and cannot be negative.");
+    return false;
+  }
+  if (formData.exchangerate === '' || formData.exchangerate < 0) {
+    setError("Exchange rate is required and cannot be negative.");
+    return false;
+  }
+  setError("");
+  return true;
+};
 
   const validateItemPage = (item: ItemManagementDto, index: number) => {
     if (!item.hscode) {
@@ -894,29 +921,28 @@ export default function DeclarationForm() {
         });
       });
 
-      const submissionData = {
-        ...formData,
-        // Convert null values to 0 for backend where applicable
-        fobamountusdt: formData.fobamountusdt || 0,
-        exchangerate: formData.exchangerate || 0,
-        externalfreight: formData.externalfreight || 0,
-        insuranceCost: formData.insuranceCost || 0,
-        inlandfreight1: formData.inlandfreight1 || 0,
-        djibouticost: formData.djibouticost || 0,
-        othercost1: formData.othercost1 || 0,
-        // Map item data, ensuring quantity/unitCost are not null
-        itemManagementdto: formData.itemManagementdto.map((item) => ({
-          ...item,
-          quantity: item.quantity || 0,
-          unitCost: item.unitCost || 0,
-          taxApplicationdto: item.taxApplicationdto.map((tax) => ({
-            ...tax,
-            value: tax.value || 0,
-            percentage: tax.percentage || 0,
-          })),
-        })),
-        taxApplicationdto: Array.from(allUniqueTaxes.values()),
-      };
+     const submissionData = {
+  ...formData,
+  // Convert empty strings to 0 for backend
+  fobamountusdt: formData.fobamountusdt === '' ? 0 : formData.fobamountusdt,
+  exchangerate: formData.exchangerate === '' ? 0 : formData.exchangerate,
+  externalfreight: formData.externalfreight === '' ? 0 : formData.externalfreight,
+  insuranceCost: formData.insuranceCost === '' ? 0 : formData.insuranceCost,
+  inlandfreight1: formData.inlandfreight1 === '' ? 0 : formData.inlandfreight1,
+  djibouticost: formData.djibouticost === '' ? 0 : formData.djibouticost,
+  othercost1: formData.othercost1 === '' ? 0 : formData.othercost1,
+  // Map item data
+  itemManagementdto: formData.itemManagementdto.map((item) => ({
+    ...item,
+    quantity: item.quantity || 0,
+    unitCost: item.unitCost || 0,
+    taxApplicationdto: item.taxApplicationdto.map((tax) => ({
+      ...tax,
+      value: tax.value || 0,
+      percentage: tax.percentage || 0,
+    })),
+  })),
+};
 
       const response = await fetch(
         `${BASE_API_URL}/api/v1/clerk/declarationInfo/${tinNumber}`,
@@ -956,19 +982,21 @@ export default function DeclarationForm() {
 
       // Reset form after successful submission
       setFormData({
-        custombranchname: "",
-        declarationnumber: "",
-        declarationdispensedate: "",
-        fobamountusdt: null,
-        exchangerate: null,
-        externalfreight: null,
-        insuranceCost: null,
-        inlandfreight1: null,
-        djibouticost: null,
-        othercost1: null,
-        itemManagementdto: [],
+       custombranchname: "",
+  declarationnumber: "",
+  declarationdispensedate: "",
+  fobamountusdt: '',        // Empty string
+  exchangerate: '',         // Empty string
+  externalfreight: '',      // Empty string
+  insuranceCost: '',        // Empty string
+  inlandfreight1: '',       // Empty string
+  djibouticost: '',         // Empty string
+  othercost1: '',           // Empty string
+  itemManagementdto: [],
         // taxApplicationdto: [],
       });
+      router.push("/components/report")
+
       setTinNumber("");
       setPage(1); // Go back to the first page
     } catch (err: any) {
@@ -982,7 +1010,7 @@ export default function DeclarationForm() {
         localStorage.removeItem("token");
         localStorage.removeItem("userId");
         localStorage.removeItem("roles");
-        router.push("/companies");
+        // router.push("/companies");
       }
     } finally {
       setLoading(false);

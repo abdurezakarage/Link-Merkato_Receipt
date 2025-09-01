@@ -13,11 +13,8 @@ interface BankPermitPayload {
   bankreference: string;
   bankservice: number | string;
 }
-interface BankServiceChargeFormProps {
-  declarationNumber?: string;
-  onDeclarationNumberChange?: (value: string) => void;
-}
-export default function BankServiceChargeForm({ declarationNumber, onDeclarationNumberChange }: BankServiceChargeFormProps) {
+
+export default function BankServiceFeeForm() {
   const [formData, setFormData] = useState<BankPermitPayload>({
     bankdate: "",
     bankname: "",
@@ -28,6 +25,7 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
     bankservice: "",
   });
 
+  const [declarationnumber, setDeclarationNumber] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -41,17 +39,17 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
   useEffect(() => {
     const timer = setTimeout(() => {
       if (
-        declarationNumber &&
-        declarationNumber !== lastFetchedDeclarationNumber.current
+        declarationnumber &&
+        declarationnumber !== lastFetchedDeclarationNumber.current
       ) {
         fetchBankData();
       }
-    }, 500); // debounce
+    }, 800); // Increased debounce time
     return () => clearTimeout(timer);
-  }, [declarationNumber]);
+  }, [declarationnumber]);
 
   const fetchBankData = async () => {
-    if (!declarationNumber) return;
+    if (!declarationnumber) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -61,9 +59,8 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
 
     setIsFetchingData(true);
     try {
-      const url = `${BASE_API_URL_local}/api/bank-details/?declaration_number=${declarationNumber}`;
-      console.log("Fetching from URL:", url);
-
+      const url = `${BASE_API_URL_local}/api/bank-details/?declaration_number=${declarationnumber}`;
+      
       const response = await fetch(url, {
         headers: {
           "Content-Type": "application/json",
@@ -72,6 +69,13 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
       });
 
       if (!response.ok) {
+        // If not found, don't show error - just don't autofill
+        if (response.status === 404) {
+          console.log("No data found for this declaration number");
+          setIsFetchingData(false);
+          return;
+        }
+        
         const json = await response.json().catch(() => ({}));
         console.error(
           `Fetch failed. Status: ${response.status} ${response.statusText}.`,
@@ -81,34 +85,66 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
         return;
       }
 
-      // ✅ API gives a flat object
-      const actualData = await response.json();
-      console.log("Fetched bank data:", actualData);
+      const responseData = await response.json();
+      
+      // Check if data array exists and has at least one item
+      if (responseData.data && Array.isArray(responseData.data) && responseData.data.length > 0) {
+        // Extract the first item from the data array
+        const actualData = responseData.data[0];
+        
+        // Update form with response fields
+        setFormData({
+          bankdate: actualData.bankdate || "",
+          bankname: actualData.bankname || "",
+          bankpermitdate: actualData.bankpermitdate || "",
+          permitno: actualData.permitno || "",
+          permitamount:
+            actualData.permitamount !== undefined && actualData.permitamount !== null
+              ? actualData.permitamount.toString()
+              : "",
+          bankreference: actualData.bankreference || "",
+          bankservice:
+            actualData.bankservice !== undefined && actualData.bankservice !== null
+              ? actualData.bankservice.toString()
+              : "",
+        });
 
-      if (!actualData) {
-        console.log("No data found for this declaration number");
-        setIsFetchingData(false);
-        return;
+        lastFetchedDeclarationNumber.current = declarationnumber;
+        
+        // Auto-remove success message after 3 seconds
+        setTimeout(() => setMessage(null), 3000);
+      } else {
+        // Handle flat object response (backward compatibility)
+        const actualData = responseData;
+        
+        if (!actualData || Object.keys(actualData).length === 0) {
+          console.log("No data found for this declaration number");
+          setIsFetchingData(false);
+          return;
+        }
+
+        // Update form with response fields
+        setFormData({
+          bankdate: actualData.bankdate || "",
+          bankname: actualData.bankname || "",
+          bankpermitdate: actualData.bankpermitdate || "",
+          permitno: actualData.permitno || "",
+          permitamount:
+            actualData.permitamount !== undefined && actualData.permitamount !== null
+              ? actualData.permitamount.toString()
+              : "",
+          bankreference: actualData.bankreference || "",
+          bankservice:
+            actualData.bankservice !== undefined && actualData.bankservice !== null
+              ? actualData.bankservice.toString()
+              : "",
+        });
+
+        lastFetchedDeclarationNumber.current = declarationnumber;
+        
+        // Auto-remove success message after 3 seconds
+        setTimeout(() => setMessage(null), 3000);
       }
-
-      // ✅ Update form with response fields
-      setFormData({
-        bankdate: actualData.bankdate || "",
-        bankname: actualData.bankname || "",
-        bankpermitdate: actualData.bankpermitdate || "",
-        permitno: actualData.permitno || "",
-        permitamount:
-          actualData.permitamount !== undefined && actualData.permitamount !== null
-            ? actualData.permitamount.toString()
-            : "",
-        bankreference: actualData.bankreference || "",
-        bankservice:
-          actualData.bankservice !== undefined && actualData.bankservice !== null
-            ? actualData.bankservice.toString()
-            : "",
-      });
-
-      lastFetchedDeclarationNumber.current = declarationNumber;
     } catch (error) {
       console.error("Network or other error during fetch:", error);
     } finally {
@@ -116,10 +152,19 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
     }
   };
 
+  // Add a manual fetch button handler
+  const handleManualFetch = () => {
+    if (declarationnumber) {
+      fetchBankData();
+    } else {
+      setMessage("Please enter a declaration number first");
+    }
+  };
+
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "declarationnumber") {
-      onDeclarationNumberChange && onDeclarationNumberChange(value);
+      setDeclarationNumber(value);
       if (isDuplicate) {
         setIsDuplicate(false);
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
@@ -138,7 +183,7 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
     setIsDuplicate(false);
     setIsSubmitting(true);
 
-    if (!declarationNumber) {
+    if (!declarationnumber) {
       setMessage("Declaration number is required");
       setIsSubmitting(false);
       return;
@@ -164,7 +209,7 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
       };
 
       const response = await fetch(
-        `${BASE_API_URL}/api/v1/clerk/bankInfo/${declarationNumber}`,
+        `${BASE_API_URL}/api/v1/clerk/bankInfo/${declarationnumber}`,
         {
           method: "POST",
           headers: {
@@ -201,6 +246,7 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
       }
 
       setFormSubmitted(true);
+      setMessage("Form submitted successfully! ✅");
 
       // Reset form
       setFormData({
@@ -212,7 +258,7 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
         bankreference: "",
         bankservice: "",
       });
-      onDeclarationNumberChange && onDeclarationNumberChange("");
+      setDeclarationNumber("");
       lastFetchedDeclarationNumber.current = "";
     } catch (error) {
       console.error("Submission error:", error);
@@ -259,29 +305,33 @@ export default function BankServiceChargeForm({ declarationNumber, onDeclaration
               >
                 Declaration Number
               </label>
-              <div className="relative">
-                <input
-                  type="text"
-                  id="declarationnumber"
-                  name="declarationnumber"
-                  value={declarationNumber || ""}
-                  onChange={handleChange}
-                  className={`w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500 ${
-                    isDuplicate
-                      ? "border-red-500 ring-2 ring-red-200"
-                      : "border-gray-300"
-                  }`}
-                  placeholder="D123456"
-                  required
-                />
-                {isFetchingData && (
-                  <div className="absolute right-3 top-3">
-                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
-                  </div>
-                )}
+              <div className="flex gap-2">
+                <div className="relative flex-grow">
+                  <input
+                    type="text"
+                    id="declarationnumber"
+                    name="declarationnumber"
+                    value={declarationnumber}
+                    onChange={handleChange}
+                    className={`w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500 ${
+                      isDuplicate
+                        ? "border-red-500 ring-2 ring-red-200"
+                        : "border-gray-300"
+                    }`}
+                    placeholder="D123456"
+                    required
+                  />
+                  {isFetchingData && (
+                    <div className="absolute right-3 top-3">
+                      <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                    </div>
+                  )}
+                </div>
+             
               </div>
               <p className="text-xs text-gray-500 mt-1">
-                Enter the declaration number to auto-fill the form
+                Enter the declaration number to auto-fill the form. 
+                Form will auto-fill after typing stops, or click Fetch.
               </p>
             </div>
 

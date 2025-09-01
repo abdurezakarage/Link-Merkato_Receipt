@@ -1,0 +1,25 @@
+/* Scoped header cells */
+.tableColumn th:nth-child(4),
+.tableColumn th:nth-child(14),
+.tableColumn th:nth-child(22),
+.tableColumn th:nth-child(34),
+.tableColumn th:nth-child(35),
+.tableColumn th:nth-child(36),
+.tableColumn th:nth-child(37),
+.tableColumn th:nth-child(38) {
+  background-color: yellow;
+  color: black;
+}
+
+/* Scoped data cells */
+.tableRow td:nth-child(4),
+.tableRow td:nth-child(14),
+.tableRow td:nth-child(22),
+.tableRow td:nth-child(34),
+.tableRow td:nth-child(35),
+.tableRow td:nth-child(36),
+.tableRow td:nth-child(37),
+.tableRow td:nth-child(38) {
+  background-color: yellow;
+  color: black;
+}

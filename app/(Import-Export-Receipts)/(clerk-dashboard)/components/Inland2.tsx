@@ -1,6 +1,9 @@
 "use client";
-import { useState, FormEvent, ChangeEvent, useEffect } from "react";
+import { useState, FormEvent, ChangeEvent, useEffect, useRef } from "react";
 import { BASE_API_URL } from "../../import-api/ImportApi";
+import { BASE_API_URL_local } from "../../import-api/ImportApi";
+
+
 
 interface TransportFeePayload {
   inlandfreight2: number | "";
@@ -19,19 +22,39 @@ export default function Inland2() {
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
+  const [isFetchingData, setIsFetchingData] = useState<boolean>(false);
+  
+  // Use a ref to track the last fetched declaration number
+  const lastFetchedDeclarationNumber = useRef<string>("");
 
   useEffect(() => {
-    if (!declarationnumber) return;
+    if (!declarationnumber) {
+      // Clear form if declaration number is empty
+      setFormData({
+        inlandfreight2: "",
+        loadingcost: "",
+        laodingvat: "",
+      });
+      lastFetchedDeclarationNumber.current = "";
+      return;
+    }
+
+    // Don't fetch if we already have data for this declaration number
+    if (declarationnumber === lastFetchedDeclarationNumber.current) {
+      return;
+    }
 
     const timeout = setTimeout(async () => {
       try {
         const token = localStorage.getItem("token");
         if (!token) return;
 
+        setIsFetchingData(true);
         const res = await fetch(
-          `${BASE_API_URL}/api/v1/clerk/inland2/${declarationnumber}`,
+          `${BASE_API_URL_local}/api/inland-freight/?declaration_number=${declarationnumber}`,
           {
             headers: { Authorization: `Bearer ${token}` },
+
           }
         );
 
@@ -42,18 +65,29 @@ export default function Inland2() {
             loadingcost: data.loadingcost || "",
             laodingvat: data.laodingvat || "",
           });
+          lastFetchedDeclarationNumber.current = declarationnumber;
         } else {
-          // Clear form if no data found
+          // Clear form if no data found or error
           setFormData({
             inlandfreight2: "",
             loadingcost: "",
             laodingvat: "",
           });
+          lastFetchedDeclarationNumber.current = "";
         }
       } catch (err) {
         console.error("Error fetching inland2 info:", err);
+        // Clear form on error
+        setFormData({
+          inlandfreight2: "",
+          loadingcost: "",
+          laodingvat: "",
+        });
+        lastFetchedDeclarationNumber.current = "";
+      } finally {
+        setIsFetchingData(false);
       }
-    }, 1000); // debounce 600ms
+    }, 600); // debounce 600ms
 
     return () => clearTimeout(timeout);
   }, [declarationnumber]);
@@ -134,6 +168,7 @@ export default function Inland2() {
         laodingvat: "",
       });
       setDeclarationNumber("");
+      lastFetchedDeclarationNumber.current = "";
     } catch (error) {
       if (error instanceof TypeError && error.message === "Failed to fetch") {
         setMessage("Network error: Could not connect to the server. ❌");
@@ -176,16 +211,26 @@ export default function Inland2() {
               >
                 Declaration Number
               </label>
-              <input
-                type="text"
-                id="declarationnumber"
-                name="declarationnumber"
-                value={declarationnumber}
-                onChange={(e) => setDeclarationNumber(e.target.value)}
-                className="w-full border rounded px-3 py-2"
-                placeholder="D123456"
-                required
-              />
+              <div className="relative">
+                <input
+                  type="text"
+                  id="declarationnumber"
+                  name="declarationnumber"
+                  value={declarationnumber}
+                  onChange={(e) => setDeclarationNumber(e.target.value)}
+                  className="w-full border rounded px-3 py-2"
+                  placeholder="D123456"
+                  required
+                />
+                {isFetchingData && (
+                  <div className="absolute right-3 top-3">
+                    <div className="animate-spin rounded-full h-4 w-4 border-b-2 border-blue-500"></div>
+                  </div>
+                )}
+              </div>
+              <p className="text-xs text-gray-500 mt-1">
+                Enter the declaration number to auto-fill the form
+              </p>
             </div>
 
             {/* Inland Freight */}
@@ -255,7 +300,10 @@ export default function Inland2() {
               ✅ Form Submitted Successfully!
             </h2>
             <button
-              onClick={() => setFormSubmitted(false)}
+              onClick={() => {
+                setFormSubmitted(false);
+                setMessage(null);
+              }}
               className="w-full bg-blue-600 text-white px-6 py-3 rounded hover:bg-blue-700 transition"
             >
               Submit Another Transport Fee

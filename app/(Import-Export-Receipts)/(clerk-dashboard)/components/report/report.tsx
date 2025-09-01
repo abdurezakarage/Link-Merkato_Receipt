@@ -2,12 +2,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
 import { ChevronDown, ChevronUp, Printer, Search } from "lucide-react";
-import { BASE_API_URL } from "../../import-api/ImportApi";
-import { costBuildUPExcel } from "./costBuildUPExcel"; // Adjust the path as needed
+import { BASE_API_URL } from "@/app/(Import-Export-Receipts)/import-api/ImportApi";
+// import { costBuildUPExcel } from "./costBuildUPExcel"; 
 import styles from "./Accountant.module.css";
-import VatableItems from "./VatableItems";
-import NonVatableItems from "./nonVatable";
-import CostSheet from "./costSheeet";
+// import VatableItems from "./VatableItems";
+// import NonVatableItems from "./nonVatable";
+// import CostSheet from "./costSheeet";
 // import StockRecord from "./costSheeet";
 
 
@@ -111,7 +111,7 @@ export default function AllTaxViewer() {
         const userId = localStorage.getItem("userId");
 
         const res = await axios.get<TaxData[]>(
-          `${BASE_API_URL}/api/v1/accountant/alltax/${userId}`,
+          `${BASE_API_URL}/api/v1/clerk/alltax/${userId}`,
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -595,7 +595,7 @@ export default function AllTaxViewer() {
                         </button>
 
                         {/* Excel download button */}
-                        <button
+                        {/* <button
                           onClick={(e) => {
                             e.stopPropagation();
                             costBuildUPExcel(declaration);
@@ -620,7 +620,7 @@ export default function AllTaxViewer() {
                           <span className="text-xs hidden md:inline">
                             Excel
                           </span>
-                        </button>
+                        </button> */}
                       </div>
 
                       {/* Items Section */}
@@ -1189,16 +1189,16 @@ export default function AllTaxViewer() {
                         </div>
 
                         {/* Add the components here */}
-                           <CostSheet
+                           {/* <CostSheet
   items={declaration.iteminfo || []}
   declarationNumber={declaration.declarationNumber}
   companyName={
     declaration.companyInfo?.companyname ||
     "Unknown Company"
   }
-/>
+/> */}
                       
-            <VatableItems
+            {/* <VatableItems
             items={declaration.iteminfo}
             declarationNumber={declaration.declarationNumber}
             companyName={
@@ -1207,9 +1207,8 @@ export default function AllTaxViewer() {
             }
             totalvat={declaration.totalvat}
             companyTin={declaration.companyInfo?.tinnumber || ""}
-        // You need to add this to your interface
-          />
-             <NonVatableItems
+          /> */}
+             {/* <NonVatableItems
             items={declaration.iteminfo}
             declarationNumber={declaration.declarationNumber}
             companyName={
@@ -1217,8 +1216,7 @@ export default function AllTaxViewer() {
               "Unknown Company"
             }
             companyTin={declaration.companyInfo?.tinnumber || ""}
-            // You need to add this to your interface
-          />
+          /> */}
              {/* <StockRecord
   items={declaration.iteminfo}
   declarationNumber={String(declaration.declarationNumber)}

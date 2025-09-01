@@ -49,11 +49,7 @@ export default function VatableItems({
   const [error, setError] = useState<string | null>(null);
   const [reportData, setReportData] = useState<ReportItem[]>([]);
 
-  // Filter items with VAT > 0
-  const vatItems = items.filter(item => {
-    const vatAmount = item.taxAmountPerItem?.[0]?.vat;
-    return vatAmount !== null && vatAmount !== undefined && vatAmount > 0;
-  });
+ 
 
   useEffect(() => {
     const fetchReport = async () => {
@@ -163,7 +159,6 @@ export default function VatableItems({
     }, 250);
   };
 
-  if (vatItems.length === 0) return null;
   if (loading) return <div className="p-4">Loading VAT report data...</div>;
   if (error) return <div className="p-4 text-red-500">Error: {error}</div>;
 
