@@ -182,7 +182,7 @@ export default function BankViewer({
           console.log(`Item ${index} has 'documents' field`);
           return {
            
-            bankdate: item.bankname || "",
+            bankdate: item.bankdate || "",
             bankname: item.bankname || "",
             bankpermitdate: item.bankpermitdate || "",
             permitno: item. permitno|| "",
@@ -573,7 +573,7 @@ export default function BankViewer({
                     <div><span className="font-medium">Bank Permit Date:</span> {fetchedDocuments[0].bankpermitdate}</div>
                     <div><span className="font-medium">Permit No:</span> {fetchedDocuments[0].permitno}</div>
                     <div><span className="font-medium">Permit Amount:</span> {fetchedDocuments[0].permitamount}</div>
-                    <div><span className="font-medium">Permit Amount:</span> {fetchedDocuments[0].bankservice}</div>
+                    <div><span className="font-medium">Bank Service:</span> {fetchedDocuments[0].bankservice}</div>
                     
                   </div>
                 </div>
