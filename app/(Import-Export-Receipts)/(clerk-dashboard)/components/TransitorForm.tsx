@@ -1,10 +1,13 @@
 "use client";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
 import { BASE_API_URL } from "../../import-api/ImportApi";
 import { BASE_API_URL_local } from "../../import-api/ImportApi";
+import ClearanceViewer from '../custom-transitor/clearanceViewer';
+interface TransitorFormProps {
+  declarationNumber?: string;
+  onDeclarationNumberChange?: (value: string) => void;
+}
 
 interface ClearanceFeePayload {
   receiptnumber: string;
@@ -17,7 +20,7 @@ interface ClearanceFeePayload {
   amountbeforetax: number | string;
 }
 
-export default function ClearanceFeeForm() {
+export default function ClearanceFeeForm({ declarationNumber, onDeclarationNumberChange }: TransitorFormProps) {
   const [formData, setFormData] = useState<ClearanceFeePayload>({
     receiptnumber: "",
     receiptdate: "",
@@ -29,7 +32,6 @@ export default function ClearanceFeeForm() {
     amountbeforetax: '',
   });
 
-  const [declarationnumber, setDeclarationNumber] = useState<string>("");
   const [isWithholdingTaxApplicable, setIsWithholdingTaxApplicable] =
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -44,16 +46,16 @@ export default function ClearanceFeeForm() {
   // Add useEffect to fetch data when declarationnumber changes
   useEffect(() => {
     const timer = setTimeout(() => {
-      if (declarationnumber && declarationnumber !== lastFetchedDeclarationNumber.current) {
+      if (declarationNumber && declarationNumber !== lastFetchedDeclarationNumber.current) {
         fetchClearanceData();
       }
     }, 500); // Debounce to avoid too many API calls
 
     return () => clearTimeout(timer);
-  }, [declarationnumber]);
+  }, [declarationNumber]);
 
   const fetchClearanceData = async () => {
-    if (!declarationnumber) {
+    if (!declarationNumber) {
       return;
     }
 
@@ -65,7 +67,7 @@ export default function ClearanceFeeForm() {
 
     setIsFetchingData(true);
     try {
-      const url = `${BASE_API_URL_local}/api/transistor-details/?declaration_number=${declarationnumber}`;
+      const url = `${BASE_API_URL_local}/api/transistor-details/?declaration_number=${declarationNumber}`;
       console.log("Fetching from URL:", url);
       const response = await fetch(url, {
         headers: {
@@ -108,14 +110,28 @@ export default function ClearanceFeeForm() {
         return;
       }
 
-      // Update the form data with fetched values
+      // Normalize and update the form data with fetched values
       setFormData({
         receiptnumber: actualData.receiptnumber || "",
-        receiptdate: actualData.receiptdate || "",
+        receiptdate: (() => {
+          const raw = actualData.receiptdate as string | undefined;
+          if (!raw) return "";
+          const parsedKnown = parse(raw, "dd-MM-yyyy", new Date());
+          if (!isNaN(parsedKnown.getTime())) return format(parsedKnown, "dd-MM-yyyy");
+          const iso = new Date(raw);
+          return isNaN(iso.getTime()) ? "" : format(iso, "dd-MM-yyyy");
+        })(),
         receiptmachinenumber: actualData.receiptmachinenumber || "",
         receiptcalendar: actualData.receiptcalendar || "",
         withholdingtaxreceiptno: actualData.withholdingtaxreceiptno || "",
-        withholdingtaxReceiptdate: actualData.withholdingtaxReceiptdate || "",
+        withholdingtaxReceiptdate: (() => {
+          const raw = actualData.withholdingtaxReceiptdate as string | undefined;
+          if (!raw) return "";
+          const parsedKnown = parse(raw, "dd-MM-yyyy", new Date());
+          if (!isNaN(parsedKnown.getTime())) return format(parsedKnown, "dd-MM-yyyy");
+          const iso = new Date(raw);
+          return isNaN(iso.getTime()) ? "" : format(iso, "dd-MM-yyyy");
+        })(),
         withholdingamount: actualData.withholdingamount !== undefined && actualData.withholdingamount !== null 
           ? actualData.withholdingamount.toString() 
           : '',
@@ -128,7 +144,7 @@ export default function ClearanceFeeForm() {
       setIsWithholdingTaxApplicable(!!actualData.withholdingtaxreceiptno);
       
       // Update last fetched declaration number
-      lastFetchedDeclarationNumber.current = declarationnumber;
+      lastFetchedDeclarationNumber.current = declarationNumber;
     } catch (error) {
       console.error("Network or other error during fetch:", error);
     } finally {
@@ -142,7 +158,9 @@ export default function ClearanceFeeForm() {
     const { name, value, type } = e.target;
 
     if (name === "declarationnumber") {
-      setDeclarationNumber(value);
+      if (onDeclarationNumberChange) {
+        onDeclarationNumberChange(value);
+      }
       if (isDuplicate) {
         setIsDuplicate(false);
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
@@ -170,7 +188,7 @@ export default function ClearanceFeeForm() {
     setIsSubmitting(true);
     setIsDuplicate(false);
 
-    if (!declarationnumber) {
+    if (!declarationNumber) {
       setMessage("Declaration number is required");
       setIsSubmitting(false);
       return;
@@ -194,7 +212,7 @@ export default function ClearanceFeeForm() {
         amountbeforetax: formData.amountbeforetax ? parseFloat(formData.amountbeforetax as string) : 0,
       };
 
-      const apiUrl = `${BASE_API_URL}/api/v1/clerk/clearanceInfo/${declarationnumber}`;
+      const apiUrl = `${BASE_API_URL}/api/v1/clerk/clearanceInfo/${declarationNumber}`;
 
       const response = await fetch(apiUrl, {
         method: "POST",
@@ -248,7 +266,9 @@ export default function ClearanceFeeForm() {
         withholdingamount: '',
         amountbeforetax: '',
       });
-      setDeclarationNumber("");
+      if (onDeclarationNumberChange) {
+        onDeclarationNumberChange("");
+      }
       setIsWithholdingTaxApplicable(false);
       lastFetchedDeclarationNumber.current = "";
     } catch (error) {
@@ -298,7 +318,7 @@ export default function ClearanceFeeForm() {
                   type="text"
                   id="declarationnumber"
                   name="declarationnumber"
-                  value={declarationnumber}
+                  value={declarationNumber || ""}
                   onChange={handleChange}
                   className={`w-full border rounded px-3 py-2 ${
                     isDuplicate
@@ -407,22 +427,25 @@ export default function ClearanceFeeForm() {
                   >
                     Withholding Tax Receipt Date
                   </label>
-                  <DatePicker
+                  <input
+                    type="date"
                     id="withholdingtaxReceiptdate"
-                    selected={
-                      formData.withholdingtaxReceiptdate
-                        ? parse(formData.withholdingtaxReceiptdate, "dd-MM-yyyy", new Date())
-                        : null
-                    }
-                    onChange={(date: Date | null) => {
-                      const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
+                    name="withholdingtaxReceiptdate"
+                    value={(() => {
+                      const raw = formData.withholdingtaxReceiptdate;
+                      if (!raw) return "";
+                      const parsed = parse(raw, "dd-MM-yyyy", new Date());
+                      return isNaN(parsed.getTime()) ? "" : format(parsed, "yyyy-MM-dd");
+                    })()}
+                    onChange={(e) => {
+                      const newValue = e.target.value; // yyyy-MM-dd
+                      const parsed = newValue ? parse(newValue, "yyyy-MM-dd", new Date()) : null;
+                      const formatted = parsed && !isNaN(parsed.getTime()) ? format(parsed, "dd-MM-yyyy") : "";
                       setFormData((prev) => ({
                         ...prev,
-                        withholdingtaxReceiptdate: formattedDate,
+                        withholdingtaxReceiptdate: formatted,
                       }));
                     }}
-                    dateFormat="dd/MM/yyyy"
-                    placeholderText="dd/mm/yyyy"
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
                 </div>
@@ -488,22 +511,25 @@ export default function ClearanceFeeForm() {
               <label htmlFor="receiptdate" className="block font-medium mb-1">
                 Receipt Date
               </label>
-              <DatePicker
+              <input
+                type="date"
                 id="receiptdate"
-                selected={
-                  formData.receiptdate
-                    ? parse(formData.receiptdate, "dd-MM-yyyy", new Date())
-                    : null
-                }
-                onChange={(date: Date | null) => {
-                  const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
+                name="receiptdate"
+                value={(() => {
+                  const raw = formData.receiptdate;
+                  if (!raw) return "";
+                  const parsed = parse(raw, "dd-MM-yyyy", new Date());
+                  return isNaN(parsed.getTime()) ? "" : format(parsed, "yyyy-MM-dd");
+                })()}
+                onChange={(e) => {
+                  const newValue = e.target.value; // yyyy-MM-dd
+                  const parsed = newValue ? parse(newValue, "yyyy-MM-dd", new Date()) : null;
+                  const formatted = parsed && !isNaN(parsed.getTime()) ? format(parsed, "dd-MM-yyyy") : "";
                   setFormData((prev) => ({
                     ...prev,
-                    receiptdate: formattedDate,
+                    receiptdate: formatted,
                   }));
                 }}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="dd/mm/yyyy"
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>
@@ -535,6 +561,12 @@ export default function ClearanceFeeForm() {
           </div>
         )}
       </div>
+      {/* Add ClearanceViewer below the form if declarationnumber is present
+      {declarationnumber && (
+        <div className="mt-8">
+          <ClearanceViewer declarationNumber={declarationnumber} />
+        </div>
+      )} */}
     </div>
   );
 }

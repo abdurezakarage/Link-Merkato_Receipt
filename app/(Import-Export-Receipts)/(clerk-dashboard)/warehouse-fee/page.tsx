@@ -11,6 +11,38 @@ interface WarehouseDocument {
   content_type: string;
 }
 
+interface FetchedDocument {
+  receiptnumber: string;
+  receiptdate: string;
+  receiptmachinenumber: string;
+  receiptcalendar: string;
+  withholdingtaxreceiptno: string;
+  withholdingtaxReceiptdate: string;
+  withholdingamount: string;
+  amountbeforetax: string;
+  documents: {
+    id: number;
+    company_tin: string;
+    declaration_number: string;
+    uploaded_at: string;
+    status: string;
+    main_file_url: string;
+    main_filename: string;
+    main_content_type: string;
+    main_attachment_url: string | null;
+    main_attachment_filename: string | null;
+    main_attachment_content_type: string | null;
+    has_main_attachment: boolean;
+    withholding_file_url: string | null;
+    withholding_filename: string | null;
+    withholding_content_type: string | null;
+    withholding_attachment_url: string | null;
+    withholding_attachment_filename: string | null;
+    withholding_attachment_content_type: string | null;
+    has_withholding_attachment: boolean;
+  };
+}
+
 interface WarehouseData {
   receiptnumber: string;
   receiptdate: string;
@@ -33,6 +65,7 @@ interface WarehouseResponse {
 export default function MainLayout() {
   const [declarationNumber, setDeclarationNumber] = useState<string>("");
   const [warehouseDocument, setWarehouseDocument] = useState<WarehouseDocument | null>(null);
+  const [fetchedDocuments, setFetchedDocuments] = useState<FetchedDocument[]>([]);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -40,6 +73,7 @@ export default function MainLayout() {
     const fetchWarehouseData = async () => {
       if (!declarationNumber) {
         setWarehouseDocument(null);
+        setFetchedDocuments([]);
         setError(null);
         return;
       }
@@ -68,11 +102,131 @@ export default function MainLayout() {
           throw new Error(errorData.message || `HTTP error! status: ${response.status}`);
         }
 
-        const data: WarehouseResponse = await response.json();
+        const responseData = await response.json();
+        console.log("Fetched warehouse data:", responseData);
+
+        // Handle different response structures
+        let dataArray = [];
         
-        // Extract the warehouse document from the first item in the data array
-        if (data.count > 0 && data.data[0]?.warehouse_document) {
-          setWarehouseDocument(data.data[0].warehouse_document);
+        // Check if response has the new structure with 'data' array
+        if (responseData.data && Array.isArray(responseData.data)) {
+          dataArray = responseData.data;
+        } 
+        // Check if response has the old structure with 'warehouse_document'
+        else if (responseData.count > 0 && responseData.data && Array.isArray(responseData.data)) {
+          dataArray = responseData.data;
+        }
+        // If response is directly an array
+        else if (Array.isArray(responseData)) {
+          dataArray = responseData;
+        }
+        
+        // Check if data array exists and has at least one item
+        if (!Array.isArray(dataArray) || dataArray.length === 0) {
+          console.log("No warehouse documents found for this declaration number");
+          setWarehouseDocument(null);
+          setFetchedDocuments([]);
+          setLoading(false);
+          return;
+        }
+
+        // Transform the data to match our expected structure
+        const transformedData = dataArray.map((item: any) => {
+          console.log("Processing item:", item);
+          
+          // If the item has a 'documents' field (new structure)
+          if (item.documents) {
+            console.log("Found documents field:", item.documents);
+            return {
+              receiptnumber: item.receiptnumber || "",
+              receiptdate: item.receiptdate || "",
+              receiptmachinenumber: item.receiptmachinenumber || "",
+              receiptcalendar: item.receiptcalendar || "",
+              withholdingtaxreceiptno: item.withholdingtaxreceiptno || "",
+              withholdingtaxReceiptdate: item.withholdingtaxReceiptdate || "",
+              withholdingamount: item.withholdingamount || "",
+              amountbeforetax: item.amountbeforetax || "",
+              documents: item.documents
+            };
+          }
+          // If the item has a 'warehouse_document' field (old structure)
+          else if (item.warehouse_document) {
+            console.log("Found warehouse_document field:", item.warehouse_document);
+            return {
+              receiptnumber: item.receiptnumber || "",
+              receiptdate: item.receiptdate || "",
+              receiptmachinenumber: item.receiptmachinenumber || "",
+              receiptcalendar: item.receiptcalendar || "",
+              withholdingtaxreceiptno: item.withholdingtaxreceiptno || "",
+              withholdingtaxReceiptdate: item.withholdingtaxReceiptdate || "",
+              withholdingamount: item.withholdingamount || "",
+              amountbeforetax: item.amountbeforetax || "",
+              documents: {
+                id: item.warehouse_document.id || 0,
+                company_tin: item.warehouse_document.company_tin || "",
+                declaration_number: item.declaration_number || "",
+                uploaded_at: item.warehouse_document.uploaded_at || "",
+                status: item.warehouse_document.status || "",
+                main_file_url: item.warehouse_document.file || "",
+                main_filename: item.warehouse_document.filename || "",
+                main_content_type: item.warehouse_document.content_type || "",
+                main_attachment_url: null,
+                main_attachment_filename: null,
+                main_attachment_content_type: null,
+                has_main_attachment: false,
+                withholding_file_url: null,
+                withholding_filename: null,
+                withholding_content_type: null,
+                withholding_attachment_url: null,
+                withholding_attachment_filename: null,
+                withholding_attachment_content_type: null,
+                has_withholding_attachment: false
+              }
+            };
+          }
+          // If the item is the document itself
+          else {
+            console.log("Item appears to be a document itself:", item);
+            return {
+              receiptnumber: "",
+              receiptdate: "",
+              receiptmachinenumber: "",
+              receiptcalendar: "",
+              withholdingtaxreceiptno: "",
+              withholdingtaxReceiptdate: "",
+              withholdingamount: "",
+              amountbeforetax: "",
+              documents: {
+                id: item.id || 0,
+                company_tin: item.company_tin || "",
+                declaration_number: declarationNumber,
+                uploaded_at: item.uploaded_at || "",
+                status: item.status || "",
+                main_file_url: item.main_file_url || item.file || "",
+                main_filename: item.main_filename || item.filename || "",
+                main_content_type: item.main_content_type || item.content_type || "",
+                main_attachment_url: item.main_attachment_url || null,
+                main_attachment_filename: item.main_attachment_filename || null,
+                main_attachment_content_type: item.main_attachment_content_type || null,
+                has_main_attachment: item.has_main_attachment || false,
+                withholding_file_url: item.withholding_file_url || null,
+                withholding_filename: item.withholding_filename || null,
+                withholding_content_type: item.withholding_content_type || null,
+                withholding_attachment_url: item.withholding_attachment_url || null,
+                withholding_attachment_filename: item.withholding_attachment_filename || null,
+                withholding_attachment_content_type: item.withholding_attachment_content_type || null,
+                has_withholding_attachment: item.has_withholding_attachment || false
+              }
+            };
+          }
+        });
+
+        console.log("Transformed data:", transformedData);
+        setFetchedDocuments(transformedData);
+        
+        // For backward compatibility, also set the warehouse document if it exists
+        if (dataArray[0]?.warehouse_document) {
+          setWarehouseDocument(dataArray[0].warehouse_document);
         } else {
           setWarehouseDocument(null);
         }
@@ -80,6 +234,7 @@ export default function MainLayout() {
         console.error("Error fetching warehouse data:", err);
         setError(err.message || "An unexpected error occurred");
         setWarehouseDocument(null);
+        setFetchedDocuments([]);
       } finally {
         setLoading(false);
       }
@@ -133,6 +288,7 @@ export default function MainLayout() {
           <WarehouseViewer 
             warehouseDocument={warehouseDocument || undefined}
             declarationNumber={declarationNumber}
+            fetchedDocuments={fetchedDocuments}
           />
         )}
       </div>

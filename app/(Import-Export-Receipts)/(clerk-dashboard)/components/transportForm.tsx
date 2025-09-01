@@ -1,6 +1,4 @@
 "use client";
-import DatePicker from "react-datepicker";
-import "react-datepicker/dist/react-datepicker.css";
 import { useState, FormEvent, ChangeEvent, useEffect, useRef } from "react";
 import { format, parse } from "date-fns";
 import { BASE_API_URL } from "../../import-api/ImportApi";
@@ -18,7 +16,15 @@ interface TransportFeePayload {
   amountbeforetax: number | string;
 }
 
-export default function TransportFeeForm() {
+interface TransportFormProps {
+  declarationNumber?: string;
+  onDeclarationNumberChange?: (value: string) => void;
+}
+
+export default function TransportFeeForm({
+  declarationNumber = "",
+  onDeclarationNumberChange,
+}: TransportFormProps) {
   const [formData, setFormData] = useState<TransportFeePayload>({
     receiptnumber: "",
     receiptdate: "",
@@ -30,7 +36,7 @@ export default function TransportFeeForm() {
     amountbeforetax: '',
   });
 
-  const [declarationnumber, setDeclarationNumber] = useState<string>("");
+  const [declarationnumber, setDeclarationNumber] = useState<string>(declarationNumber);
   const [isWithholdingTaxApplicable, setIsWithholdingTaxApplicable] =
     useState<boolean>(false);
   const [message, setMessage] = useState<string | null>(null);
@@ -41,6 +47,11 @@ export default function TransportFeeForm() {
   
   // Use a ref to track the last fetched declaration number
   const lastFetchedDeclarationNumber = useRef<string>("");
+
+  // Keep local state in sync with parent-provided declarationNumber
+  useEffect(() => {
+    setDeclarationNumber(declarationNumber);
+  }, [declarationNumber]);
 
   // Add useEffect to fetch data when declarationnumber changes
   useEffect(() => {
@@ -110,19 +121,33 @@ export default function TransportFeeForm() {
         return;
       }
 
-      // Update the form data with fetched values
+      // Normalize and update the form data with fetched values
       setFormData({
         receiptnumber: actualData.receiptnumber || "",
-        receiptdate: actualData.receiptdate || "",
+        receiptdate: (() => {
+          const raw = actualData.receiptdate as string | undefined;
+          if (!raw) return "";
+          const parsedKnown = parse(raw, "dd-MM-yyyy", new Date());
+          if (!isNaN(parsedKnown.getTime())) return format(parsedKnown, "dd-MM-yyyy");
+          const iso = new Date(raw);
+          return isNaN(iso.getTime()) ? "" : format(iso, "dd-MM-yyyy");
+        })(),
         receiptmachinenumber: actualData.receiptmachinenumber || "",
         receiptcalendar: actualData.receiptcalendar || "",
         withholdingtaxreceiptno: actualData.withholdingtaxreceiptno || "",
-        withholdingtaxReceiptdate: actualData.withholdingtaxReceiptdate || "",
-        withholdingamount: actualData.withholdingamount !== undefined && actualData.withholdingamount !== null 
-          ? actualData.withholdingamount.toString() 
+        withholdingtaxReceiptdate: (() => {
+          const raw = actualData.withholdingtaxReceiptdate as string | undefined;
+          if (!raw) return "";
+          const parsedKnown = parse(raw, "dd-MM-yyyy", new Date());
+          if (!isNaN(parsedKnown.getTime())) return format(parsedKnown, "dd-MM-yyyy");
+          const iso = new Date(raw);
+          return isNaN(iso.getTime()) ? "" : format(iso, "dd-MM-yyyy");
+        })(),
+        withholdingamount: actualData.withholdingamount !== undefined && actualData.withholdingamount !== null
+          ? actualData.withholdingamount.toString()
           : '',
-        amountbeforetax: actualData.amountbeforetax !== undefined && actualData.amountbeforetax !== null 
-          ? actualData.amountbeforetax.toString() 
+        amountbeforetax: actualData.amountbeforetax !== undefined && actualData.amountbeforetax !== null
+          ? actualData.amountbeforetax.toString()
           : '',
       });
 
@@ -145,6 +170,9 @@ export default function TransportFeeForm() {
 
     if (name === "declarationnumber") {
       setDeclarationNumber(value);
+      if (onDeclarationNumberChange) {
+        onDeclarationNumberChange(value);
+      }
       if (isDuplicate) {
         setIsDuplicate(false);
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
@@ -251,6 +279,9 @@ export default function TransportFeeForm() {
         amountbeforetax: '',
       });
       setDeclarationNumber("");
+      if (onDeclarationNumberChange) {
+        onDeclarationNumberChange("");
+      }
       setIsWithholdingTaxApplicable(false);
       lastFetchedDeclarationNumber.current = "";
     } catch (error) {
@@ -409,24 +440,28 @@ export default function TransportFeeForm() {
                   >
                     Withholding Tax Receipt Date
                   </label>
-                  <DatePicker
+                  <input
+                    type="date"
                     id="withholdingtaxReceiptdate"
-                    selected={
-                      formData.withholdingtaxReceiptdate
-                        ? parse(formData.withholdingtaxReceiptdate, "dd-MM-yyyy", new Date())
-                        : null
-                    }
-                    onChange={(date: Date | null) => {
-                      const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
+                    name="withholdingtaxReceiptdate"
+                    value={(() => {
+                      const raw = formData.withholdingtaxReceiptdate;
+                      if (!raw) return "";
+                      const parsed = parse(raw, "dd-MM-yyyy", new Date());
+                      return isNaN(parsed.getTime()) ? "" : format(parsed, "yyyy-MM-dd");
+                    })()}
+                    onChange={(e) => {
+                      const newValue = e.target.value; // yyyy-MM-dd from native input
+                      const parsed = newValue ? parse(newValue, "yyyy-MM-dd", new Date()) : null;
+                      const formatted = parsed && !isNaN(parsed.getTime()) ? format(parsed, "dd-MM-yyyy") : "";
                       setFormData((prev) => ({
                         ...prev,
-                        withholdingtaxReceiptdate: formattedDate,
+                        withholdingtaxReceiptdate: formatted,
                       }));
                     }}
-                    dateFormat="dd/MM/yyyy"
-                    placeholderText="dd/mm/yyyy"
                     className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
                   />
+
                 </div>
               </>
             )}
@@ -490,22 +525,25 @@ export default function TransportFeeForm() {
               <label htmlFor="receiptdate" className="block font-medium mb-1">
                 Receipt Date
               </label>
-              <DatePicker
+              <input
+                type="date"
                 id="receiptdate"
-                selected={
-                  formData.receiptdate
-                    ? parse(formData.receiptdate, "dd-MM-yyyy", new Date())
-                    : null
-                }
-                onChange={(date: Date | null) => {
-                  const formattedDate = date ? format(date, "dd-MM-yyyy") : "";
+                name="receiptdate"
+                value={(() => {
+                  const raw = formData.receiptdate;
+                  if (!raw) return "";
+                  const parsed = parse(raw, "dd-MM-yyyy", new Date());
+                  return isNaN(parsed.getTime()) ? "" : format(parsed, "yyyy-MM-dd");
+                })()}
+                onChange={(e) => {
+                  const newValue = e.target.value; // yyyy-MM-dd
+                  const parsed = newValue ? parse(newValue, "yyyy-MM-dd", new Date()) : null;
+                  const formatted = parsed && !isNaN(parsed.getTime()) ? format(parsed, "dd-MM-yyyy") : "";
                   setFormData((prev) => ({
                     ...prev,
-                    receiptdate: formattedDate,
+                    receiptdate: formatted,
                   }));
                 }}
-                dateFormat="dd/MM/yyyy"
-                placeholderText="dd/mm/yyyy"
                 className="w-full border border-gray-300 rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500"
               />
             </div>

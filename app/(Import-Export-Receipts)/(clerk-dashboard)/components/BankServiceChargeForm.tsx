@@ -13,8 +13,11 @@ interface BankPermitPayload {
   bankreference: string;
   bankservice: number | string;
 }
-
-export default function BankServiceFeeForm() {
+interface BankServiceChargeFormProps {
+  declarationNumber?: string;
+  onDeclarationNumberChange?: (value: string) => void;
+}
+export default function BankServiceChargeForm({ declarationNumber, onDeclarationNumberChange }: BankServiceChargeFormProps) {
   const [formData, setFormData] = useState<BankPermitPayload>({
     bankdate: "",
     bankname: "",
@@ -25,7 +28,6 @@ export default function BankServiceFeeForm() {
     bankservice: "",
   });
 
-  const [declarationnumber, setDeclarationNumber] = useState("");
   const [message, setMessage] = useState<string | null>(null);
   const [formSubmitted, setFormSubmitted] = useState(false);
   const [isDuplicate, setIsDuplicate] = useState(false);
@@ -39,17 +41,17 @@ export default function BankServiceFeeForm() {
   useEffect(() => {
     const timer = setTimeout(() => {
       if (
-        declarationnumber &&
-        declarationnumber !== lastFetchedDeclarationNumber.current
+        declarationNumber &&
+        declarationNumber !== lastFetchedDeclarationNumber.current
       ) {
         fetchBankData();
       }
     }, 500); // debounce
     return () => clearTimeout(timer);
-  }, [declarationnumber]);
+  }, [declarationNumber]);
 
   const fetchBankData = async () => {
-    if (!declarationnumber) return;
+    if (!declarationNumber) return;
 
     const token = localStorage.getItem("token");
     if (!token) {
@@ -59,7 +61,7 @@ export default function BankServiceFeeForm() {
 
     setIsFetchingData(true);
     try {
-      const url = `${BASE_API_URL_local}/api/bank-details/?declaration_number=${declarationnumber}`;
+      const url = `${BASE_API_URL_local}/api/bank-details/?declaration_number=${declarationNumber}`;
       console.log("Fetching from URL:", url);
 
       const response = await fetch(url, {
@@ -106,7 +108,7 @@ export default function BankServiceFeeForm() {
             : "",
       });
 
-      lastFetchedDeclarationNumber.current = declarationnumber;
+      lastFetchedDeclarationNumber.current = declarationNumber;
     } catch (error) {
       console.error("Network or other error during fetch:", error);
     } finally {
@@ -117,7 +119,7 @@ export default function BankServiceFeeForm() {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "declarationnumber") {
-      setDeclarationNumber(value);
+      onDeclarationNumberChange && onDeclarationNumberChange(value);
       if (isDuplicate) {
         setIsDuplicate(false);
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");
@@ -136,7 +138,7 @@ export default function BankServiceFeeForm() {
     setIsDuplicate(false);
     setIsSubmitting(true);
 
-    if (!declarationnumber) {
+    if (!declarationNumber) {
       setMessage("Declaration number is required");
       setIsSubmitting(false);
       return;
@@ -162,7 +164,7 @@ export default function BankServiceFeeForm() {
       };
 
       const response = await fetch(
-        `${BASE_API_URL}/api/v1/clerk/bankInfo/${declarationnumber}`,
+        `${BASE_API_URL}/api/v1/clerk/bankInfo/${declarationNumber}`,
         {
           method: "POST",
           headers: {
@@ -210,7 +212,7 @@ export default function BankServiceFeeForm() {
         bankreference: "",
         bankservice: "",
       });
-      setDeclarationNumber("");
+      onDeclarationNumberChange && onDeclarationNumberChange("");
       lastFetchedDeclarationNumber.current = "";
     } catch (error) {
       console.error("Submission error:", error);
@@ -262,7 +264,7 @@ export default function BankServiceFeeForm() {
                   type="text"
                   id="declarationnumber"
                   name="declarationnumber"
-                  value={declarationnumber}
+                  value={declarationNumber || ""}
                   onChange={handleChange}
                   className={`w-full border rounded px-3 py-2 focus:ring-blue-500 focus:border-blue-500 ${
                     isDuplicate
