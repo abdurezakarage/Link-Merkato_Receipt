@@ -13,8 +13,11 @@ interface BankPermitPayload {
   bankreference: string;
   bankservice: number | string;
 }
-
-export default function BankServiceFeeForm() {
+interface BankServiceChargeFormProps {
+  declarationNumber?: string;
+  onDeclarationNumberChange?: (value: string) => void;
+}
+export default function BankServiceFeeForm({ declarationNumber, onDeclarationNumberChange }: BankServiceChargeFormProps) {
   const [formData, setFormData] = useState<BankPermitPayload>({
     bankdate: "",
     bankname: "",
@@ -164,7 +167,8 @@ export default function BankServiceFeeForm() {
   const handleChange = (e: ChangeEvent<HTMLInputElement>) => {
     const { name, value } = e.target;
     if (name === "declarationnumber") {
-      setDeclarationNumber(value);
+      setDeclarationNumber(value)
+      onDeclarationNumberChange && onDeclarationNumberChange(value);
       if (isDuplicate) {
         setIsDuplicate(false);
         e.target.classList.remove("border-red-500", "ring-2", "ring-red-200");

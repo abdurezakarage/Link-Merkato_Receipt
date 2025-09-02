@@ -654,6 +654,16 @@ function LocalReceiptContent() {
     form.receiptName && form.itemType &&
     ((form.itemType === 'goods' && subTotal > 20000) || (form.itemType === 'service' && subTotal > 10000));
 
+  // Automatically set withholdingRequired to 'no' if below threshold and not explicitly set to 'yes'
+  useEffect(() => {
+    if (
+      (form.itemType === 'goods' && subTotal <= 20000) ||
+      (form.itemType === 'service' && subTotal <= 10000)
+    ) {
+      setWithholdingRequired('no');
+    }
+  }, [form.itemType, subTotal]);
+
   // Check if all required fields are completed (excluding withholding for now)
   const isFormComplete: boolean = useMemo(() => {
    
