@@ -71,6 +71,8 @@ const ReportPage: React.FC = () => {
   });
   const [downloadFormat, setDownloadFormat] = useState<DownloadFormat>('csv');
   const [downloading, setDownloading] = useState(false);
+  const [deleteConfirmId, setDeleteConfirmId] = useState<string | null>(null);
+  const [deleteLoadingId, setDeleteLoadingId] = useState<string | null>(null);
   
   // document base for public documents
   const document_BASE_URL = 'https://api.local.linkmerkato.com.et/';
@@ -651,6 +653,30 @@ const ReportPage: React.FC = () => {
     doc.save(filename);
   };
 
+  const handleDeleteReceipt = async (receipt_number: string, issued_by_tin_number: string) => {
+    if (!window.confirm('Are you sure you want to delete this receipt?')) return;
+    setLoading(true);
+    setError(null);
+    try {
+      await axios.delete(`${DJANGO_BASE_URL}/receipts/delete`, {
+        params: {
+          receipt_number,
+          issued_by_tin_number,
+        },
+        headers: {
+          'Authorization': `Bearer ${token}`,
+        },
+      });
+      // Remove the deleted receipt from state
+      setReceipts(prev => prev.filter(r => !(r.receipt_number === receipt_number && r.issued_by_details.tin_number === issued_by_tin_number)));
+      setFilteredReceipts(prev => prev.filter(r => !(r.receipt_number === receipt_number && r.issued_by_details.tin_number === issued_by_tin_number)));
+    } catch (err) {
+      setError('Failed to delete receipt. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   useEffect(() => {
     if (token) {
       fetchReceipts();
@@ -973,6 +999,7 @@ const ReportPage: React.FC = () => {
                       </div>
                     </div>
                     <div className="flex items-center space-x-2">
+                     
                       <button
                         onClick={() => toggleReceiptDetails(receipt.id)}
                         className="text-blue-600 hover:text-blue-800 text-sm font-medium"
@@ -1036,6 +1063,47 @@ const ReportPage: React.FC = () => {
                               <dd className="font-medium">{formatCurrency(receipt.net_payable_to_supplier)}</dd>
                             </div>
                           </dl>
+                        </div>
+                        <div>
+                          <h4 className="text-sm font-medium text-gray-900 mb-2">Delete Receipt</h4>
+                          <div>
+                            {deleteConfirmId === receipt.receipt_number ? (
+                              <div className="flex items-center space-x-2">
+                                <button
+                                  onClick={async () => {
+                                    setDeleteLoadingId(receipt.receipt_number);
+                                    await handleDeleteReceipt(receipt.receipt_number, receipt.issued_by_details.tin_number);
+                                    setDeleteLoadingId(null);
+                                    setDeleteConfirmId(null);
+                                  }}
+                                  className="flex items-center px-3 py-1 rounded-md bg-red-600 text-white shadow hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-400 text-sm font-medium disabled:opacity-60"
+                                  disabled={deleteLoadingId === receipt.receipt_number}
+                                >
+                                  {deleteLoadingId === receipt.receipt_number ? (
+                                    <svg className="animate-spin h-4 w-4 mr-2" viewBox="0 0 24 24"><circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" /><path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8v8z" /></svg>
+                                  ) : (
+                                    <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a2 2 0 012 2v2H7V5a2 2 0 012-2zm-2 6h8" /></svg>
+                                  )}
+                                  Confirm
+                                </button>
+                                <button
+                                  onClick={() => setDeleteConfirmId(null)}
+                                  className="px-3 py-1 rounded-md bg-gray-200 text-gray-700 hover:bg-gray-300 text-sm font-medium"
+                                  disabled={deleteLoadingId === receipt.receipt_number}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button
+                                onClick={() => setDeleteConfirmId(receipt.receipt_number)}
+                                className="flex items-center px-3 py-1 rounded-md bg-red-50 text-red-700 border border-red-200 shadow-sm hover:bg-red-100 focus:outline-none focus:ring-2 focus:ring-red-200 text-sm font-medium"
+                              >
+                                <svg className="h-4 w-4 mr-2" fill="none" stroke="currentColor" strokeWidth="2" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5-4h4a2 2 0 012 2v2H7V5a2 2 0 012-2zm-2 6h8" /></svg>
+                                Delete
+                              </button>
+                            )}
+                          </div>
                         </div>
                       </div>
 
